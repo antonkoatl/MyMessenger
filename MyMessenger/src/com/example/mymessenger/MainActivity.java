@@ -1,9 +1,12 @@
 package com.example.mymessenger;
 
+import java.util.List;
+
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.ContextMenu;
@@ -23,26 +26,29 @@ public class MainActivity extends Activity implements OnClickListener {
 	final int MENU_CON_MOVE = 101;
 	final int MENU_CON_DELETE = 102;
 	final int DIALOG_SMS = 1;
-	
-	private MessageService sms;
+	MyApplication app;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         
-        sms = new SmsService(this.getApplicationContext());
+        app = (MyApplication) getApplicationContext();
+        app.addService(new SmsService(this.getApplicationContext()));
         
         LinearLayout ll_list = (LinearLayout) findViewById(R.id.linearlay_mainbuttons);
         
-        Button b = new Button(this);
-        b.setText(sms.getName());
-        b.setId(10);
-        b.setOnClickListener(this);
-        ll_list.addView(b);
-        registerForContextMenu(b);
-        
-        Log.d("myLogs", "Вот так работают логи");
+        for(MessageService ser : app.myServices){
+        	Button b = new Button(this);
+            b.setText(ser.getName());
+            // TODO dyn id
+            b.setId( 10 ); 
+            b.setOnClickListener(this);
+            ll_list.addView(b);
+            registerForContextMenu(b);
+            
+            Log.d("myLogs", "Service added: " + ser.getName());
+        }
     }
 
 
@@ -64,6 +70,10 @@ public class MainActivity extends Activity implements OnClickListener {
     	Toast.makeText(this, item.getTitle(), Toast.LENGTH_SHORT).show();
     	return super.onOptionsItemSelected(item);
     }
+    
+    
+    
+    
     
     @Override
     public void onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo) {
@@ -87,26 +97,35 @@ public class MainActivity extends Activity implements OnClickListener {
     	return super.onContextItemSelected(item);
     }
 
+    
+    
+    
 
 	@Override
 	public void onClick(View arg0) {
-		Toast.makeText(this, "Нажата кнопка " + ((Button) arg0).getText(), Toast.LENGTH_SHORT).show();
+		//Toast.makeText(this, "Нажата кнопка " + ((Button) arg0).getText(), Toast.LENGTH_SHORT).show();
 		switch (arg0.getId()) {
 		case 10:
 			showDialog(DIALOG_SMS);
-			//Intent intent = new Intent(this, ActivityTwo.class);
-			//startActivity(intent);
 			break;
 		}
 		
 	}
 	
+	
+	
+	
+	
 	protected Dialog onCreateDialog(int id) {
 		AlertDialog.Builder adb = new AlertDialog.Builder(this);
 		switch (id) {
 		case DIALOG_SMS:
-			String data[] = {"last dialog", "New message", "All messages"};
-			adb.setTitle(sms.getName());
+			List<mDialog> t = app.getService( MessageService.SMS ).getDialogs(0, 1);
+			app.getService( MessageService.SMS ).setActiveDialog(t.get(0));
+			
+			String data[] = {t.get(0).getParticipantsNames(), "New message", "All messages"};
+			
+			adb.setTitle(app.getService( MessageService.SMS ).getName());
 			adb.setItems(data, myClickListener);
 			break;
 		}
@@ -116,8 +135,15 @@ public class MainActivity extends Activity implements OnClickListener {
 	// обработчик нажатия на пункт списка диалога
 	android.content.DialogInterface.OnClickListener myClickListener = new android.content.DialogInterface.OnClickListener() {
 		  public void onClick(DialogInterface dialog, int which) {
-		      // выводим в лог позицию нажатого элемента
-			  Log.d("+++", "which = " + which);
+			  
+			  switch(which) {
+			  case 0:
+				  app.active_service = MessageService.SMS;
+				  Intent intent = new Intent(MainActivity.this, ActivityTwo.class);
+				  startActivity(intent);
+				  break;
+			  }
+			  
 		  }
 	  };
     

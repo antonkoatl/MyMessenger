@@ -9,7 +9,7 @@
     tools:context=".MainActivity" >
 
     <TextView
-        android:id="@+id/textView1"
+        android:id="@+id/author_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/answer_to" />
@@ -20,7 +20,7 @@
         android:layout_height="wrap_content"
         android:layout_alignParentLeft="true"
         android:layout_alignParentRight="true"
-        android:layout_below="@+id/textView1" >
+        android:layout_below="@+id/author_text" >
 
         <LinearLayout
             android:id="@+id/linearlay_mainbuttons"
