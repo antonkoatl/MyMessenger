@@ -120,7 +120,7 @@ public class MainActivity extends Activity implements OnClickListener {
 		AlertDialog.Builder adb = new AlertDialog.Builder(this);
 		switch (id) {
 		case DIALOG_SMS:
-			List<mDialog> t = app.getService( MessageService.SMS ).getDialogs(0, 1);
+			List<mDialog> t = app.getService( MessageService.SMS ).getDialogs(1, 1);
 			app.getService( MessageService.SMS ).setActiveDialog(t.get(0));
 			
 			String data[] = {t.get(0).getParticipantsNames(), "New message", "All messages"};
@@ -135,11 +135,18 @@ public class MainActivity extends Activity implements OnClickListener {
 	// обработчик нажатия на пункт списка диалога
 	android.content.DialogInterface.OnClickListener myClickListener = new android.content.DialogInterface.OnClickListener() {
 		  public void onClick(DialogInterface dialog, int which) {
-			  
+			  Intent intent;
 			  switch(which) {
 			  case 0:
 				  app.active_service = MessageService.SMS;
-				  Intent intent = new Intent(MainActivity.this, ActivityTwo.class);
+				  intent = new Intent(MainActivity.this, ActivityTwo.class);
+				  intent.putExtra("mode", "messages");
+				  startActivity(intent);
+				  break;
+			  case 2:
+				  app.active_service = MessageService.SMS;
+				  intent = new Intent(MainActivity.this, ActivityTwo.class);
+				  intent.putExtra("mode", "dialogs");
 				  startActivity(intent);
 				  break;
 			  }

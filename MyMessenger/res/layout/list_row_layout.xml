@@ -1,21 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-	android:id="@+id/even_container"
-	android:layout_width="fill_parent" 
-	android:layout_height="wrap_content">
-		
-	<ImageView
-	    android:id="@+id/user_img"
-	    android:layout_width="wrap_content"
-	    android:layout_height="wrap_content"
-	    android:layout_marginTop="80dip"
-	    android:src="@drawable/sample_image" />
+    android:id="@+id/even_container"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content" >
 		
 	<TextView
 	    android:id="@+id/msg_text"
 	    android:layout_width="wrap_content"
 	    android:layout_height="wrap_content"
-	    android:layout_alignParentRight="true"
 	    android:layout_margin="5dip"
 	    android:layout_marginLeft="120dip"
 	    android:layout_marginRight="8dip"
@@ -24,12 +16,21 @@
 	    android:paddingLeft="10dp"
 	    android:textColor="#000000"
 	    android:textSize="16sp" />
+	
+	<ImageView
+	    android:id="@+id/user_img"
+	    android:layout_width="wrap_content"
+	    android:layout_height="wrap_content"
+	    android:layout_below="@id/msg_text"
+	    android:layout_marginTop="10dp"
+	    android:src="@drawable/sample_image" />
 
 	<TextView
 	    android:id="@+id/author_text"
 	    android:layout_width="wrap_content"
 	    android:layout_height="wrap_content"
-	    android:layout_marginTop="80dp"
+	    android:layout_below="@id/msg_text"
+	    android:layout_marginTop="10dp"
 	    android:layout_toRightOf="@+id/user_img" />
 
 </RelativeLayout>

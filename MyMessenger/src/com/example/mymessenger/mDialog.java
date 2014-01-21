@@ -7,6 +7,7 @@ public class mDialog {
 	public List<mMessage> messages;
 	public List<String> participants;
 	public int mservice;
+	public String snippet;
 	
 	public mDialog() {
 		messages = new ArrayList<mMessage>();

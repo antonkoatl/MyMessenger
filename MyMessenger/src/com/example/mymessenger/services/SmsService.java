@@ -7,6 +7,8 @@ import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 import android.text.format.Time;
+import android.util.Log;
+
 import com.example.mymessenger.mDialog;
 import com.example.mymessenger.mMessage;
 
@@ -62,26 +64,35 @@ public class SmsService implements MessageService {
 		int total = cursor.getCount();
 		List<mDialog> return_dialogs = new ArrayList<mDialog>();
 		
+		if(cursor.moveToFirst()){}
 		for (int i = 0; i < offset; i++) cursor.moveToNext();
+		cursor.moveToPrevious();
 		
-		if(cursor.moveToFirst()){
-			for (int i = 0; i < count; i++) {
+		for (int i = 0; i < count; i++) {
+			if(cursor.moveToNext()){
 				mDialog mdl = new mDialog();
 				String[] recipient_ids = cursor.getString( cursor.getColumnIndex("recipient_ids") ).split(" ");
-				
+
 				for(String rid : recipient_ids){
-					Cursor c = context.getContentResolver().query(Uri.parse("content://mms-sms/canonical-addresses"), null, "_id = " + rid, null, null);
+					Cursor c = context.getContentResolver().query(Uri.parse("content://mms-sms/canonical-addresses"), null, "_id = ?", new String[]{rid}, null);
 					if(c.moveToNext()){
 						mdl.participants.add( c.getString( c.getColumnIndex("address") ) );
+					} else {
+						for(String cn : cursor.getColumnNames()){
+							Log.d("getDialogs", cn + " : " + cursor.getString(cursor.getColumnIndex(cn)) );
+						}
+						mdl.participants.add( "DRAFT" ); //??
 					}
 					c.close();
 				}
 				
+				mdl.snippet = cursor.getString( cursor.getColumnIndex("snippet") );
+				
 				return_dialogs.add(mdl);
-				cursor.moveToNext();
-			}
+			} else break;
 		}
 		
+		cursor.close();
 		return return_dialogs;
 	}
 
@@ -113,6 +124,15 @@ public class SmsService implements MessageService {
 
 	@Override
 	public List<mMessage> getMessages(mDialog dlg, int offset, int count) {
+		/* MESSAGE_TYPE_ALL    = 0;
+		 * MESSAGE_TYPE_INBOX  = 1;
+		 * MESSAGE_TYPE_SENT   = 2;
+		 * MESSAGE_TYPE_DRAFT  = 3;
+		 * MESSAGE_TYPE_OUTBOX = 4;
+		 * MESSAGE_TYPE_FAILED = 5; // for failed outgoing messages
+		 * MESSAGE_TYPE_QUEUED = 6; // for messages to send later
+		 */
+		
 		List<mMessage> return_msgs = new ArrayList<mMessage>();
 		
 		String[] projection = null; // A list of which columns to return. Passing null will return all columns, which is inefficient.
@@ -123,10 +143,12 @@ public class SmsService implements MessageService {
 		
 		int total = cursor.getCount();
 		
+		if(cursor.moveToFirst()){}
 		for (int i = 0; i < offset; i++) cursor.moveToNext();
+		cursor.moveToPrevious();
 		
-		if(cursor.moveToFirst()){
-			for (int i = 0; i < count; i++) {
+		for (int i = 0; i < count; i++) {
+			if(cursor.moveToNext()){
 				mMessage msg = new mMessage();
 				String address = cursor.getString( cursor.getColumnIndex("address") );
 				msg.text = cursor.getString( cursor.getColumnIndex("body") );
@@ -136,7 +158,7 @@ public class SmsService implements MessageService {
 				if (cursor.getString(cursor.getColumnIndex("type")).contains("1")) { //Inbox
 					msg.sender = address;
 					msg.address = self_name;
-	            } else if (cursor.getString(cursor.getColumnIndex("type")).contains("4")) { //Sent
+	            } else if (cursor.getString(cursor.getColumnIndex("type")).contains("2")) { //Sent
 	            	msg.sender = self_name;
 					msg.address = address;
 	            } else {
@@ -144,11 +166,16 @@ public class SmsService implements MessageService {
 	            	continue;
 	            }
 				return_msgs.add(msg);
-				cursor.moveToNext();
-			}
-		}		
+			} else break;
+		}
 		
+		cursor.close();
 		return return_msgs;
+	}
+
+	@Override
+	public String getMyName() {
+		return self_name;
 	}
 
 }

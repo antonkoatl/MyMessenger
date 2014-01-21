@@ -15,4 +15,5 @@ public interface MessageService {
 	public int getType();
 	public void setActiveDialog(mDialog dlg);
 	public mDialog getActiveDialog();
+	public String getMyName();
 }
