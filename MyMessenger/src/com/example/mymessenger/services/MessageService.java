@@ -16,4 +16,5 @@ public interface MessageService {
 	public void setActiveDialog(mDialog dlg);
 	public mDialog getActiveDialog();
 	public String getMyName();
+	public String getContactName(String address);
 }

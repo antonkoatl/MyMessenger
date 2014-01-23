@@ -120,7 +120,7 @@ public class MainActivity extends Activity implements OnClickListener {
 		AlertDialog.Builder adb = new AlertDialog.Builder(this);
 		switch (id) {
 		case DIALOG_SMS:
-			List<mDialog> t = app.getService( MessageService.SMS ).getDialogs(1, 1);
+			List<mDialog> t = app.getService( MessageService.SMS ).getDialogs(0, 1);
 			app.getService( MessageService.SMS ).setActiveDialog(t.get(0));
 			
 			String data[] = {t.get(0).getParticipantsNames(), "New message", "All messages"};

@@ -30,10 +30,12 @@ public class ActivityTwo extends Activity {
 	private boolean dlg_maxed;
 	private boolean msg_maxed;
 	
+	public int supposedFVI;
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.two);
+		
 		dlg_maxed = false;
 		msg_maxed = false;
 		
@@ -42,9 +44,11 @@ public class ActivityTwo extends Activity {
 		Intent intent = getIntent();	    
 	    String mode = intent.getStringExtra("mode");
 	    
-	    listview = (ListView) findViewById(R.id.listview_msgs);
 	    
-	    if (mode.equals("messages")) {			
+	    if (mode.equals("messages")) {
+	    	setContentView(R.layout.listview_reversed);
+	    	listview = (ListView) findViewById(R.id.listview_msgs);
+	    	
 			showing_messages = new ArrayList<mMessage>();
 			
 			msg_adapter = new MyAdapter(this, showing_messages);
@@ -53,17 +57,22 @@ public class ActivityTwo extends Activity {
 			MessageService ms = app.getService( app.active_service );
 			
 	        for(mMessage msg : ms.getMessages(ms.getActiveDialog(), 0, 20)){
-	        	showing_messages.add(msg);
+	        	showing_messages.add(0, msg);
 	        }
 	        
 	        msg_adapter.notifyDataSetChanged();
 	        listview.invalidateViews();
-	        
+
 	        listview.setOnItemClickListener(MsgClickListener);
 	        listview.setOnScrollListener(MsgScrollListener);
+	        
+	        supposedFVI = -1;
 	    }
 	    
-	    if (mode.equals("dialogs")) {			
+	    if (mode.equals("dialogs")) {
+	    	setContentView(R.layout.two);
+	    	listview = (ListView) findViewById(R.id.listview_msgs);
+	    	
 			showing_dialogs = new ArrayList<mDialog>();
 			
 			dlg_adapter = new MyDialogsAdapter(this, showing_dialogs);
@@ -110,7 +119,7 @@ public class ActivityTwo extends Activity {
 		        }
 				if( (showing_dialogs.size() - s) == 0 )dlg_maxed = true;
 				dlg_adapter.notifyDataSetChanged();
-				listview.invalidateViews();
+				//listview.invalidateViews();
 			}
 		}
 
@@ -139,15 +148,32 @@ public class ActivityTwo extends Activity {
 
 		@Override
 		public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
-			if ( !msg_maxed && ( (totalItemCount - (firstVisibleItem + visibleItemCount)) < 5 ) ) {
+			if(supposedFVI != -1){
+				if(supposedFVI != firstVisibleItem){
+					Log.d("MsgScrollListener", "Wrong firstVisibleItem!!");
+					firstVisibleItem = supposedFVI;
+				}
+				supposedFVI = -1;
+			}
+			Log.d("MsgScrollListener", String.valueOf(firstVisibleItem) + ", " + String.valueOf(listview.getFirstVisiblePosition()));
+			if (visibleItemCount == 0) return;
+			if ( !msg_maxed && ( firstVisibleItem == 0 ) ) {
 				MessageService ms = app.getService( app.active_service );
 				int s = showing_messages.size();
-				for(mMessage msg : ms.getMessages(ms.getActiveDialog(), showing_messages.size(), 20)){
-		        	showing_messages.add(msg);
+				List<mMessage> lmsgs = ms.getMessages(ms.getActiveDialog(), showing_messages.size(), 20);
+				for(mMessage msg : lmsgs){
+		        	showing_messages.add(0, msg);
 		        }
 				if( (showing_messages.size() - s) == 0 )msg_maxed = true;
 				msg_adapter.notifyDataSetChanged();
 				listview.invalidateViews();
+				//listview.scrollBy(0, view.);
+				//listview.smoothScrollToPosition(firstVisibleItem + 20);
+				//msg_maxed = true;
+				//Log.d("MsgScrollListener", String.valueOf(firstVisibleItem + lmsgs.size()) + ", " + String.valueOf(listview.getChildAt(firstVisibleItem).getTop()));
+				listview.setSelectionFromTop(firstVisibleItem + lmsgs.size(), listview.getChildAt(firstVisibleItem).getTop());
+				supposedFVI = firstVisibleItem + lmsgs.size();
+				//Log.d("MsgScrollListener", String.valueOf(firstVisibleItem + lmsgs.size()) + ", " + String.valueOf(listview.getChildAt(firstVisibleItem).getTop()));
 			}
 		}
 

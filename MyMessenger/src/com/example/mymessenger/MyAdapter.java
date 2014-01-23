@@ -57,17 +57,20 @@ public class MyAdapter extends BaseAdapter {
 	    boolean left = msg.sender == ((MyApplication) context.getApplicationContext()).getService( MessageService.SMS ).getMyName();
 	    
     	TextView textLabel = (TextView) view.findViewById(R.id.author_text);
-    	textLabel.setText( msg.sender );
+    	textLabel.setText( msg.getSenderName() );
         
     	textLabel = (TextView) view.findViewById(R.id.msg_text);
-    	textLabel.setText( msg.text );
+    	textLabel.setText( msg.text + "(" + String.valueOf(position) + ")");
     	
     	textLabel.setBackgroundResource(left ? R.drawable.bubble_yellow : R.drawable.bubble_green);
     	textLabel.setGravity(left ? Gravity.LEFT : Gravity.RIGHT);
-    	
+    	    	    	
     	RelativeLayout.LayoutParams lp = (RelativeLayout.LayoutParams) textLabel.getLayoutParams();
     	lp.addRule(left ? RelativeLayout.ALIGN_PARENT_LEFT : RelativeLayout.ALIGN_PARENT_RIGHT);
     	textLabel.setLayoutParams(lp);
+    	
+    	textLabel = (TextView) view.findViewById(R.id.msg_date);
+    	textLabel.setText( msg.sendTime.format("%d.%m.%Y %H:%M") );
     	
     	Log.d("MyAdapter", data.size() + " : " + position + " : " + msg.text);
 		return view;

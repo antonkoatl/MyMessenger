@@ -6,6 +6,7 @@ import java.util.List;
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
+import android.provider.ContactsContract;
 import android.text.format.Time;
 import android.util.Log;
 
@@ -77,11 +78,13 @@ public class SmsService implements MessageService {
 					Cursor c = context.getContentResolver().query(Uri.parse("content://mms-sms/canonical-addresses"), null, "_id = ?", new String[]{rid}, null);
 					if(c.moveToNext()){
 						mdl.participants.add( c.getString( c.getColumnIndex("address") ) );
+						mdl.participants_names.add( getContactName( c.getString( c.getColumnIndex("address") ) ) );
 					} else {
 						for(String cn : cursor.getColumnNames()){
 							Log.d("getDialogs", cn + " : " + cursor.getString(cursor.getColumnIndex(cn)) );
 						}
 						mdl.participants.add( "DRAFT" ); //??
+						mdl.participants_names.add( "DRAFT" ); //??
 					}
 					c.close();
 				}
@@ -155,12 +158,17 @@ public class SmsService implements MessageService {
 				msg.sendTime = new Time();
 				msg.sendTime.set(cursor.getLong( cursor.getColumnIndex("date") ) );
 				msg.ReadState = cursor.getString( cursor.getColumnIndex("read") );
+				
 				if (cursor.getString(cursor.getColumnIndex("type")).contains("1")) { //Inbox
 					msg.sender = address;
 					msg.address = self_name;
+					msg.sender_name = getContactName(address);
+					msg.address_name = getContactName(self_name);
 	            } else if (cursor.getString(cursor.getColumnIndex("type")).contains("2")) { //Sent
 	            	msg.sender = self_name;
 					msg.address = address;
+					msg.sender_name = getContactName(self_name);
+					msg.address_name = getContactName(address);
 	            } else {
 	            	cursor.moveToNext();
 	            	continue;
@@ -178,4 +186,32 @@ public class SmsService implements MessageService {
 		return self_name;
 	}
 
+	@Override
+	public String getContactName(String number){
+		String name = number;
+
+	    // define the columns I want the query to return
+	    String[] name_projection = new String[] {
+	            ContactsContract.PhoneLookup.DISPLAY_NAME,
+	            ContactsContract.PhoneLookup._ID};
+
+	    // encode the phone number and build the filter URI
+	    Uri contactUri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(number));
+
+	    // query time
+	    Cursor name_cursor = context.getContentResolver().query(contactUri, name_projection, null, null, null);
+
+	    if(name_cursor != null) {
+	        if (name_cursor.moveToFirst()) {
+	        	name =      name_cursor.getString(name_cursor.getColumnIndex(ContactsContract.PhoneLookup.DISPLAY_NAME));
+	            Log.v("SmsService.getContactName", "Contact Found @ " + number);            
+	            Log.v("SmsService.getContactName", "Contact name  = " + name);
+	        } else {
+	            Log.v("SmsService.getContactName", "Contact Not Found @ " + number);
+	        }
+	        name_cursor.close();
+	    }
+	    
+	    return name;
+	}
 }
