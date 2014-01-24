@@ -3,12 +3,19 @@ package com.example.mymessenger.services;
 import java.util.ArrayList;
 import java.util.List;
 
+import android.app.Activity;
+import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.ContactsContract;
+import android.telephony.SmsManager;
 import android.text.format.Time;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.example.mymessenger.mDialog;
 import com.example.mymessenger.mMessage;
@@ -23,6 +30,14 @@ public class SmsService implements MessageService {
 		this.context = context;
 		self_name = "Me";
 		dialogs = new ArrayList<mDialog>();
+		
+		mSentIntent = PendingIntent.getBroadcast(context, 0, new Intent("CTS_SMS_SEND_ACTION"),
+                PendingIntent.FLAG_ONE_SHOT);
+        mDeliveredIntent = PendingIntent.getBroadcast(context, 0, new Intent("CTS_SMS_DELIVERY_ACTION"),
+                PendingIntent.FLAG_ONE_SHOT);
+        
+        mSendReceiver = new SmsBroadcastReceiver();
+        mDeliveryReceiver = new SmsBroadcastReceiver();
 	}
 	
 	@Override
@@ -214,4 +229,52 @@ public class SmsService implements MessageService {
 	    
 	    return name;
 	}
+
+	private PendingIntent mSentIntent;
+    private PendingIntent mDeliveredIntent;
+    private SmsBroadcastReceiver mSendReceiver;
+    private SmsBroadcastReceiver mDeliveryReceiver;
+    
+	@Override
+	public boolean sendMessage(String address, String text) {
+		SmsManager smsManager = SmsManager.getDefault();
+		smsManager.sendTextMessage(address, null, text, mSentIntent, mDeliveredIntent);
+		context.registerReceiver(mSendReceiver, new IntentFilter("CTS_SMS_SEND_ACTION"));
+		context.registerReceiver(mDeliveryReceiver, new IntentFilter("CTS_SMS_DELIVERY_ACTION"));
+		return false;
+	}
+	
+	private static class SmsBroadcastReceiver extends BroadcastReceiver {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+        	
+        	switch (getResultCode()){
+        	case Activity.RESULT_OK:
+        		Toast.makeText(context, "SMS sent", Toast.LENGTH_SHORT).show();
+                break;
+
+        	case SmsManager.RESULT_ERROR_GENERIC_FAILURE:
+        		Toast.makeText(context, "SMS: Generic failure", Toast.LENGTH_SHORT).show();
+        		break;
+
+            case SmsManager.RESULT_ERROR_NO_SERVICE:
+            	Toast.makeText(context, "SMS: No service", Toast.LENGTH_SHORT).show();
+            	break;
+
+            case SmsManager.RESULT_ERROR_NULL_PDU:
+            	Toast.makeText(context, "SMS: Null PDU", Toast.LENGTH_SHORT).show();
+            	break;
+
+            case SmsManager.RESULT_ERROR_RADIO_OFF:
+            	Toast.makeText(context, "SMS: Radio off", Toast.LENGTH_SHORT).show();
+            	break;
+            }
+        	 
+        	context.unregisterReceiver(this);
+
+        }
+
+
+    }
 }
