@@ -6,6 +6,7 @@ import java.util.List;
 import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -35,9 +36,6 @@ public class SmsService implements MessageService {
                 PendingIntent.FLAG_ONE_SHOT);
         mDeliveredIntent = PendingIntent.getBroadcast(context, 0, new Intent("CTS_SMS_DELIVERY_ACTION"),
                 PendingIntent.FLAG_ONE_SHOT);
-        
-        mSendReceiver = new SmsBroadcastReceiver();
-        mDeliveryReceiver = new SmsBroadcastReceiver();
 	}
 	
 	@Override
@@ -232,8 +230,6 @@ public class SmsService implements MessageService {
 
 	private PendingIntent mSentIntent;
     private PendingIntent mDeliveredIntent;
-    private SmsBroadcastReceiver mSendReceiver;
-    private SmsBroadcastReceiver mDeliveryReceiver;
     
 	@Override
 	public boolean sendMessage(String address, String text) {
@@ -241,10 +237,19 @@ public class SmsService implements MessageService {
 		smsManager.sendTextMessage(address, null, text, mSentIntent, mDeliveredIntent);
 		context.registerReceiver(mSendReceiver, new IntentFilter("CTS_SMS_SEND_ACTION"));
 		context.registerReceiver(mDeliveryReceiver, new IntentFilter("CTS_SMS_DELIVERY_ACTION"));
+		
+		ContentValues values = new ContentValues();   
+	    values.put("address", address);	              
+	    values.put("body", text);
+	    context.getContentResolver().insert(Uri.parse("content://sms/sent"), values);
+		
 		return false;
+		
+		//ArrayList<String> parts = smsManager.divideMessage(message); 
+	    //smsManager.sendMultipartTextMessage(phoneNumber, null, parts, null, null);
 	}
 	
-	private static class SmsBroadcastReceiver extends BroadcastReceiver {
+	private BroadcastReceiver mSendReceiver = new BroadcastReceiver() {
 
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -271,10 +276,27 @@ public class SmsService implements MessageService {
             	break;
             }
         	 
-        	context.unregisterReceiver(this);
+        	context.unregisterReceiver(mSendReceiver);
 
         }
 
+    };
+    
+    private BroadcastReceiver mDeliveryReceiver = new BroadcastReceiver() {
 
-    }
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			switch(getResultCode()) {
+            case Activity.RESULT_OK:
+                Toast.makeText(context, "SMS Delivered", Toast.LENGTH_SHORT).show();
+                break;
+            case Activity.RESULT_CANCELED:
+                Toast.makeText(context, "SMS not delivered", Toast.LENGTH_SHORT).show();
+                break;
+            }
+			
+			context.unregisterReceiver(mDeliveryReceiver);
+		}
+    	
+    };
 }

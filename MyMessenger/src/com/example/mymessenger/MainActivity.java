@@ -120,10 +120,15 @@ public class MainActivity extends Activity implements OnClickListener {
 		AlertDialog.Builder adb = new AlertDialog.Builder(this);
 		switch (id) {
 		case DIALOG_SMS:
-			List<mDialog> t = app.getService( MessageService.SMS ).getDialogs(0, 1);
-			app.getService( MessageService.SMS ).setActiveDialog(t.get(0));
+			String data[] = {"---", "New message", "All messages"};
 			
-			String data[] = {t.get(0).getParticipantsNames(), "New message", "All messages"};
+			List<mDialog> t = app.getService( MessageService.SMS ).getDialogs(0, 1);
+			if(t.size() > 0){
+				app.getService( MessageService.SMS ).setActiveDialog(t.get(0));
+				data[0] = t.get(0).getParticipantsNames();
+			}
+			else
+				app.getService( MessageService.SMS ).setActiveDialog(null);			
 			
 			adb.setTitle(app.getService( MessageService.SMS ).getName());
 			adb.setItems(data, myClickListener);
@@ -138,10 +143,12 @@ public class MainActivity extends Activity implements OnClickListener {
 			  Intent intent;
 			  switch(which) {
 			  case 0:
-				  app.active_service = MessageService.SMS;
-				  intent = new Intent(MainActivity.this, ActivityTwo.class);
-				  intent.putExtra("mode", "messages");
-				  startActivity(intent);
+				  if(app.getService( MessageService.SMS ).getActiveDialog() != null){
+					  app.active_service = MessageService.SMS;
+					  intent = new Intent(MainActivity.this, ActivityTwo.class);
+					  intent.putExtra("mode", "messages");
+					  startActivity(intent);
+				  }
 				  break;
 			  case 2:
 				  app.active_service = MessageService.SMS;

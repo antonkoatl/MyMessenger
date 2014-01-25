@@ -6,14 +6,17 @@ import java.util.List;
 import com.example.mymessenger.services.MessageService;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.AbsListView;
 import android.widget.AbsListView.OnScrollListener;
 import android.widget.AdapterView;
@@ -37,6 +40,9 @@ public class ActivityTwo extends Activity implements AsyncTaskCompleteListener<L
 	private boolean msg_isLoading;
 	
 	public int supposedFVI;
+	
+	public final static String BROADCAST_ACTION = "ru.mymessage.servicebackbroadcast";
+	BroadcastReceiver br;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -100,6 +106,20 @@ public class ActivityTwo extends Activity implements AsyncTaskCompleteListener<L
 	    }
 	    
 	    
+	    br = new BroadcastReceiver() {
+	        // действия при получении сообщений
+	        public void onReceive(Context context, Intent intent) {
+	          int task = intent.getIntExtra("task", 0);
+	          
+	          Log.d("+++", "onReceive: task = " + task);
+	          if(task == 1){
+	        	  MsgUpdate();
+	          }
+	        }
+	    };
+	    
+	    IntentFilter intFilt = new IntentFilter(BROADCAST_ACTION);
+	    registerReceiver(br, intFilt);
 	}
 	
 	OnItemClickListener DlgClickListener = new OnItemClickListener(){
@@ -238,6 +258,13 @@ public class ActivityTwo extends Activity implements AsyncTaskCompleteListener<L
 		case R.id.msg_sendbutton :
 			EditText textLabel = (EditText) findViewById(R.id.msg_entertext);
 			String text = textLabel.getText().toString();
+			textLabel.setText("");
+			
+			InputMethodManager inputManager = (InputMethodManager) app.getSystemService(Context.INPUT_METHOD_SERVICE); 
+			inputManager.hideSoftInputFromWindow(
+			        this.getCurrentFocus().getWindowToken(),
+			        InputMethodManager.HIDE_NOT_ALWAYS); 
+			
 			Log.d("ActivityTwo.onClick.msg_sendbutton", text);
 			MessageService ms = app.getService( app.active_service );
 			mDialog dlg = ms.getActiveDialog();
@@ -245,8 +272,32 @@ public class ActivityTwo extends Activity implements AsyncTaskCompleteListener<L
 			for(String addr : dlg.participants){
 				ms.sendMessage(addr, text);
 			}
+			
+	        for(mMessage msg : ms.getMessages(dlg, 0, 1)){
+	        	showing_messages.add(msg);
+	        	msg_adapter.notifyDataSetChanged();
+	        }
+	        
 			break;
 		}
 			
+	}
+
+	public void MsgUpdate(){
+		MessageService ms = app.getService( app.active_service );
+		
+		boolean update = true;
+		while(update){
+	        for(mMessage msg : ms.getMessages(ms.getActiveDialog(), 0, 20)){
+	        	if( msg.sendTime.after( showing_messages.get(showing_messages.size()-1).sendTime ) ){
+	        		showing_messages.add(msg);
+	        		msg_adapter.notifyDataSetChanged();
+	        	} else {
+	        		update = false;
+	        		break;
+	        	}
+	        	
+	        }
+		}
 	}
 }

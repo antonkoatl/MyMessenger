@@ -72,7 +72,7 @@ public class MyAdapter extends BaseAdapter {
 	    	textLabel.setText( msg.getSenderName() );
 	        
 	    	textLabel = (TextView) view.findViewById(R.id.msg_text);
-	    	textLabel.setText( msg.text + "(" + String.valueOf(position) + ")");
+	    	textLabel.setText( msg.text );
 	    	
 	    	textLabel.setBackgroundResource(left ? R.drawable.bubble_yellow : R.drawable.bubble_green);
 	    	textLabel.setGravity(left ? Gravity.LEFT : Gravity.RIGHT);
