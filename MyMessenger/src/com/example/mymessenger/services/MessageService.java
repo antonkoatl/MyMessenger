@@ -2,6 +2,8 @@ package com.example.mymessenger.services;
 
 import java.util.List;
 
+import android.content.Context;
+
 import com.example.mymessenger.mDialog;
 import com.example.mymessenger.mMessage;
 
@@ -18,4 +20,6 @@ public interface MessageService {
 	public String getMyName();
 	public String getContactName(String address);
 	public boolean sendMessage(String address, String text);
+	public String[] getStringsForMainViewMenu();
+	public void MainViewMenu_click(int which, Context context);
 }

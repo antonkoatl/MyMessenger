@@ -7,6 +7,7 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.ContextMenu;
@@ -27,22 +28,28 @@ public class MainActivity extends Activity implements OnClickListener {
 	final int MENU_CON_DELETE = 102;
 	final int DIALOG_SMS = 1;
 	MyApplication app;
+	private SharedPreferences sPref;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        
         app = (MyApplication) getApplicationContext();
-        app.addService(new SmsService(this.getApplicationContext()));
+        
+        sPref = getSharedPreferences("MyPref", MODE_PRIVATE);
+        String using_services[] = sPref.getString("usingservices", "sms").split(";");
+        
+        for(String i : using_services){        	
+        	if(i.equals("sms"))
+        		app.addService(new SmsService(this.getApplicationContext()));
+        }
         
         LinearLayout ll_list = (LinearLayout) findViewById(R.id.linearlay_mainbuttons);
         
         for(MessageService ser : app.myServices){
         	Button b = new Button(this);
             b.setText(ser.getName());
-            // TODO dyn id
-            b.setId( 10 ); 
+            b.setId( getButtonIdMainScreen(ser.getType()) ); 
             b.setOnClickListener(this);
             ll_list.addView(b);
             registerForContextMenu(b);
@@ -52,7 +59,18 @@ public class MainActivity extends Activity implements OnClickListener {
     }
 
 
-    @Override
+    private int getButtonIdMainScreen(int type) {
+    	int res = 10;
+		switch(type){
+		case MessageService.SMS :
+			res += 0;
+			break;
+		}
+		return res;
+	}
+
+
+	@Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.main, menu);
@@ -102,13 +120,10 @@ public class MainActivity extends Activity implements OnClickListener {
     
 
 	@Override
-	public void onClick(View arg0) {
+	public void onClick(View view) {
 		//Toast.makeText(this, "Нажата кнопка " + ((Button) arg0).getText(), Toast.LENGTH_SHORT).show();
-		switch (arg0.getId()) {
-		case 10:
-			showDialog(DIALOG_SMS);
-			break;
-		}
+		if( isServicesButton(view.getId()) )
+			showDialog(view.getId());
 		
 	}
 	
@@ -116,48 +131,42 @@ public class MainActivity extends Activity implements OnClickListener {
 	
 	
 	
+	private boolean isServicesButton(int id) {
+		if (id >= 10 && id < 20)
+			return true;
+		else 
+			return false;
+	}
+
+
 	protected Dialog onCreateDialog(int id) {
 		AlertDialog.Builder adb = new AlertDialog.Builder(this);
-		switch (id) {
-		case DIALOG_SMS:
-			String data[] = {"---", "New message", "All messages"};
-			
-			List<mDialog> t = app.getService( MessageService.SMS ).getDialogs(0, 1);
-			if(t.size() > 0){
-				app.getService( MessageService.SMS ).setActiveDialog(t.get(0));
-				data[0] = t.get(0).getParticipantsNames();
-			}
-			else
-				app.getService( MessageService.SMS ).setActiveDialog(null);			
-			
-			adb.setTitle(app.getService( MessageService.SMS ).getName());
-			adb.setItems(data, myClickListener);
-			break;
-		}
+		
+		MessageService ser = getServiceFromButtonId(id);
+		app.active_service = ser.getType();
+		
+		String data[] = ser.getStringsForMainViewMenu();
+
+		adb.setTitle(ser.getName());
+		adb.setItems(data, myClickListener);
+
 		return adb.create();
 	}
 	
+	private MessageService getServiceFromButtonId(int id) {
+		switch(id){
+			case 10+0 :
+				return app.getService( MessageService.SMS );
+			default :
+				return null;
+		}
+	}
+
 	// обработчик нажатия на пункт списка диалога
 	android.content.DialogInterface.OnClickListener myClickListener = new android.content.DialogInterface.OnClickListener() {
 		  public void onClick(DialogInterface dialog, int which) {
-			  Intent intent;
-			  switch(which) {
-			  case 0:
-				  if(app.getService( MessageService.SMS ).getActiveDialog() != null){
-					  app.active_service = MessageService.SMS;
-					  intent = new Intent(MainActivity.this, ActivityTwo.class);
-					  intent.putExtra("mode", "messages");
-					  startActivity(intent);
-				  }
-				  break;
-			  case 2:
-				  app.active_service = MessageService.SMS;
-				  intent = new Intent(MainActivity.this, ActivityTwo.class);
-				  intent.putExtra("mode", "dialogs");
-				  startActivity(intent);
-				  break;
-			  }
-			  
+			  MessageService ser = app.getService( app.active_service );
+			  ser.MainViewMenu_click(which, MainActivity.this);			  
 		  }
 	  };
     

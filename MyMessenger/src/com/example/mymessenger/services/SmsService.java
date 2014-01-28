@@ -18,6 +18,8 @@ import android.text.format.Time;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.example.mymessenger.ActivityTwo;
+import com.example.mymessenger.MainActivity;
 import com.example.mymessenger.mDialog;
 import com.example.mymessenger.mMessage;
 
@@ -299,4 +301,36 @@ public class SmsService implements MessageService {
 		}
     	
     };
+
+	@Override
+	public String[] getStringsForMainViewMenu() {
+		String data[] = {"---", "New message", "All messages"};
+		List<mDialog> t = getDialogs(0, 1);
+		if(t.size() > 0){
+			setActiveDialog(t.get(0));
+			data[0] = t.get(0).getParticipantsNames();
+		}
+		else
+			setActiveDialog(null);
+		return data;
+	}
+
+	@Override
+	public void MainViewMenu_click(int which, Context con) {
+		Intent intent;
+		switch(which) {
+		case 0:
+			if(getActiveDialog() != null){
+				intent = new Intent(con, ActivityTwo.class);
+				intent.putExtra("mode", "messages");
+				con.startActivity(intent);
+			}
+			break;
+		case 2:
+			intent = new Intent(con, ActivityTwo.class);
+			intent.putExtra("mode", "dialogs");
+			con.startActivity(intent);
+			break;
+		}
+	}
 }

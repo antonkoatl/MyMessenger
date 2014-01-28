@@ -35,7 +35,7 @@ public class SmsReceiver extends BroadcastReceiver {
 	        } else if (sms.isReplace()) {
 	        //    return replaceMessage(context, msgs, error);
 	        } else {
-	            storeMessage(context, messages, intent.getIntExtra("errorCode", 0));
+	            //storeMessage(context, messages, intent.getIntExtra("errorCode", 0)); //~~~ Store here
 	        }
 		    
 		    /*
@@ -56,7 +56,7 @@ public class SmsReceiver extends BroadcastReceiver {
 		    //context.getContentResolver().insert(Uri.parse("content://sms/inbox"), values);
 		    //messages[0].getStatus();
 		    
-		    abortBroadcast();
+		    //abortBroadcast(); //~~~ Dont abort for now
 		    
 		    Intent intent2 = new Intent(ActivityTwo.BROADCAST_ACTION);
 		    intent2.putExtra("task", 1);

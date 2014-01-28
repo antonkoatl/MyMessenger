@@ -224,8 +224,9 @@ public class ActivityTwo extends Activity implements AsyncTaskCompleteListener<L
 		if( (showing_messages.size() - s) == 0 )msg_maxed = true;
 		
 		int firstVisibleItem = listview.getFirstVisiblePosition();
-		listview.setSelectionFromTop(firstVisibleItem  + result.size(), listview.getChildAt(firstVisibleItem + 1).getTop());
-		
+
+		listview.setSelectionFromTop(firstVisibleItem  + result.size(), listview.getChildAt(1).getTop()); //listView.getChildAt(i) works where 0 is the very first visible row and (n-1) is the last visible row (where n is the number of visible views you see).
+
 		msg_isLoading = false;
 		msg_adapter.isLoading = false;
 	}
