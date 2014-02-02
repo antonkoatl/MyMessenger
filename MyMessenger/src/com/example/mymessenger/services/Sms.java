@@ -12,6 +12,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.provider.ContactsContract;
 import android.telephony.SmsManager;
 import android.text.format.Time;
@@ -19,20 +20,24 @@ import android.util.Log;
 import android.widget.Toast;
 
 import com.example.mymessenger.ActivityTwo;
+import com.example.mymessenger.AsyncTaskCompleteListener;
 import com.example.mymessenger.MainActivity;
+import com.example.mymessenger.MyApplication;
 import com.example.mymessenger.mDialog;
 import com.example.mymessenger.mMessage;
 
-public class SmsService implements MessageService {
+public class Sms implements MessageService {
 	private Context context;
 	private List<mDialog> dialogs;
 	public String self_name;
 	public mDialog active_dialog;
+	private MyApplication app;
 	
-	public SmsService(Context context) {
+	public Sms(Context context) {
 		this.context = context;
 		self_name = "Me";
 		dialogs = new ArrayList<mDialog>();
+		app = (MyApplication) context.getApplicationContext();
 		
 		mSentIntent = PendingIntent.getBroadcast(context, 0, new Intent("CTS_SMS_SEND_ACTION"),
                 PendingIntent.FLAG_ONE_SHOT);
@@ -333,4 +338,33 @@ public class SmsService implements MessageService {
 			break;
 		}
 	}
+
+	@Override
+	public void requestMessages(mDialog activeDialog, int offset, int count,
+			AsyncTaskCompleteListener<List<mMessage>> cb) {
+
+		new load_msgs_async(this.context, cb).execute(offset, count);
+		
+	}
+	
+	class load_msgs_async extends AsyncTask<Integer, Void, List<mMessage>> {
+	    private AsyncTaskCompleteListener<List<mMessage>> callback;
+		private Context context;
+
+	    public load_msgs_async(Context context, AsyncTaskCompleteListener<List<mMessage>> cb) {
+	        this.context = context;
+	        this.callback = cb;
+	    }
+
+	    protected void onPostExecute(List<mMessage> result) {
+	       callback.onTaskComplete(result);
+	   }
+
+		@Override
+		protected List<mMessage> doInBackground(Integer... params) {
+			MessageService ms = app.getService( app.active_service );
+			return ms.getMessages(ms.getActiveDialog(), params[0], params[1]);
+		}  
+	}
+
 }

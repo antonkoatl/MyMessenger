@@ -65,8 +65,8 @@ public class MyAdapter extends BaseAdapter {
 		    }
 		    
 		    mMessage msg = data.get(position);
-		    
-		    boolean left = msg.sender == ((MyApplication) context.getApplicationContext()).getService( MessageService.SMS ).getMyName();
+		    MessageService ser = ((MyApplication) context.getApplicationContext()).getActiveService();
+		    boolean left = msg.sender.equals(ser.getMyName());
 		    
 	    	TextView textLabel = (TextView) view.findViewById(R.id.author_text);
 	    	textLabel.setText( msg.getSenderName() );

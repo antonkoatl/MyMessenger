@@ -21,7 +21,9 @@ import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import com.example.mymessenger.services.MessageService;
-import com.example.mymessenger.services.SmsService;
+import com.example.mymessenger.services.Sms;
+import com.example.mymessenger.services.Vk;
+import com.vk.sdk.VKUIHelper;
 
 public class MainActivity extends Activity implements OnClickListener {
 	final int MENU_CON_MOVE = 101;
@@ -37,11 +39,13 @@ public class MainActivity extends Activity implements OnClickListener {
         app = (MyApplication) getApplicationContext();
         
         sPref = getSharedPreferences("MyPref", MODE_PRIVATE);
-        String using_services[] = sPref.getString("usingservices", "sms").split(";");
+        String using_services[] = sPref.getString("usingservices", "sms,vk").split(",");
         
         for(String i : using_services){        	
         	if(i.equals("sms"))
-        		app.addService(new SmsService(this.getApplicationContext()));
+        		app.addService(new Sms(this.getApplicationContext()));
+        	if(i.equals("vk"))
+        		app.addService(new Vk(this));
         }
         
         LinearLayout ll_list = (LinearLayout) findViewById(R.id.linearlay_mainbuttons);
@@ -64,6 +68,9 @@ public class MainActivity extends Activity implements OnClickListener {
 		switch(type){
 		case MessageService.SMS :
 			res += 0;
+			break;
+		case MessageService.VK :
+			res += 1;
 			break;
 		}
 		return res;
@@ -157,6 +164,8 @@ public class MainActivity extends Activity implements OnClickListener {
 		switch(id){
 			case 10+0 :
 				return app.getService( MessageService.SMS );
+			case 10+1 :
+				return app.getService( MessageService.VK );
 			default :
 				return null;
 		}
@@ -170,4 +179,23 @@ public class MainActivity extends Activity implements OnClickListener {
 		  }
 	  };
     
+	  
+	  
+  
+	@Override 
+	protected void onResume() { 
+		super.onResume(); 
+		VKUIHelper.onResume(this); 
+	} 
+
+	@Override 
+	protected void onDestroy() { 
+		super.onDestroy(); 
+		VKUIHelper.onDestroy(this); 
+	} 
+
+	@Override 
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) { 
+		VKUIHelper.onActivityResult(requestCode, resultCode, data); 
+	} 
 }

@@ -68,14 +68,19 @@ public class ActivityTwo extends Activity implements AsyncTaskCompleteListener<L
 			listview.setAdapter(msg_adapter);
 			
 			MessageService ms = app.getService( app.active_service );
-			
+			/*
 	        for(mMessage msg : ms.getMessages(ms.getActiveDialog(), 0, 20)){
 	        	showing_messages.add(0, msg);
 	        }
 	        
 	        msg_adapter.notifyDataSetChanged();
-	        listview.invalidateViews();
-
+	        listview.invalidateViews();*/
+			ms.requestMessages(ms.getActiveDialog(), 0, 20, this);
+			showing_messages.add(0, null);
+			msg_isLoading = true;
+			msg_adapter.isLoading = true;
+			msg_adapter.notifyDataSetChanged();
+			
 	        listview.setOnItemClickListener(MsgClickListener);
 	        listview.setOnScrollListener(MsgScrollListener);
 	        
@@ -189,7 +194,9 @@ public class ActivityTwo extends Activity implements AsyncTaskCompleteListener<L
 			if ( !msg_maxed && ( firstVisibleItem == 0 ) && !msg_isLoading ) {
 				
 				msg_isLoading = true;
-				new load_msgs_async(ActivityTwo.this, ActivityTwo.this).execute(null);
+				//new load_msgs_async(ActivityTwo.this, ActivityTwo.this).execute(null);
+				MessageService ms = app.getActiveService();
+				ms.requestMessages(ms.getActiveDialog(), showing_messages.size(), 20, ActivityTwo.this);
 				showing_messages.add(0, null);
 				msg_adapter.isLoading = true;
 				msg_adapter.notifyDataSetChanged();
@@ -225,7 +232,8 @@ public class ActivityTwo extends Activity implements AsyncTaskCompleteListener<L
 		
 		int firstVisibleItem = listview.getFirstVisiblePosition();
 
-		listview.setSelectionFromTop(firstVisibleItem  + result.size(), listview.getChildAt(1).getTop()); //listView.getChildAt(i) works where 0 is the very first visible row and (n-1) is the last visible row (where n is the number of visible views you see).
+		if(listview.getLastVisiblePosition() > 0)
+			listview.setSelectionFromTop(firstVisibleItem  + result.size(), listview.getChildAt(1).getTop()); //listView.getChildAt(i) works where 0 is the very first visible row and (n-1) is the last visible row (where n is the number of visible views you see).
 
 		msg_isLoading = false;
 		msg_adapter.isLoading = false;

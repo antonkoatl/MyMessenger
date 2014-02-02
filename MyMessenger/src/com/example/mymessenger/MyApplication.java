@@ -25,4 +25,8 @@ public class MyApplication extends Application {
 		}
 		return null;
 	}
+
+	public MessageService getActiveService() {
+		return getService(active_service);
+	}
 }

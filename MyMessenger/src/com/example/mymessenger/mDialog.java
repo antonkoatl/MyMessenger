@@ -30,13 +30,18 @@ public class mDialog {
 	}
 	
 	public String getParticipantsNames(){
-		String res = participants_names.get(0);
-		
-		if(participants_names.size() > 1) {
-			int i = 1;
-			do {
-				res += ", " + participants_names.get(i);
-			} while (i < participants_names.size());
+		String res;
+		if(participants_names.size() > 0){
+			res = participants_names.get(0);
+			
+			if(participants_names.size() > 1) {
+				int i = 1;
+				do {
+					res += ", " + participants_names.get(i);
+				} while (i < participants_names.size());
+			}
+		} else {
+			res = "---";
 		}
 		
 		return res;
