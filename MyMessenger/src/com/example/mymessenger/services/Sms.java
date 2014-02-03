@@ -30,6 +30,7 @@ public class Sms implements MessageService {
 	private Context context;
 	private List<mDialog> dialogs;
 	public String self_name;
+	public String self_address;
 	public mDialog active_dialog;
 	private MyApplication app;
 	
@@ -45,7 +46,6 @@ public class Sms implements MessageService {
                 PendingIntent.FLAG_ONE_SHOT);
 	}
 	
-	@Override
 	public List<mDialog> getDialogs(int offset, int count) {
 		/*
 		 * Inbox = "content://sms/inbox"
@@ -120,18 +120,13 @@ public class Sms implements MessageService {
 	}
 
 	@Override
-	public String getName() {
+	public String getServiceName() {
 		return "Sms";
 	}
 
-	@Override
-	public List<mMessage> getMessages(String user_id, int offset, int count) {
-		// TODO Auto-generated method stub
-		return null;
-	}
 
 	@Override
-	public int getType() {
+	public int getServiceType() {
 		return MessageService.SMS;
 	}
 
@@ -145,7 +140,6 @@ public class Sms implements MessageService {
 		return active_dialog;
 	}
 
-	@Override
 	public List<mMessage> getMessages(mDialog dlg, int offset, int count) {
 		/* MESSAGE_TYPE_ALL    = 0;
 		 * MESSAGE_TYPE_INBOX  = 1;
@@ -204,6 +198,12 @@ public class Sms implements MessageService {
 	@Override
 	public String getMyName() {
 		return self_name;
+	}
+	
+	@Override
+	public String getMyAddress() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 	@Override
@@ -340,20 +340,29 @@ public class Sms implements MessageService {
 	}
 
 	@Override
-	public void requestMessages(mDialog activeDialog, int offset, int count,
+	public void requestMessages(mDialog dlg, int offset, int count,
 			AsyncTaskCompleteListener<List<mMessage>> cb) {
 
-		new load_msgs_async(this.context, cb).execute(offset, count);
+		new load_msgs_async(this.context, cb, dlg).execute(offset, count);
 		
+	}
+	
+	@Override
+	public void requestDialogs(int offset, int count,
+			AsyncTaskCompleteListener<List<mDialog>> cb) {
+		
+		new load_dlgs_async(this.context, cb).execute(offset, count);		
 	}
 	
 	class load_msgs_async extends AsyncTask<Integer, Void, List<mMessage>> {
 	    private AsyncTaskCompleteListener<List<mMessage>> callback;
 		private Context context;
+		private mDialog dlg;
 
-	    public load_msgs_async(Context context, AsyncTaskCompleteListener<List<mMessage>> cb) {
+	    public load_msgs_async(Context context, AsyncTaskCompleteListener<List<mMessage>> cb, mDialog dialog) {
 	        this.context = context;
 	        this.callback = cb;
+	        this.dlg = dialog;
 	    }
 
 	    protected void onPostExecute(List<mMessage> result) {
@@ -362,9 +371,33 @@ public class Sms implements MessageService {
 
 		@Override
 		protected List<mMessage> doInBackground(Integer... params) {
-			MessageService ms = app.getService( app.active_service );
-			return ms.getMessages(ms.getActiveDialog(), params[0], params[1]);
+			return getMessages(dlg, params[0], params[1]);
 		}  
 	}
+
+	
+	class load_dlgs_async extends AsyncTask<Integer, Void, List<mDialog>> {
+	    private AsyncTaskCompleteListener<List<mDialog>> callback;
+		private Context context;
+
+	    public load_dlgs_async(Context context, AsyncTaskCompleteListener<List<mDialog>> cb) {
+	        this.context = context;
+	        this.callback = cb;
+	    }
+
+	    protected void onPostExecute(List<mDialog> result) {
+	       callback.onTaskComplete(result);
+	   }
+
+		@Override
+		protected List<mDialog> doInBackground(Integer... params) {
+			return getDialogs(params[0], params[1]);
+		}  
+	}
+
+	
+	
+
+	
 
 }

@@ -21,7 +21,7 @@ public class MyApplication extends Application {
 
 	public MessageService getService(int typeId) {
 		for(MessageService ms : myServices){
-			if (ms.getType() == typeId ) return ms;
+			if (ms.getServiceType() == typeId ) return ms;
 		}
 		return null;
 	}

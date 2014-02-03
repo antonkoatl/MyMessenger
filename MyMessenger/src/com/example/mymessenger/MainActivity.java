@@ -52,13 +52,13 @@ public class MainActivity extends Activity implements OnClickListener {
         
         for(MessageService ser : app.myServices){
         	Button b = new Button(this);
-            b.setText(ser.getName());
-            b.setId( getButtonIdMainScreen(ser.getType()) ); 
+            b.setText(ser.getServiceName());
+            b.setId( getButtonIdMainScreen(ser.getServiceType()) ); 
             b.setOnClickListener(this);
             ll_list.addView(b);
             registerForContextMenu(b);
             
-            Log.d("myLogs", "Service added: " + ser.getName());
+            Log.d("myLogs", "Service added: " + ser.getServiceName());
         }
     }
 
@@ -150,11 +150,11 @@ public class MainActivity extends Activity implements OnClickListener {
 		AlertDialog.Builder adb = new AlertDialog.Builder(this);
 		
 		MessageService ser = getServiceFromButtonId(id);
-		app.active_service = ser.getType();
+		app.active_service = ser.getServiceType();
 		
 		String data[] = ser.getStringsForMainViewMenu();
 
-		adb.setTitle(ser.getName());
+		adb.setTitle(ser.getServiceName());
 		adb.setItems(data, myClickListener);
 
 		return adb.create();

@@ -46,13 +46,17 @@ public class Vk implements MessageService {
 	List<mMessage> return_msgs;
 	boolean finished;
 	boolean handling;
-	private AsyncTaskCompleteListener<List<mMessage>> rmcb;
+	private boolean authorization_finished;
+	private AsyncTaskCompleteListener<List<mMessage>> requestMessagesCallback;
+	private AsyncTaskCompleteListener<List<mDialog>> requestDialogsCallback;
 	
 	public Vk(Context context) {
 		this.context = context;
+		authorization_finished = true;
 		VKUIHelper.onResume((Activity) this.context);
 		VKSdk.initialize(sdkListener, "4161005", VKAccessToken.tokenFromSharedPreferences(this.context, sTokenKey));
-		//VKSdk.authorize(sMyScope);
+		//VKSdk.authorize(sMyScope, false, true);
+		
 		active_dlg = new mDialog();
 		requestActiveDlg();
 		VKUIHelper.onDestroy((Activity) this.context); 
@@ -66,7 +70,7 @@ public class Vk implements MessageService {
 		request.executeWithListener(
 				new VKRequestListener() {
 
-				    @Override
+					@Override
 				    public void onComplete(VKResponse response) {
 				    	Log.d("getLastDlg", "onComplete" );
 				        try {
@@ -96,7 +100,18 @@ public class Vk implements MessageService {
 
 				    @Override
 				    public void onError(VKError error) {
-				    	Log.d("getLastDlg", "onError " + error.errorMessage);
+				    	Log.d("getLastDlg", "onError " + error.errorMessage + String.valueOf(authorization_finished));
+				    	if(error.apiError != null){
+				    		if(error.apiError.errorCode == 5){
+				    			if(authorization_finished){
+				    				VKSdk.authorize(sMyScope, false, true);
+				    				authorization_finished = false;
+				    			}
+				    			
+				    			Log.d("getLastDlg", "error.request.repeat");
+				    			error.request.repeat();
+				    		}
+				    	}
 				        // Ошибка. Сообщаем пользователю об error.
 				    }
 				    @Override
@@ -111,106 +126,14 @@ public class Vk implements MessageService {
 		
 	}
 
-	@Override
-	public List<mDialog> getDialogs(int offset, int count) {
-		return_dialogs = new ArrayList<mDialog>();
-		
-		VKRequest request = new VKRequest("messages.getDialogs", VKParameters.from(VKApiConst.COUNT, String.valueOf(count)));
-		//VKUIHelper.onResume((Activity) this.context);
-		//VKRequest request = VKApi.users().get();
-		request.secure = false;
-		VKParameters preparedParameters = request.getPreparedParameters();
-		finished = false;
-
-		request.executeWithListener(
-				new VKRequestListener() {
-
-				    @Override
-				    public void onComplete(VKResponse response) {
-				    	Log.d("VKRequestListener", "onComplete" );
-				        try {
-				        	JSONObject response_json = response.json.getJSONObject("response");
-				        	JSONArray items = response_json.getJSONArray("items");
-				    		
-				    		for (int i = 0; i < items.length(); i++) {
-				    			JSONObject item = items.getJSONObject(i);
-				    			
-			    				mDialog mdl = new mDialog();			    				
-			    				String[] recipient_ids = item.getString( "user_id" ).split(",");
-
-			    				for(String rid : recipient_ids){
-		    						mdl.participants.add( rid );
-		    						mdl.participants_names.add( rid );
-			    				}
-			    				
-				    			mdl.snippet = item.getString( "body" );
-				    				
-				    			return_dialogs.add(mdl);
-
-				    		}
-				    		
-				    		finished = true;
-				        	
-						} catch (JSONException e) {
-							e.printStackTrace();
-						}
-				    }
-
-				    @Override
-				    public void onError(VKError error) {
-				    	Log.d("VKRequestListener", "onError " + error.errorMessage);
-				        // Ошибка. Сообщаем пользователю об error.
-				    	finished = true;
-				    }
-				    @Override
-				    public void attemptFailed(VKRequest request, int attemptNumber, int totalAttempts) {
-				    	Log.d("VKRequestListener", "attemptFailed" );
-				        // Неудачная попытка. В аргументах имеется номер попытки и общее их количество.
-				    	finished = true;
-				    }
-				    
-				}
-				
-				);
-		/*handling = true;
-		while(handling){
-			Handler handler = new Handler();
-			handler.postDelayed(new Runnable() {
-			    public void run() {
-			    	if(finished)handling = false;
-			    	Log.d("VK.getDialogs", "handling" );
-			    }
-			}, 100);
-		}*/
-		while(!finished)
-			try {
-				Thread.sleep(100);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		return return_dialogs;
-	}
 
 	@Override
-	public List<mMessage> getMessages(String user_id, int offset, int count) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public List<mMessage> getMessages(mDialog dlg, int offset, int count) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public String getName() {
+	public String getServiceName() {
 		return "Vk";
 	}
 
 	@Override
-	public int getType() {
+	public int getServiceType() {
 		return MessageService.VK;
 	}
 
@@ -228,6 +151,12 @@ public class Vk implements MessageService {
 	public String getMyName() {
 		// TODO Auto-generated method stub
 		return "140195103";
+	}
+	
+	@Override
+	public String getMyAddress() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 	@Override
@@ -268,9 +197,7 @@ public class Vk implements MessageService {
 		}
 	}
 	
-	
-	
-	
+
 	
 	private VKSdkListener sdkListener = new VKSdkListener() {
         @Override
@@ -293,6 +220,7 @@ public class Vk implements MessageService {
         @Override
         public void onReceiveNewToken(VKAccessToken newToken) {
             newToken.saveTokenToSharedPreferences(Vk.this.context, sTokenKey);
+            authorization_finished = true;
             Log.d("VKSdkListener", "onReceiveNewToken" );
         }
 
@@ -301,26 +229,22 @@ public class Vk implements MessageService {
         	Log.d("VKSdkListener", "onAcceptUserToken" );
         }
     };
-	
 
 	@Override
 	public void requestMessages(mDialog activeDialog, int offset, int count,
 			AsyncTaskCompleteListener<List<mMessage>> cb) {
-		rmcb = cb;
-		return_msgs = new ArrayList<mMessage>();
-		
+
+
 		VKRequest request = new VKRequest("messages.getHistory", VKParameters.from(VKApiConst.COUNT, String.valueOf(count),
 				VKApiConst.OFFSET, String.valueOf(offset), VKApiConst.USER_ID, activeDialog.getParticipants()));
 		request.secure = false;
 		VKParameters preparedParameters = request.getPreparedParameters();
 
-		request.executeWithListener(
-				new VKRequestListener() {
-					AsyncTaskCompleteListener<List<mMessage>> callback;
-
+		VKRequestListener rl = new VKRequestListenerWithCallback<mMessage>(cb) {
 				    @Override
 				    public void onComplete(VKResponse response) {
 				    	Log.d("VKRequestListener", "onComplete" );
+				    	List<mMessage> msgs = new ArrayList<mMessage>();
 				        try {
 				        	JSONObject response_json = response.json.getJSONObject("response");
 				        	JSONArray items = response_json.getJSONArray("items");
@@ -337,9 +261,9 @@ public class Vk implements MessageService {
 								msg.ReadState = item.getString( "read_state" );
 								
 				    				
-				    			return_msgs.add(msg);
+								msgs.add(msg);
 				    		}
-				    		rmcb.onTaskComplete(return_msgs);
+				    		callback.onTaskComplete(msgs);
 				        	
 						} catch (JSONException e) {
 							e.printStackTrace();
@@ -357,9 +281,68 @@ public class Vk implements MessageService {
 				        // Неудачная попытка. В аргументах имеется номер попытки и общее их количество.
 				    }
 				    
+				};
+
+		request.executeWithListener(rl);
+	}
+
+	@Override
+	public void requestDialogs(int offset, int count,
+			AsyncTaskCompleteListener<List<mDialog>> cb) {
+
+		VKRequest request = new VKRequest("messages.getDialogs", VKParameters.from(VKApiConst.COUNT, String.valueOf(count),
+				VKApiConst.OFFSET, String.valueOf(offset),
+				VKApiConst.FIELDS, "first_name,last_name,photo_50"));
+		request.secure = false;
+		VKParameters preparedParameters = request.getPreparedParameters();
+		
+		VKRequestListener rl = new VKRequestListenerWithCallback<mDialog>(cb) {
+			
+		    @Override
+			    public void onComplete(VKResponse response) {
+		    	Log.d("VKRequestListener", "onComplete" );
+		    	List<mDialog> dlgs = new ArrayList<mDialog>();
+		        try {
+		        	JSONObject response_json = response.json.getJSONObject("response");
+		        	JSONArray items = response_json.getJSONArray("items");
+		    		
+		    		for (int i = 0; i < items.length(); i++) {
+		    			JSONObject item = items.getJSONObject(i);
+		    			
+	    				mDialog mdl = new mDialog();			    				
+	    				String[] recipient_ids = item.getString( "user_id" ).split(",");
+
+	    				for(String rid : recipient_ids){
+    						mdl.participants.add( rid );
+    						mdl.participants_names.add( rid );
+	    				}
+	    				
+		    			mdl.snippet = item.getString( "body" );
+		    				
+		    			dlgs.add(mdl);
+
+		    		}
+		    		callback.onTaskComplete(dlgs);
+		        	
+				} catch (JSONException e) {
+					e.printStackTrace();
 				}
-				
-				);
+		    }
+
+		    @Override
+		    public void onError(VKError error) {
+		    	Log.d("VKRequestListener", "onError " + error.errorMessage);
+		        // Ошибка. Сообщаем пользователю об error.
+		    }
+		    @Override
+		    public void attemptFailed(VKRequest request, int attemptNumber, int totalAttempts) {
+		    	Log.d("VKRequestListener", "attemptFailed" );
+		        // Неудачная попытка. В аргументах имеется номер попытки и общее их количество.
+		    }
+		    
+		};
+		
+		request.executeWithListener(rl);
 		
 	}
     

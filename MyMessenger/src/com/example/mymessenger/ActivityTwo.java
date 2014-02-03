@@ -27,7 +27,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.AdapterView.OnItemClickListener;
 
-public class ActivityTwo extends Activity implements AsyncTaskCompleteListener<List<mMessage>>, OnClickListener {
+public class ActivityTwo extends Activity implements OnClickListener {
 	MyApplication app;
 	MyAdapter msg_adapter;
 	MyDialogsAdapter dlg_adapter;
@@ -36,13 +36,16 @@ public class ActivityTwo extends Activity implements AsyncTaskCompleteListener<L
 	private ListView listview;
 	
 	private boolean dlg_maxed;
+	private boolean dlg_isLoading;
 	private boolean msg_maxed;
 	private boolean msg_isLoading;
 	
 	public int supposedFVI;
+	private int async_complete_listener_msg_update_total_offset;
 	
 	public final static String BROADCAST_ACTION = "ru.mymessage.servicebackbroadcast";
 	BroadcastReceiver br;
+	
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -68,14 +71,8 @@ public class ActivityTwo extends Activity implements AsyncTaskCompleteListener<L
 			listview.setAdapter(msg_adapter);
 			
 			MessageService ms = app.getService( app.active_service );
-			/*
-	        for(mMessage msg : ms.getMessages(ms.getActiveDialog(), 0, 20)){
-	        	showing_messages.add(0, msg);
-	        }
-	        
-	        msg_adapter.notifyDataSetChanged();
-	        listview.invalidateViews();*/
-			ms.requestMessages(ms.getActiveDialog(), 0, 20, this);
+
+			ms.requestMessages(ms.getActiveDialog(), 0, 20, async_complete_listener_msg);
 			showing_messages.add(0, null);
 			msg_isLoading = true;
 			msg_adapter.isLoading = true;
@@ -98,14 +95,8 @@ public class ActivityTwo extends Activity implements AsyncTaskCompleteListener<L
 			listview.setAdapter(dlg_adapter);
 			
 			MessageService ms = app.getService( app.active_service );
+			ms.requestDialogs(0, 20, async_complete_listener_dlg);
 			
-	        for(mDialog dlg : ms.getDialogs(0, 20)){
-	        	showing_dialogs.add(dlg);
-	        }
-	        
-	        dlg_adapter.notifyDataSetChanged();
-	        listview.invalidateViews();
-	        
 	        listview.setOnItemClickListener(DlgClickListener);
 	        listview.setOnScrollListener(DlgScrollListener);
 	    }
@@ -115,10 +106,11 @@ public class ActivityTwo extends Activity implements AsyncTaskCompleteListener<L
 	        // действия при получении сообщений
 	        public void onReceive(Context context, Intent intent) {
 	          int task = intent.getIntExtra("task", 0);
+	          int service_type = intent.getIntExtra("service_type", 0);
 	          
 	          Log.d("+++", "onReceive: task = " + task);
 	          if(task == 1){
-	        	  MsgUpdate();
+	        	  MsgUpdate(service_type);
 	          }
 	        }
 	    };
@@ -144,15 +136,10 @@ public class ActivityTwo extends Activity implements AsyncTaskCompleteListener<L
 
 		@Override
 		public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
-			if ( !dlg_maxed && ( (totalItemCount - (firstVisibleItem + visibleItemCount)) < 5 ) ) {
+			if ( !dlg_maxed && ( (totalItemCount - (firstVisibleItem + visibleItemCount)) < 5 ) && !dlg_isLoading) {
 				MessageService ms = app.getService( app.active_service );
-				int s = showing_dialogs.size();
-				for(mDialog dlg : ms.getDialogs(showing_dialogs.size(), 20)){
-		        	showing_dialogs.add(dlg);
-		        }
-				if( (showing_dialogs.size() - s) == 0 )dlg_maxed = true;
-				dlg_adapter.notifyDataSetChanged();
-				//listview.invalidateViews();
+				ms.requestDialogs(showing_dialogs.size(), 20, async_complete_listener_dlg);
+				dlg_isLoading = true;
 			}
 		}
 
@@ -194,9 +181,9 @@ public class ActivityTwo extends Activity implements AsyncTaskCompleteListener<L
 			if ( !msg_maxed && ( firstVisibleItem == 0 ) && !msg_isLoading ) {
 				
 				msg_isLoading = true;
-				//new load_msgs_async(ActivityTwo.this, ActivityTwo.this).execute(null);
+
 				MessageService ms = app.getActiveService();
-				ms.requestMessages(ms.getActiveDialog(), showing_messages.size(), 20, ActivityTwo.this);
+				ms.requestMessages(ms.getActiveDialog(), showing_messages.size(), 20, async_complete_listener_msg);
 				showing_messages.add(0, null);
 				msg_adapter.isLoading = true;
 				msg_adapter.notifyDataSetChanged();
@@ -220,46 +207,69 @@ public class ActivityTwo extends Activity implements AsyncTaskCompleteListener<L
 	
 	
 	
-	@Override
-	public void onTaskComplete(List<mMessage> result) {
-		showing_messages.remove(0);
-		int s = showing_messages.size();
-		for(mMessage msg : result){
-        	showing_messages.add(0, msg);
-        }
-		msg_adapter.notifyDataSetChanged();
-		if( (showing_messages.size() - s) == 0 )msg_maxed = true;
-		
-		int firstVisibleItem = listview.getFirstVisiblePosition();
-
-		if(listview.getLastVisiblePosition() > 0)
-			listview.setSelectionFromTop(firstVisibleItem  + result.size(), listview.getChildAt(1).getTop()); //listView.getChildAt(i) works where 0 is the very first visible row and (n-1) is the last visible row (where n is the number of visible views you see).
-
-		msg_isLoading = false;
-		msg_adapter.isLoading = false;
-	}
 	
-	
-	class load_msgs_async extends AsyncTask<String, Void, List<mMessage>> {
-	    private AsyncTaskCompleteListener<List<mMessage>> callback;
-		private Context context;
-
-	    public load_msgs_async(Context context, AsyncTaskCompleteListener<List<mMessage>> cb) {
-	        this.context = context;
-	        this.callback = cb;
-	    }
-
-	    protected void onPostExecute(List<mMessage> result) {
-	       callback.onTaskComplete(result);
-	   }
+	AsyncTaskCompleteListener<List<mMessage>> async_complete_listener_msg = new AsyncTaskCompleteListener<List<mMessage>>(){
 
 		@Override
-		protected List<mMessage> doInBackground(String... params) {
-			MessageService ms = app.getService( app.active_service );
-			return ms.getMessages(ms.getActiveDialog(), showing_messages.size(), 20);
-		}  
-	}
+		public void onTaskComplete(List<mMessage> result) {
+			showing_messages.remove(0);
+			int s = showing_messages.size();
+			for(mMessage msg : result){
+	        	showing_messages.add(0, msg);
+	        }
+			msg_adapter.notifyDataSetChanged();
+			if( (showing_messages.size() - s) == 0 )msg_maxed = true;
+			
+			int firstVisibleItem = listview.getFirstVisiblePosition();
 
+			if(listview.getLastVisiblePosition() > 0)
+				listview.setSelectionFromTop(firstVisibleItem  + result.size(), listview.getChildAt(1).getTop()); //listView.getChildAt(i) works where 0 is the very first visible row and (n-1) is the last visible row (where n is the number of visible views you see).
+
+			msg_isLoading = false;
+			msg_adapter.isLoading = false;			
+		}
+		
+	};
+	
+	AsyncTaskCompleteListener<List<mDialog>> async_complete_listener_dlg = new AsyncTaskCompleteListener<List<mDialog>>(){
+
+		@Override
+		public void onTaskComplete(List<mDialog> result) {
+
+			int s = showing_dialogs.size();
+			for(mDialog dlg : result){
+	        	showing_dialogs.add(dlg);
+	        }
+			dlg_adapter.notifyDataSetChanged();
+			if( (showing_dialogs.size() - s) == 0 )dlg_maxed = true;
+			
+			dlg_isLoading = false;
+		
+		}
+		
+	};
+	
+	AsyncTaskCompleteListener<List<mMessage>> async_complete_listener_msg_update = new AsyncTaskCompleteListener<List<mMessage>>(){
+		@Override
+		public void onTaskComplete(List<mMessage> result) {
+			boolean update = true;
+
+			for(mMessage msg : result){
+				if( msg.sendTime.after( showing_messages.get(showing_messages.size()-1).sendTime ) ){
+	        		showing_messages.add(msg);
+	        		async_complete_listener_msg_update_total_offset++;
+	        		msg_adapter.notifyDataSetChanged();
+	        	} else {
+	        		update = false;
+	        		break;
+	        	}
+	        }
+			
+			if(update){
+				app.getActiveService().requestMessages(app.getActiveService().getActiveDialog(), async_complete_listener_msg_update_total_offset, 20, async_complete_listener_msg_update);
+			}
+		}
+	};
 
 	@Override
 	public void onClick(View view) {
@@ -282,31 +292,21 @@ public class ActivityTwo extends Activity implements AsyncTaskCompleteListener<L
 				ms.sendMessage(addr, text);
 			}
 			
-	        for(mMessage msg : ms.getMessages(dlg, 0, 1)){
-	        	showing_messages.add(msg);
-	        	msg_adapter.notifyDataSetChanged();
-	        }
-	        
+			ms.requestMessages(dlg, 0, 1, async_complete_listener_msg);
+
 			break;
 		}
 			
 	}
 
-	public void MsgUpdate(){
-		MessageService ms = app.getService( app.active_service );
+	
+	public void MsgUpdate(int service_type){
+		MessageService ms = app.getService( service_type );
 		
-		boolean update = true;
-		while(update){
-	        for(mMessage msg : ms.getMessages(ms.getActiveDialog(), 0, 20)){
-	        	if( msg.sendTime.after( showing_messages.get(showing_messages.size()-1).sendTime ) ){
-	        		showing_messages.add(msg);
-	        		msg_adapter.notifyDataSetChanged();
-	        	} else {
-	        		update = false;
-	        		break;
-	        	}
-	        	
-	        }
+		if(service_type == app.getActiveService().getServiceType()){
+			async_complete_listener_msg_update_total_offset = 0;
+			ms.requestMessages(ms.getActiveDialog(), 0, 20, async_complete_listener_msg_update);
 		}
+
 	}
 }
