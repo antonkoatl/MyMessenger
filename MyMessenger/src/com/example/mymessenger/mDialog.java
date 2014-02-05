@@ -5,40 +5,47 @@ import java.util.List;
 
 public class mDialog {
 	public List<mMessage> messages;
-	public List<String> participants;
-	public List<String> participants_names;
+	public List<mContact> participants;
 	public int mservice;
 	public String snippet;
 	
 	public mDialog() {
 		messages = new ArrayList<mMessage>();
-		participants = new ArrayList<String>();
-		participants_names = new ArrayList<String>();
+		participants = new ArrayList<mContact>();
 	}
 	
-	public String getParticipants(){
-		String res = participants.get(0);
-		
-		if(participants.size() > 1) {
-			int i = 1;
-			do {
-				res += ", " + participants.get(i);
-			} while (i < participants.size());
+
+	public String getParticipantsNames(){
+		String res;
+		if(participants.size() > 0){
+			res = participants.get(0).name == null ? participants.get(0).address : participants.get(0).name;
+			
+			if(participants.size() > 1) {
+				int i = 1;
+				do {
+					res += ", " + (participants.get(0).name == null ? participants.get(0).address : participants.get(0).name);
+					i++;
+				} while (i < participants.size());
+			}
+		} else {
+			res = "---";
 		}
 		
 		return res;
 	}
-	
-	public String getParticipantsNames(){
+
+
+	public String getParticipants() {
 		String res;
-		if(participants_names.size() > 0){
-			res = participants_names.get(0);
+		if(participants.size() > 0){
+			res = participants.get(0).address;
 			
-			if(participants_names.size() > 1) {
+			if(participants.size() > 1) {
 				int i = 1;
 				do {
-					res += ", " + participants_names.get(i);
-				} while (i < participants_names.size());
+					res += ", " + participants.get(i).address;
+					i++;
+				} while (i < participants.size());
 			}
 		} else {
 			res = "---";

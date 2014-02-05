@@ -1,7 +1,9 @@
 package com.example.mymessenger.services;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import android.app.Activity;
 import android.app.PendingIntent;
@@ -23,6 +25,7 @@ import com.example.mymessenger.ActivityTwo;
 import com.example.mymessenger.AsyncTaskCompleteListener;
 import com.example.mymessenger.MainActivity;
 import com.example.mymessenger.MyApplication;
+import com.example.mymessenger.mContact;
 import com.example.mymessenger.mDialog;
 import com.example.mymessenger.mMessage;
 
@@ -33,6 +36,9 @@ public class Sms implements MessageService {
 	public String self_address;
 	public mDialog active_dialog;
 	private MyApplication app;
+
+	Map<String, mContact> contacts;
+	private AsyncTaskCompleteListener<Void> contact_data_changed;
 	
 	public Sms(Context context) {
 		this.context = context;
@@ -44,6 +50,8 @@ public class Sms implements MessageService {
                 PendingIntent.FLAG_ONE_SHOT);
         mDeliveredIntent = PendingIntent.getBroadcast(context, 0, new Intent("CTS_SMS_DELIVERY_ACTION"),
                 PendingIntent.FLAG_ONE_SHOT);
+        
+        contacts = new HashMap<String, mContact>();
 	}
 	
 	public List<mDialog> getDialogs(int offset, int count) {
@@ -97,14 +105,12 @@ public class Sms implements MessageService {
 				for(String rid : recipient_ids){
 					Cursor c = context.getContentResolver().query(Uri.parse("content://mms-sms/canonical-addresses"), null, "_id = ?", new String[]{rid}, null);
 					if(c.moveToNext()){
-						mdl.participants.add( c.getString( c.getColumnIndex("address") ) );
-						mdl.participants_names.add( getContactName( c.getString( c.getColumnIndex("address") ) ) );
+						mdl.participants.add( getContact( c.getString( c.getColumnIndex("address") ) ) );
 					} else {
 						for(String cn : cursor.getColumnNames()){
 							Log.d("getDialogs", cn + " : " + cursor.getString(cursor.getColumnIndex(cn)) );
 						}
-						mdl.participants.add( "DRAFT" ); //??
-						mdl.participants_names.add( "DRAFT" ); //??
+						mdl.participants.add( getContact("DRAFT") ); //??
 					}
 					c.close();
 				}
@@ -154,7 +160,7 @@ public class Sms implements MessageService {
 		
 		String[] projection = null; // A list of which columns to return. Passing null will return all columns, which is inefficient.
 		String selection = "address=?"; // A filter declaring which rows to return, formatted as an SQL WHERE clause (excluding the WHERE itself). Passing null will return all rows for the given URI
-		String[] selectionArgs = {dlg.participants.get(0)}; // You may include ?s in selection, which will be replaced by the values from selectionArgs, in the order that they appear in the selection. The values will be bound as Strings
+		String[] selectionArgs = {dlg.participants.get(0).address}; // You may include ?s in selection, which will be replaced by the values from selectionArgs, in the order that they appear in the selection. The values will be bound as Strings
 		String sortOrder = null; // How to order the rows, formatted as an SQL ORDER BY clause (excluding the ORDER BY itself). Passing null will use the default sort order, which may be unordered
 		Cursor cursor = context.getContentResolver().query(Uri.parse("content://sms"), projection, selection, selectionArgs, sortOrder);
 		
@@ -174,15 +180,9 @@ public class Sms implements MessageService {
 				msg.ReadState = cursor.getString( cursor.getColumnIndex("read") );
 				
 				if (cursor.getString(cursor.getColumnIndex("type")).contains("1")) { //Inbox
-					msg.sender = address;
-					msg.address = self_name;
-					msg.sender_name = getContactName(address);
-					msg.address_name = getContactName(self_name);
+					msg.sender = getContact(address);
 	            } else if (cursor.getString(cursor.getColumnIndex("type")).contains("2")) { //Sent
-	            	msg.sender = self_name;
-					msg.address = address;
-					msg.sender_name = getContactName(self_name);
-					msg.address_name = getContactName(address);
+	            	msg.sender = getContact(self_name);
 	            } else {
 	            	cursor.moveToNext();
 	            	continue;
@@ -196,10 +196,21 @@ public class Sms implements MessageService {
 	}
 
 	@Override
-	public String getMyName() {
-		return self_name;
+	public mContact getContact(String address) {
+		mContact cnt = contacts.get(address);
+		
+		if(cnt == null){
+			cnt = new mContact(address);
+			
+			requestContactData(cnt);
+			
+			contacts.put(address, cnt);
+		}
+		
+		return cnt;
 	}
 	
+
 	@Override
 	public String getMyAddress() {
 		// TODO Auto-generated method stub
@@ -207,16 +218,16 @@ public class Sms implements MessageService {
 	}
 
 	@Override
-	public String getContactName(String number){
-		String name = number;
+	public void requestContactData(mContact cnt) {
+		String name = "";
 
-	    // define the columns I want the query to return
+		// define the columns I want the query to return
 	    String[] name_projection = new String[] {
 	            ContactsContract.PhoneLookup.DISPLAY_NAME,
 	            ContactsContract.PhoneLookup._ID};
 
 	    // encode the phone number and build the filter URI
-	    Uri contactUri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(number));
+	    Uri contactUri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(cnt.address));
 
 	    // query time
 	    Cursor name_cursor = context.getContentResolver().query(contactUri, name_projection, null, null, null);
@@ -224,17 +235,19 @@ public class Sms implements MessageService {
 	    if(name_cursor != null) {
 	        if (name_cursor.moveToFirst()) {
 	        	name =      name_cursor.getString(name_cursor.getColumnIndex(ContactsContract.PhoneLookup.DISPLAY_NAME));
-	            Log.v("SmsService.getContactName", "Contact Found @ " + number);            
+	            Log.v("SmsService.getContactName", "Contact Found @ " + cnt.address);            
 	            Log.v("SmsService.getContactName", "Contact name  = " + name);
 	        } else {
-	            Log.v("SmsService.getContactName", "Contact Not Found @ " + number);
+	        	name = cnt.address;
+	            Log.v("SmsService.getContactName", "Contact Not Found @ " + cnt.address);
 	        }
 	        name_cursor.close();
 	    }
-	    
-	    return name;
-	}
+		    
 
+		cnt.name = name;		
+	}
+		
 	private PendingIntent mSentIntent;
     private PendingIntent mDeliveredIntent;
     
@@ -394,6 +407,16 @@ public class Sms implements MessageService {
 			return getDialogs(params[0], params[1]);
 		}  
 	}
+
+
+	@Override
+	public void setContactDataChangedCallback(
+			AsyncTaskCompleteListener<Void> contact_data_changed) {
+		this.contact_data_changed = contact_data_changed;		
+	}
+
+
+	
 
 	
 	

@@ -60,6 +60,9 @@ public class ActivityTwo extends Activity implements OnClickListener {
 		Intent intent = getIntent();	    
 	    String mode = intent.getStringExtra("mode");
 	    
+	    app.getActiveService().setContactDataChangedCallback(contact_data_changed);
+	    
+	    MessageService ms = app.getActiveService();
 	    
 	    if (mode.equals("messages")) {
 	    	setContentView(R.layout.msg_list);
@@ -69,8 +72,6 @@ public class ActivityTwo extends Activity implements OnClickListener {
 			
 			msg_adapter = new MyAdapter(this, showing_messages);
 			listview.setAdapter(msg_adapter);
-			
-			MessageService ms = app.getService( app.active_service );
 
 			ms.requestMessages(ms.getActiveDialog(), 0, 20, async_complete_listener_msg);
 			showing_messages.add(0, null);
@@ -93,8 +94,7 @@ public class ActivityTwo extends Activity implements OnClickListener {
 			
 			dlg_adapter = new MyDialogsAdapter(this, showing_dialogs);
 			listview.setAdapter(dlg_adapter);
-			
-			MessageService ms = app.getService( app.active_service );
+
 			ms.requestDialogs(0, 20, async_complete_listener_dlg);
 			
 	        listview.setOnItemClickListener(DlgClickListener);
@@ -119,6 +119,7 @@ public class ActivityTwo extends Activity implements OnClickListener {
 	    registerReceiver(br, intFilt);
 	}
 	
+	
 	OnItemClickListener DlgClickListener = new OnItemClickListener(){
 
 		@Override
@@ -131,6 +132,7 @@ public class ActivityTwo extends Activity implements OnClickListener {
 		}
 		
 	};
+	
 	
 	OnScrollListener DlgScrollListener = new OnScrollListener(){
 
@@ -155,6 +157,7 @@ public class ActivityTwo extends Activity implements OnClickListener {
 	
 	
 	
+	
 	OnItemClickListener MsgClickListener = new OnItemClickListener(){
 
 		@Override
@@ -163,6 +166,7 @@ public class ActivityTwo extends Activity implements OnClickListener {
 		}
 		
 	};
+	
 	
 	OnScrollListener MsgScrollListener = new OnScrollListener(){
 
@@ -208,6 +212,7 @@ public class ActivityTwo extends Activity implements OnClickListener {
 	
 	
 	
+	
 	AsyncTaskCompleteListener<List<mMessage>> async_complete_listener_msg = new AsyncTaskCompleteListener<List<mMessage>>(){
 
 		@Override
@@ -231,6 +236,7 @@ public class ActivityTwo extends Activity implements OnClickListener {
 		
 	};
 	
+	
 	AsyncTaskCompleteListener<List<mDialog>> async_complete_listener_dlg = new AsyncTaskCompleteListener<List<mDialog>>(){
 
 		@Override
@@ -248,6 +254,7 @@ public class ActivityTwo extends Activity implements OnClickListener {
 		}
 		
 	};
+	
 	
 	AsyncTaskCompleteListener<List<mMessage>> async_complete_listener_msg_update = new AsyncTaskCompleteListener<List<mMessage>>(){
 		@Override
@@ -271,6 +278,16 @@ public class ActivityTwo extends Activity implements OnClickListener {
 		}
 	};
 
+	
+	AsyncTaskCompleteListener<Void> contact_data_changed = new AsyncTaskCompleteListener<Void>(){
+		@Override
+		public void onTaskComplete(Void result) {
+			if(msg_adapter != null)msg_adapter.notifyDataSetChanged();
+			if(dlg_adapter != null)dlg_adapter.notifyDataSetChanged();
+		}
+		
+	};
+	
 	@Override
 	public void onClick(View view) {
 		switch (view.getId()){
@@ -288,8 +305,8 @@ public class ActivityTwo extends Activity implements OnClickListener {
 			MessageService ms = app.getService( app.active_service );
 			mDialog dlg = ms.getActiveDialog();
 			
-			for(String addr : dlg.participants){
-				ms.sendMessage(addr, text);
+			for(mContact cnt : dlg.participants){
+				ms.sendMessage(cnt.address, text);
 			}
 			
 			ms.requestMessages(dlg, 0, 1, async_complete_listener_msg);

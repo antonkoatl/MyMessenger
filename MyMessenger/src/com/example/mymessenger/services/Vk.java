@@ -1,7 +1,9 @@
 package com.example.mymessenger.services;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -20,6 +22,7 @@ import android.util.Log;
 
 import com.example.mymessenger.ActivityTwo;
 import com.example.mymessenger.AsyncTaskCompleteListener;
+import com.example.mymessenger.mContact;
 import com.example.mymessenger.mDialog;
 import com.example.mymessenger.mMessage;
 import com.vk.sdk.VKAccessToken;
@@ -44,11 +47,16 @@ public class Vk implements MessageService {
 	
 	List<mDialog> return_dialogs;
 	List<mMessage> return_msgs;
+
+	Map<String, mContact> contacts;
+	
 	boolean finished;
 	boolean handling;
 	private boolean authorization_finished;
 	private AsyncTaskCompleteListener<List<mMessage>> requestMessagesCallback;
 	private AsyncTaskCompleteListener<List<mDialog>> requestDialogsCallback;
+	
+	private AsyncTaskCompleteListener<Void> contact_data_changed;
 	
 	public Vk(Context context) {
 		this.context = context;
@@ -59,7 +67,9 @@ public class Vk implements MessageService {
 		
 		active_dlg = new mDialog();
 		requestActiveDlg();
-		VKUIHelper.onDestroy((Activity) this.context); 
+		VKUIHelper.onDestroy((Activity) this.context);
+
+		contacts = new HashMap<String, mContact>();
 	}
 
 	private void requestActiveDlg() {
@@ -84,8 +94,7 @@ public class Vk implements MessageService {
 		    				String[] recipient_ids = item.getString( "user_id" ).split(",");
 
 		    				for(String rid : recipient_ids){
-	    						mdl.participants.add( rid );
-	    						mdl.participants_names.add( rid );
+	    						mdl.participants.add( getContact(rid) );
 		    				}
 		    				
 			    			mdl.snippet = item.getString( "body" );
@@ -100,18 +109,8 @@ public class Vk implements MessageService {
 
 				    @Override
 				    public void onError(VKError error) {
-				    	Log.d("getLastDlg", "onError " + error.errorMessage + String.valueOf(authorization_finished));
-				    	if(error.apiError != null){
-				    		if(error.apiError.errorCode == 5){
-				    			if(authorization_finished){
-				    				VKSdk.authorize(sMyScope, false, true);
-				    				authorization_finished = false;
-				    			}
-				    			
-				    			Log.d("getLastDlg", "error.request.repeat");
-				    			error.request.repeat();
-				    		}
-				    	}
+				    	Log.w("getLastDlg", "onError " + error.errorMessage + String.valueOf(authorization_finished));
+				    	if(error.apiError != null) HandleApiError(error);
 				        // Ошибка. Сообщаем пользователю об error.
 				    }
 				    @Override
@@ -148,22 +147,72 @@ public class Vk implements MessageService {
 	}
 
 	@Override
-	public String getMyName() {
+	public String getMyAddress() {
 		// TODO Auto-generated method stub
 		return "140195103";
 	}
-	
-	@Override
-	public String getMyAddress() {
-		// TODO Auto-generated method stub
-		return null;
-	}
 
 	@Override
-	public String getContactName(String address) {
-		// TODO Auto-generated method stub
-		return null;
+	public void requestContactData(mContact cnt) {
+		VKRequest request = new VKRequest("users.get", VKParameters.from(VKApiConst.USER_IDS, cnt.address));
+		request.secure = false;
+		VKParameters preparedParameters = request.getPreparedParameters();
+		
+		class change_sender_name_callback implements AsyncTaskCompleteListener<String>{
+			mContact cnt;
+			
+			public change_sender_name_callback(mContact cnt) {
+				this.cnt = cnt;
+			}
+
+			@Override
+			public void onTaskComplete(String result) {
+				cnt.name = result;
+			}
+			
+		};
+		
+		change_sender_name_callback cb = new change_sender_name_callback(cnt);
+		
+		VKRequestListener rl = new VKRequestListenerWithCallback<String>(cb) {
+		    @Override
+		    public void onComplete(VKResponse response) {
+		    	Log.d("VKRequestListener", "onComplete" );
+		        try {
+		        	JSONArray response_json = response.json.getJSONArray("response");
+		        	JSONObject item = response_json.getJSONObject(0);
+		        	String name = item.getString("first_name");
+		        	name += " " + item.getString("last_name");
+		        	
+		        	String address = item.getString("id");
+		        	
+		        	callback.onTaskComplete(name);
+		        	if(contact_data_changed != null)contact_data_changed.onTaskComplete(null);
+		        	
+				} catch (JSONException e) {
+					e.printStackTrace();
+				}
+		    }
+
+		    @Override
+		    public void onError(VKError error) {
+		    	Log.w("VKRequestListener.requestContactData", "onError " + error.errorMessage + ", " + error.apiError.errorMessage);
+		    	if(error.apiError != null) HandleApiError(error);
+		        // Ошибка. Сообщаем пользователю об error.
+		    }
+		    @Override
+		    public void attemptFailed(VKRequest request, int attemptNumber, int totalAttempts) {
+		    	Log.d("VKRequestListener", "attemptFailed" );
+		        // Неудачная попытка. В аргументах имеется номер попытки и общее их количество.
+		    }
+		    
+		};
+
+		request.executeWithListener(rl);
+		
+			
 	}
+
 
 	@Override
 	public boolean sendMessage(String address, String text) {
@@ -207,7 +256,8 @@ public class Vk implements MessageService {
 
         @Override
         public void onTokenExpired(VKAccessToken expiredToken) {
-            VKSdk.authorize(sMyScope);
+            VKSdk.authorize(sMyScope, false, true);
+            authorization_finished = false;
         }
 
         @Override
@@ -229,8 +279,10 @@ public class Vk implements MessageService {
         	Log.d("VKSdkListener", "onAcceptUserToken" );
         }
     };
+    
 
-	@Override
+	
+    @Override
 	public void requestMessages(mDialog activeDialog, int offset, int count,
 			AsyncTaskCompleteListener<List<mMessage>> cb) {
 
@@ -240,7 +292,7 @@ public class Vk implements MessageService {
 		request.secure = false;
 		VKParameters preparedParameters = request.getPreparedParameters();
 
-		VKRequestListener rl = new VKRequestListenerWithCallback<mMessage>(cb) {
+		VKRequestListener rl = new VKRequestListenerWithCallback<List<mMessage>>(cb) {
 				    @Override
 				    public void onComplete(VKResponse response) {
 				    	Log.d("VKRequestListener", "onComplete" );
@@ -253,11 +305,11 @@ public class Vk implements MessageService {
 				    			JSONObject item = items.getJSONObject(i);
 				    			
 				    			mMessage msg = new mMessage();
-				    			msg.sender = item.getString( "from_id" );
-								msg.sender_name = item.getString( "from_id" );
+				    			msg.sender = getContact( item.getString( "from_id" ) );
+								
 								msg.text = item.getString( "body" );
 								msg.sendTime = new Time();
-								msg.sendTime.set(item.getLong( "date" ));
+								msg.sendTime.set(item.getLong( "date" )*1000);
 								msg.ReadState = item.getString( "read_state" );
 								
 				    				
@@ -272,7 +324,8 @@ public class Vk implements MessageService {
 
 				    @Override
 				    public void onError(VKError error) {
-				    	Log.d("VKRequestListener", "onError " + error.errorMessage);
+				    	Log.w("VKRequestListener.requestMessages", "onError " + error.errorMessage + ", " + error.apiError.errorMessage);
+				    	if(error.apiError != null) HandleApiError(error);
 				        // Ошибка. Сообщаем пользователю об error.
 				    }
 				    @Override
@@ -296,7 +349,7 @@ public class Vk implements MessageService {
 		request.secure = false;
 		VKParameters preparedParameters = request.getPreparedParameters();
 		
-		VKRequestListener rl = new VKRequestListenerWithCallback<mDialog>(cb) {
+		VKRequestListener rl = new VKRequestListenerWithCallback<List<mDialog>>(cb) {
 			
 		    @Override
 			    public void onComplete(VKResponse response) {
@@ -313,8 +366,7 @@ public class Vk implements MessageService {
 	    				String[] recipient_ids = item.getString( "user_id" ).split(",");
 
 	    				for(String rid : recipient_ids){
-    						mdl.participants.add( rid );
-    						mdl.participants_names.add( rid );
+    						mdl.participants.add( getContact( rid ) );
 	    				}
 	    				
 		    			mdl.snippet = item.getString( "body" );
@@ -331,7 +383,8 @@ public class Vk implements MessageService {
 
 		    @Override
 		    public void onError(VKError error) {
-		    	Log.d("VKRequestListener", "onError " + error.errorMessage);
+		    	Log.w("VKRequestListener.requestDialogs", "onError " + error.errorMessage + ", " + error.apiError.errorMessage);
+		    	if(error.apiError != null) HandleApiError(error);
 		        // Ошибка. Сообщаем пользователю об error.
 		    }
 		    @Override
@@ -345,8 +398,48 @@ public class Vk implements MessageService {
 		request.executeWithListener(rl);
 		
 	}
-    
-    
 
+	
+
+
+
+	@Override
+	public mContact getContact(String address) {
+		mContact cnt = contacts.get(address);
+		
+		if(cnt == null){
+			cnt = new mContact(address);
+			
+			requestContactData(cnt);
+			
+			contacts.put(address, cnt);
+		}
+		
+		return cnt;
+	}
+
+	@Override
+	public void setContactDataChangedCallback(
+			AsyncTaskCompleteListener<Void> contact_data_changed) {
+		this.contact_data_changed = contact_data_changed;
+		
+	}
+    
+    
+	private void HandleApiError(VKError error){
+		if(error.apiError.errorCode == 5){ // User authorization failed.
+			if(authorization_finished && error.request.getPreparedParameters().get(VKApiConst.ACCESS_TOKEN).equals(VKSdk.getAccessToken().accessToken) ){
+				VKSdk.authorize(sMyScope, false, true);
+				authorization_finished = false;
+			}
+			
+			Log.d("getLastDlg", "error.request.repeat");
+			error.request.repeat();
+		}
+		
+		if(error.apiError.errorCode == 6){ // Too many requests per second.
+			error.request.repeat();
+		}
+	}
 
 }
