@@ -47,6 +47,10 @@ public class Vk implements MessageService {
 	
 	List<mDialog> return_dialogs;
 	List<mMessage> return_msgs;
+	
+	List<mContact> accum_cnt;
+	boolean accum_cnt_handler_isRunning;
+	
 
 	Map<String, mContact> contacts;
 	
@@ -57,6 +61,7 @@ public class Vk implements MessageService {
 	private AsyncTaskCompleteListener<List<mDialog>> requestDialogsCallback;
 	
 	private AsyncTaskCompleteListener<Void> contact_data_changed;
+	final Handler handler;
 	
 	public Vk(Context context) {
 		this.context = context;
@@ -70,6 +75,10 @@ public class Vk implements MessageService {
 		VKUIHelper.onDestroy((Activity) this.context);
 
 		contacts = new HashMap<String, mContact>();
+		
+		accum_cnt = new ArrayList<mContact>();
+		accum_cnt_handler_isRunning = false;
+		handler = new Handler();
 	}
 
 	private void requestActiveDlg() {
@@ -154,62 +163,85 @@ public class Vk implements MessageService {
 
 	@Override
 	public void requestContactData(mContact cnt) {
-		VKRequest request = new VKRequest("users.get", VKParameters.from(VKApiConst.USER_IDS, cnt.address));
-		request.secure = false;
-		VKParameters preparedParameters = request.getPreparedParameters();
+		accum_cnt.add(cnt);
 		
-		class change_sender_name_callback implements AsyncTaskCompleteListener<String>{
-			mContact cnt;
+		if(!accum_cnt_handler_isRunning){
+			accum_cnt_handler_isRunning = true;
 			
-			public change_sender_name_callback(mContact cnt) {
-				this.cnt = cnt;
-			}
-
-			@Override
-			public void onTaskComplete(String result) {
-				cnt.name = result;
-			}
+			handler.postDelayed(new Runnable() {
+				@Override
+				public void run() {
+					//Do something after 500ms
+					String uids = accum_cnt.get(0).address;
+					for(int i = 1; i < accum_cnt.size(); i++){
+						uids += "," + accum_cnt.get(i).address;
+					}
+		
+					VKRequest request = new VKRequest("users.get", VKParameters.from(VKApiConst.USER_IDS, uids));
+					request.secure = false;
+					VKParameters preparedParameters = request.getPreparedParameters();
+					
+					class change_sender_name_callback implements AsyncTaskCompleteListener<Void>{
+						public List<mContact> cnt;
+						
+						public change_sender_name_callback(List<mContact> cnt) {
+							this.cnt = new ArrayList<mContact>(cnt);
+							cnt.clear();
+						}
 			
-		};
-		
-		change_sender_name_callback cb = new change_sender_name_callback(cnt);
-		
-		VKRequestListener rl = new VKRequestListenerWithCallback<String>(cb) {
-		    @Override
-		    public void onComplete(VKResponse response) {
-		    	Log.d("VKRequestListener", "onComplete" );
-		        try {
-		        	JSONArray response_json = response.json.getJSONArray("response");
-		        	JSONObject item = response_json.getJSONObject(0);
-		        	String name = item.getString("first_name");
-		        	name += " " + item.getString("last_name");
-		        	
-		        	String address = item.getString("id");
-		        	
-		        	callback.onTaskComplete(name);
-		        	if(contact_data_changed != null)contact_data_changed.onTaskComplete(null);
-		        	
-				} catch (JSONException e) {
-					e.printStackTrace();
+						@Override
+						public void onTaskComplete(Void result) {
+							accum_cnt_handler_isRunning = false;
+						}
+						
+					};
+					
+					change_sender_name_callback cb = new change_sender_name_callback(accum_cnt);
+					
+					VKRequestListener rl = new VKRequestListenerWithCallback<Void>(cb) {
+					    @Override
+					    public void onComplete(VKResponse response) {
+					    	Log.d("VKRequestListener", "onComplete" );
+					        try {
+					        	JSONArray response_json = response.json.getJSONArray("response");
+					        	for(int i = 0; i < response_json.length(); i++){
+						        	JSONObject item = response_json.getJSONObject(i);
+						        	change_sender_name_callback data_cb = (change_sender_name_callback) callback;
+						        	mContact cnt = data_cb.cnt.get(i);
+						        	
+						        	String name = item.getString("first_name");
+						        	name += " " + item.getString("last_name");
+						        	
+						        	cnt.name = name;
+						        	
+						        	callback.onTaskComplete(null);
+					        	}
+					        	if(contact_data_changed != null)contact_data_changed.onTaskComplete(null);
+					        	
+							} catch (JSONException e) {
+								e.printStackTrace();
+							}
+					    }
+			
+					    @Override
+					    public void onError(VKError error) {
+					    	Log.w("VKRequestListener.requestContactData", "onError " + error.errorMessage + ", " + error.apiError.errorMessage);
+					    	if(error.apiError != null) HandleApiError(error);
+					        // Ошибка. Сообщаем пользователю об error.
+					    }
+					    @Override
+					    public void attemptFailed(VKRequest request, int attemptNumber, int totalAttempts) {
+					    	Log.d("VKRequestListener", "attemptFailed" );
+					        // Неудачная попытка. В аргументах имеется номер попытки и общее их количество.
+					    }
+					    
+					};
+			
+					request.executeWithListener(rl);
+					
 				}
-		    }
-
-		    @Override
-		    public void onError(VKError error) {
-		    	Log.w("VKRequestListener.requestContactData", "onError " + error.errorMessage + ", " + error.apiError.errorMessage);
-		    	if(error.apiError != null) HandleApiError(error);
-		        // Ошибка. Сообщаем пользователю об error.
-		    }
-		    @Override
-		    public void attemptFailed(VKRequest request, int attemptNumber, int totalAttempts) {
-		    	Log.d("VKRequestListener", "attemptFailed" );
-		        // Неудачная попытка. В аргументах имеется номер попытки и общее их количество.
-		    }
-		    
-		};
-
-		request.executeWithListener(rl);
-		
+			}, 500);
+		}
 			
 	}
 
