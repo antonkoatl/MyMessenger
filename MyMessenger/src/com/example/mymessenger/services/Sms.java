@@ -415,6 +415,13 @@ public class Sms implements MessageService {
 		this.contact_data_changed = contact_data_changed;		
 	}
 
+	@Override
+	public void requestNewMessagesRunnable(
+			AsyncTaskCompleteListener<Runnable> cb) {
+		// TODO Auto-generated method stub
+		
+	}
+
 
 	
 

@@ -14,6 +14,7 @@
     <uses-permission android:name="android.permission.READ_SMS"/>
     <uses-permission android:name="android.permission.READ_CONTACTS"/>
     <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
 
     <application
         android:allowBackup="true"
@@ -37,6 +38,12 @@
 		    </intent-filter>
 		</receiver>
         <activity android:name="com.vk.sdk.VKOpenAuthActivity"></activity>
+        <receiver android:name="BootBroadReceiv">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+            </intent-filter>
+        </receiver>
+        <service android:name="UpdateService"></service>
     </application>
 
 </manifest>

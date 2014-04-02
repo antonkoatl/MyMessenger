@@ -15,6 +15,7 @@ public interface MessageService {
 
 	public void requestMessages(mDialog activeDialog, int offset, int count, AsyncTaskCompleteListener<List<mMessage>> cb);
 	public void requestDialogs(int offset, int count, AsyncTaskCompleteListener<List<mDialog>> cb);
+	public void requestNewMessagesRunnable(AsyncTaskCompleteListener<Runnable> cb);
 	
 	public String getServiceName();
 	public int getServiceType();

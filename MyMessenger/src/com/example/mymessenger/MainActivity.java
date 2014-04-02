@@ -1,5 +1,6 @@
 package com.example.mymessenger;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import android.app.Activity;
@@ -31,38 +32,68 @@ public class MainActivity extends Activity implements OnClickListener {
 	final int DIALOG_SMS = 1;
 	MyApplication app;
 	private SharedPreferences sPref;
+	private List<Button> buttons;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.d("MainActivity", "onCreate^" + String.valueOf(savedInstanceState == null));
+        
         setContentView(R.layout.activity_main);
         app = (MyApplication) getApplicationContext();
         
         sPref = getSharedPreferences("MyPref", MODE_PRIVATE);
-        String using_services[] = sPref.getString("usingservices", "sms,vk").split(",");
         
-        for(String i : using_services){        	
-        	if(i.equals("sms"))
-        		app.addService(new Sms(this.getApplicationContext()));
-        	if(i.equals("vk"))
-        		app.addService(new Vk(this));
-        }
+        //((Vk) app.getService(MessageService.VK)).authorize(this);
+
         
         LinearLayout ll_list = (LinearLayout) findViewById(R.id.linearlay_mainbuttons);
-        
-        for(MessageService ser : app.myServices){
+
+        for(MessageService ser : app.myMsgServices){
         	Button b = new Button(this);
             b.setText(ser.getServiceName());
             b.setId( getButtonIdMainScreen(ser.getServiceType()) ); 
             b.setOnClickListener(this);
             ll_list.addView(b);
             registerForContextMenu(b);
-            
-            Log.d("myLogs", "Service added: " + ser.getServiceName());
+
+            Log.d("myLogs", "Service button added: " + ser.getServiceName());
         }
+        
     }
 
+    @Override
+    protected void onStart(){
+    	super.onStart();
+    	Log.d("MainActivity", "onStart");
+    }
 
+    @Override
+	protected void onResume() { 
+		super.onResume();
+		Log.d("MainActivity", "onResume");
+		VKUIHelper.onResume(this); 
+	} 
+
+    @Override
+    protected void onPause() {
+    	super.onPause();
+    	Log.d("MainActivity", "onPause");
+    }
+    
+    @Override
+    protected void onStop() {
+    	super.onStop();
+    	Log.d("MainActivity", "onPause");
+    }
+    
+    @Override 
+	protected void onDestroy() { 
+		super.onDestroy();
+		Log.d("MainActivity", "onDestroy");
+		VKUIHelper.onDestroy(this); 
+	} 
+    
     private int getButtonIdMainScreen(int type) {
     	int res = 10;
 		switch(type){
@@ -182,17 +213,9 @@ public class MainActivity extends Activity implements OnClickListener {
 	  
 	  
   
-	@Override 
-	protected void onResume() { 
-		super.onResume(); 
-		VKUIHelper.onResume(this); 
-	} 
+	
 
-	@Override 
-	protected void onDestroy() { 
-		super.onDestroy(); 
-		VKUIHelper.onDestroy(this); 
-	} 
+	
 
 	@Override 
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) { 

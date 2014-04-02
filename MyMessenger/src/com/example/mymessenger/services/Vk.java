@@ -1,5 +1,11 @@
 package com.example.mymessenger.services;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -17,14 +23,18 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Handler;
+import android.os.HandlerThread;
 import android.text.format.Time;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.example.mymessenger.ActivityTwo;
 import com.example.mymessenger.AsyncTaskCompleteListener;
+import com.example.mymessenger.MyApplication;
 import com.example.mymessenger.mContact;
 import com.example.mymessenger.mDialog;
 import com.example.mymessenger.mMessage;
+import com.example.mymessenger.services.Sms.load_msgs_async;
 import com.vk.sdk.VKAccessToken;
 import com.vk.sdk.VKCaptchaDialog;
 import com.vk.sdk.VKScope;
@@ -63,22 +73,77 @@ public class Vk implements MessageService {
 	private AsyncTaskCompleteListener<Void> contact_data_changed;
 	final Handler handler;
 	
+	
+	final Handler nwhandler;
+	
+	public void requestNewMessagesRunnable(AsyncTaskCompleteListener<Runnable> cb){
+		VKRequest request = new VKRequest("messages.getLongPollServer", VKParameters.from(VKApiConst.COUNT, String.valueOf(1)));
+		request.secure = false;
+		VKParameters preparedParameters = request.getPreparedParameters();
+		VKRequestListener rl = 	new VKRequestListenerWithCallback<Runnable>(cb) {
+
+					@Override
+				    public void onComplete(VKResponse response) {
+				    	Log.d("getLastDlg", "onComplete" );
+				        try {
+				        	JSONObject response_json = response.json.getJSONObject("response");
+
+				    		
+			    			String key = response_json.getString( "key" );
+			    			String server = response_json.getString( "server" );
+			    			Integer ts = response_json.getInt( "ts" );
+			    			
+			    			Runnable r = new LongPollRunnable(server, key, ts);
+			    			callback.onTaskComplete(r);
+			    			
+					    } catch (JSONException e) {
+							e.printStackTrace();
+						}
+					}
+
+				    @Override
+				    public void onError(VKError error) {
+				    	Log.w("requestActiveDlg", "onError " + error.errorCode + " : " + error.errorMessage + String.valueOf(authorization_finished));
+				    	if(error.apiError != null) HandleApiError(error);
+				        // Ошибка. Сообщаем пользователю об error.
+				    }
+				    @Override
+				    public void attemptFailed(VKRequest request, int attemptNumber, int totalAttempts) {
+				    	Log.d("getLastDlg", "attemptFailed" );
+				        // Неудачная попытка. В аргументах имеется номер попытки и общее их количество.
+				    }
+				    
+				};
+				
+
+		request.executeWithListener(rl);
+	}
+	
+	public void authorize(Context acontext){
+		VKUIHelper.onResume((Activity) acontext);
+		VKSdk.authorize(sMyScope, false, false);
+		VKUIHelper.onDestroy((Activity) acontext);
+	}
+	
 	public Vk(Context context) {
 		this.context = context;
 		authorization_finished = true;
-		VKUIHelper.onResume((Activity) this.context);
+		
+		//VKUIHelper.onResume((Activity) this.context);
 		VKSdk.initialize(sdkListener, "4161005", VKAccessToken.tokenFromSharedPreferences(this.context, sTokenKey));
 		//VKSdk.authorize(sMyScope, false, true);
 		
 		active_dlg = new mDialog();
 		requestActiveDlg();
-		VKUIHelper.onDestroy((Activity) this.context);
+		//VKUIHelper.onDestroy((Activity) this.context);
 
 		contacts = new HashMap<String, mContact>();
 		
 		accum_cnt = new ArrayList<mContact>();
 		accum_cnt_handler_isRunning = false;
 		handler = new Handler();
+		
+		nwhandler = new Handler( ((MyApplication) context).netthread.getLooper() );
 	}
 
 	private void requestActiveDlg() {
@@ -118,7 +183,7 @@ public class Vk implements MessageService {
 
 				    @Override
 				    public void onError(VKError error) {
-				    	Log.w("getLastDlg", "onError " + error.errorMessage + String.valueOf(authorization_finished));
+				    	Log.w("requestActiveDlg", "onError " + error.errorCode + " : " + error.errorMessage + String.valueOf(authorization_finished));
 				    	if(error.apiError != null) HandleApiError(error);
 				        // Ошибка. Сообщаем пользователю об error.
 				    }
@@ -248,7 +313,32 @@ public class Vk implements MessageService {
 
 	@Override
 	public boolean sendMessage(String address, String text) {
-		// TODO Auto-generated method stub
+		VKRequest request = new VKRequest("messages.send", VKParameters.from(VKApiConst.USER_ID, address,
+				VKApiConst.MESSAGE, text));
+		request.secure = false;
+		VKParameters preparedParameters = request.getPreparedParameters();
+		
+		VKRequestListener rl = new VKRequestListener() {
+		    @Override
+		    public void onComplete(VKResponse response) {
+		    	Log.d("VKRequestListener", "onComplete" );
+		    }
+
+		    @Override
+		    public void onError(VKError error) {
+		    	Log.w("VKRequestListener.requestMessages", "onError " + error.errorMessage + ", " + error.apiError.errorMessage);
+		    	if(error.apiError != null) HandleApiError(error);
+		        // Ошибка. Сообщаем пользователю об error.
+		    }
+		    @Override
+		    public void attemptFailed(VKRequest request, int attemptNumber, int totalAttempts) {
+		    	Log.d("VKRequestListener", "attemptFailed" );
+		        // Неудачная попытка. В аргументах имеется номер попытки и общее их количество.
+		    }
+		    
+		};
+
+		request.executeWithListener(rl);
 		return false;
 	}
 
@@ -283,17 +373,20 @@ public class Vk implements MessageService {
 	private VKSdkListener sdkListener = new VKSdkListener() {
         @Override
         public void onCaptchaError(VKError captchaError) {
+        	Log.d("VKSdkListener", "onCaptchaError" );
             new VKCaptchaDialog(captchaError).show();
         }
 
         @Override
         public void onTokenExpired(VKAccessToken expiredToken) {
+        	Log.d("VKSdkListener", "onTokenExpired" );
             VKSdk.authorize(sMyScope, false, true);
             authorization_finished = false;
         }
 
         @Override
         public void onAccessDenied(VKError authorizationError) {
+        	Log.d("VKSdkListener", "onAccessDenied" );
             new AlertDialog.Builder(Vk.this.context)
                     .setMessage(authorizationError.errorMessage)
                     .show();
@@ -315,8 +408,7 @@ public class Vk implements MessageService {
 
 	
     @Override
-	public void requestMessages(mDialog activeDialog, int offset, int count,
-			AsyncTaskCompleteListener<List<mMessage>> cb) {
+	public void requestMessages(mDialog activeDialog, int offset, int count, AsyncTaskCompleteListener<List<mMessage>> cb) {
 
 
 		VKRequest request = new VKRequest("messages.getHistory", VKParameters.from(VKApiConst.COUNT, String.valueOf(count),
@@ -461,12 +553,15 @@ public class Vk implements MessageService {
 	private void HandleApiError(VKError error){
 		if(error.apiError.errorCode == 5){ // User authorization failed.
 			if(authorization_finished && error.request.getPreparedParameters().get(VKApiConst.ACCESS_TOKEN).equals(VKSdk.getAccessToken().accessToken) ){
+				Log.d("HandleApiError", "VKSdk.authorize: " + error.apiError.errorMessage);
 				VKSdk.authorize(sMyScope, false, true);
 				authorization_finished = false;
 			}
 			
-			Log.d("getLastDlg", "error.request.repeat");
-			error.request.repeat();
+			if(authorization_finished){
+				Log.d("HandleApiError", "error.request.repeat: " + error.apiError.errorMessage);
+				error.request.repeat();
+			}
 		}
 		
 		if(error.apiError.errorCode == 6){ // Too many requests per second.
@@ -474,4 +569,77 @@ public class Vk implements MessageService {
 		}
 	}
 
+
+	class LongPollRunnable implements Runnable {
+		String server;
+		String key;
+		Integer ts;
+		
+		LongPollRunnable(String server, String key, Integer ts) { 
+        	this.server = server;
+        	this.key = key;
+        	this.ts = ts; 
+        }
+
+		@Override
+		public void run() {
+			while(true){
+				//Log.d("LongPollRunnable", "start");
+				try {
+				  URL url = new URL("http://"+server+"?act=a_check&key="+key+"&ts="+ts.toString()+"&wait=25&mode=2");
+				  HttpURLConnection con = (HttpURLConnection) url.openConnection();
+				  //new LongPoll_async().execute(con.getInputStream());
+				  BufferedReader reader = null;
+				  String line = "";
+				  String page = "";
+				  try {
+					  reader = new BufferedReader(new InputStreamReader(con.getInputStream()));
+					  while ((line = reader.readLine()) != null) {
+						  page += line;
+					  }
+				  } catch (IOException e) {
+					  e.printStackTrace();
+				  } finally {
+					  if (reader != null) {
+						  try {
+							  reader.close();
+						  } catch (IOException e) {
+							  e.printStackTrace();
+						  }
+					  }
+				  }
+	  
+				  //Log.d("LongPollRunnable", page);
+				  
+				  JSONObject response_json = new JSONObject(page);
+				  ts = response_json.getInt( "ts" );
+				  
+				  JSONArray updates = response_json.getJSONArray("updates");
+				  for (int i = 0; i < updates.length(); i++) {
+					  JSONArray item = updates.getJSONArray(i);
+
+					  if (item.getInt(0) == 4) {
+						 String from_id = item.getString(3);
+						 int timestamp = item.getInt(4);
+						 String subject = item.getString(5);
+						 String text = item.getString(6);
+						 
+						 mMessage msg = new mMessage();
+						 msg.sender = getContact( from_id );
+						
+						 msg.text = text;
+						 msg.sendTime = new Time();
+						 msg.sendTime.set(timestamp*1000);
+						 
+						 //Log.d("LongPollRunnable", text);
+					  }
+				  }
+
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		}			    			
+	}
+	
 }

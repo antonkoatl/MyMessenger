@@ -12,5 +12,6 @@
     <string name="menu6">Developers</string>
     <string name="menu7">Leave a review</string>
     <string name="menu8">$Donate$</string>
+    <string name="vk_retry">Retry</string>
 
 </resources>

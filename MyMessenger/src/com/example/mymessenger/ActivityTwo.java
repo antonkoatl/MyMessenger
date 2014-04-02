@@ -302,7 +302,7 @@ public class ActivityTwo extends Activity implements OnClickListener {
 			        InputMethodManager.HIDE_NOT_ALWAYS); 
 			
 			Log.d("ActivityTwo.onClick.msg_sendbutton", text);
-			MessageService ms = app.getService( app.active_service );
+			MessageService ms = app.getActiveService();
 			mDialog dlg = ms.getActiveDialog();
 			
 			for(mContact cnt : dlg.participants){
