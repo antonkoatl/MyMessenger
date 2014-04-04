@@ -44,8 +44,6 @@ public class ActivityTwo extends Activity implements OnClickListener {
 	private int async_complete_listener_msg_update_total_offset;
 	
 	public final static String BROADCAST_ACTION = "ru.mymessage.servicebackbroadcast";
-	BroadcastReceiver br;
-	
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -100,23 +98,6 @@ public class ActivityTwo extends Activity implements OnClickListener {
 	        listview.setOnItemClickListener(DlgClickListener);
 	        listview.setOnScrollListener(DlgScrollListener);
 	    }
-	    
-	    
-	    br = new BroadcastReceiver() {
-	        // действия при получении сообщений
-	        public void onReceive(Context context, Intent intent) {
-	          int task = intent.getIntExtra("task", 0);
-	          int service_type = intent.getIntExtra("service_type", 0);
-	          
-	          Log.d("+++", "onReceive: task = " + task);
-	          if(task == 1){
-	        	  MsgUpdate(service_type);
-	          }
-	        }
-	    };
-	    
-	    IntentFilter intFilt = new IntentFilter(BROADCAST_ACTION);
-	    registerReceiver(br, intFilt);
 	}
 	
 	

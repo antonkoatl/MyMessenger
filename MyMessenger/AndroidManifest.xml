@@ -32,11 +32,6 @@
             </intent-filter>
         </activity>
         <activity android:name="ActivityTwo" android:windowSoftInputMode="stateHidden"></activity>
-        <receiver android:name="SmsReceiver">
-		    <intent-filter android:priority="2147483647">
-		        <action android:name="android.provider.Telephony.SMS_RECEIVED"/>
-		    </intent-filter>
-		</receiver>
         <activity android:name="com.vk.sdk.VKOpenAuthActivity"></activity>
         <receiver android:name="BootBroadReceiv">
             <intent-filter>
@@ -44,6 +39,11 @@
             </intent-filter>
         </receiver>
         <service android:name="UpdateService"></service>
+        <receiver android:name="MsgReceiver">
+            <intent-filter>
+                <action android:name="android.mymessenger.MSG_RECEIVED"/>
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

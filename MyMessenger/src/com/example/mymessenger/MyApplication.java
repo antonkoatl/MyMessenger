@@ -6,6 +6,7 @@ import com.example.mymessenger.services.MessageService;
 import com.example.mymessenger.services.Sms;
 import com.example.mymessenger.services.Vk;
 
+import android.app.Activity;
 import android.app.Application;
 import android.app.PendingIntent;
 import android.content.Intent;
@@ -60,4 +61,14 @@ public class MyApplication extends Application {
 	public boolean isServisesLoaded() {
 		return myMsgServices.size() > 0;
 	}
+	
+	private Activity mCurrentActivity = null;
+	
+    public Activity getCurrentActivity(){
+          return mCurrentActivity;
+    }
+    public void setCurrentActivity(Activity mCurrentActivity){
+          this.mCurrentActivity = mCurrentActivity;
+    }
+
 }

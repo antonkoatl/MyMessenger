@@ -30,6 +30,8 @@ import android.widget.Toast;
 
 import com.example.mymessenger.ActivityTwo;
 import com.example.mymessenger.AsyncTaskCompleteListener;
+import com.example.mymessenger.MainActivity;
+import com.example.mymessenger.MsgReceiver;
 import com.example.mymessenger.MyApplication;
 import com.example.mymessenger.mContact;
 import com.example.mymessenger.mDialog;
@@ -61,7 +63,6 @@ public class Vk implements MessageService {
 	List<mContact> accum_cnt;
 	boolean accum_cnt_handler_isRunning;
 	
-
 	Map<String, mContact> contacts;
 	
 	boolean finished;
@@ -72,9 +73,9 @@ public class Vk implements MessageService {
 	
 	private AsyncTaskCompleteListener<Void> contact_data_changed;
 	final Handler handler;
-	
-	
 	final Handler nwhandler;
+	
+	boolean authorised;
 	
 	public void requestNewMessagesRunnable(AsyncTaskCompleteListener<Runnable> cb){
 		VKRequest request = new VKRequest("messages.getLongPollServer", VKParameters.from(VKApiConst.COUNT, String.valueOf(1)));
@@ -128,6 +129,7 @@ public class Vk implements MessageService {
 	public Vk(Context context) {
 		this.context = context;
 		authorization_finished = true;
+		authorised = false;
 		
 		//VKUIHelper.onResume((Activity) this.context);
 		VKSdk.initialize(sdkListener, "4161005", VKAccessToken.tokenFromSharedPreferences(this.context, sTokenKey));
@@ -380,7 +382,9 @@ public class Vk implements MessageService {
         @Override
         public void onTokenExpired(VKAccessToken expiredToken) {
         	Log.d("VKSdkListener", "onTokenExpired" );
-            VKSdk.authorize(sMyScope, false, true);
+        	MyApplication app = (MyApplication) context;
+        	if(app.getCurrentActivity() != null) authorize(app.getCurrentActivity());
+            //VKSdk.authorize(sMyScope, false, false);
             authorization_finished = false;
         }
 
@@ -631,6 +635,11 @@ public class Vk implements MessageService {
 						 msg.sendTime = new Time();
 						 msg.sendTime.set(timestamp*1000);
 						 
+						 Intent intent = new Intent(MsgReceiver.ACTION_RECEIVE);
+				    	 intent.putExtra("service_type", getServiceType());
+				    	 intent.putExtra("msg", msg);
+				    	 context.sendBroadcast(intent);
+
 						 //Log.d("LongPollRunnable", text);
 					  }
 				  }

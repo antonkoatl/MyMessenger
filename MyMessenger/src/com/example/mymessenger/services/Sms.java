@@ -25,6 +25,7 @@ import com.example.mymessenger.ActivityTwo;
 import com.example.mymessenger.AsyncTaskCompleteListener;
 import com.example.mymessenger.MainActivity;
 import com.example.mymessenger.MyApplication;
+import com.example.mymessenger.SmsReceiver;
 import com.example.mymessenger.mContact;
 import com.example.mymessenger.mDialog;
 import com.example.mymessenger.mMessage;
@@ -36,6 +37,7 @@ public class Sms implements MessageService {
 	public String self_address;
 	public mDialog active_dialog;
 	private MyApplication app;
+	BroadcastReceiver br;
 
 	Map<String, mContact> contacts;
 	private AsyncTaskCompleteListener<Void> contact_data_changed;
@@ -418,8 +420,9 @@ public class Sms implements MessageService {
 	@Override
 	public void requestNewMessagesRunnable(
 			AsyncTaskCompleteListener<Runnable> cb) {
-		// TODO Auto-generated method stub
-		
+		br = new SmsReceiver();	    
+	    IntentFilter intFilt = new IntentFilter(SmsReceiver.ACTION);
+	    context.registerReceiver(br, intFilt);
 	}
 
 

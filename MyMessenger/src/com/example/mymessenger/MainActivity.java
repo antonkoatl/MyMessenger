@@ -72,13 +72,15 @@ public class MainActivity extends Activity implements OnClickListener {
 	protected void onResume() { 
 		super.onResume();
 		Log.d("MainActivity", "onResume");
-		VKUIHelper.onResume(this); 
+		//VKUIHelper.onResume(this);
+		app.setCurrentActivity(this);
 	} 
 
     @Override
     protected void onPause() {
     	super.onPause();
     	Log.d("MainActivity", "onPause");
+    	app.setCurrentActivity(null);
     }
     
     @Override
@@ -91,7 +93,7 @@ public class MainActivity extends Activity implements OnClickListener {
 	protected void onDestroy() { 
 		super.onDestroy();
 		Log.d("MainActivity", "onDestroy");
-		VKUIHelper.onDestroy(this); 
+		//VKUIHelper.onDestroy(this); 
 	} 
     
     private int getButtonIdMainScreen(int type) {
@@ -160,8 +162,11 @@ public class MainActivity extends Activity implements OnClickListener {
 	@Override
 	public void onClick(View view) {
 		//Toast.makeText(this, "Нажата кнопка " + ((Button) arg0).getText(), Toast.LENGTH_SHORT).show();
-		if( isServicesButton(view.getId()) )
+		if( isServicesButton(view.getId()) ){
+			MessageService ser = getServiceFromButtonId(view.getId());
+			app.active_service = ser.getServiceType();
 			showDialog(view.getId());
+		}
 		
 	}
 	
@@ -181,7 +186,6 @@ public class MainActivity extends Activity implements OnClickListener {
 		AlertDialog.Builder adb = new AlertDialog.Builder(this);
 		
 		MessageService ser = getServiceFromButtonId(id);
-		app.active_service = ser.getServiceType();
 		
 		String data[] = ser.getStringsForMainViewMenu();
 
@@ -204,21 +208,10 @@ public class MainActivity extends Activity implements OnClickListener {
 
 	// обработчик нажатия на пункт списка диалога
 	android.content.DialogInterface.OnClickListener myClickListener = new android.content.DialogInterface.OnClickListener() {
-		  public void onClick(DialogInterface dialog, int which) {
-			  MessageService ser = app.getService( app.active_service );
+		public void onClick(DialogInterface dialog, int which) {
+			  MessageService ser = app.getActiveService();
 			  ser.MainViewMenu_click(which, MainActivity.this);			  
 		  }
 	  };
     
-	  
-	  
-  
-	
-
-	
-
-	@Override 
-	protected void onActivityResult(int requestCode, int resultCode, Intent data) { 
-		VKUIHelper.onActivityResult(requestCode, resultCode, data); 
-	} 
 }

@@ -3,6 +3,8 @@ package com.example.mymessenger;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 
+import com.example.mymessenger.services.MessageService;
+
 import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.ContentValues;
@@ -11,10 +13,11 @@ import android.content.Intent;
 import android.net.Uri;
 import android.telephony.SmsMessage;
 import android.text.TextUtils;
+import android.text.format.Time;
 import android.widget.Toast;
 
 public class SmsReceiver extends BroadcastReceiver {
-	private static final String ACTION = "android.provider.Telephony.SMS_RECEIVED";
+	public static final String ACTION = "android.provider.Telephony.SMS_RECEIVED";
 	
 	@Override
 	public void onReceive(Context context, Intent intent) {
@@ -25,7 +28,7 @@ public class SmsReceiver extends BroadcastReceiver {
 		        messages[i] = SmsMessage.createFromPdu((byte[]) pduArray[i]);
 		    }
 
-		    Toast.makeText(context, "New SMS!", Toast.LENGTH_LONG).show();
+		    //Toast.makeText(context, "New SMS!", Toast.LENGTH_LONG).show();
 		    
 		    SmsMessage sms = messages[0];
 		    
@@ -58,8 +61,18 @@ public class SmsReceiver extends BroadcastReceiver {
 		    
 		    //abortBroadcast(); //~~~ Dont abort for now
 		    
-		    Intent intent2 = new Intent(ActivityTwo.BROADCAST_ACTION);
-		    intent2.putExtra("task", 1);
+		    mMessage msg = new mMessage();
+		    MyApplication app = (MyApplication) context.getApplicationContext();
+		    MessageService sms_service = app.getService(MessageService.SMS);
+		    msg.sender = sms_service.getContact( sms.getDisplayOriginatingAddress() );
+			
+			msg.text = sms.getDisplayMessageBody();
+			msg.sendTime = new Time();
+			msg.sendTime.set(sms.getTimestampMillis());
+		    
+		    Intent intent2 = new Intent(MsgReceiver.ACTION_RECEIVE);
+		    intent2.putExtra("service_type", MessageService.SMS);
+		    intent2.putExtra("msg", msg);
 		    context.sendBroadcast(intent2);
 		}
 	}
