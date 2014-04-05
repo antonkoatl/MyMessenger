@@ -42,6 +42,8 @@ public class Sms implements MessageService {
 	Map<String, mContact> contacts;
 	private AsyncTaskCompleteListener<Void> contact_data_changed;
 	
+	mContact self_contact;
+	
 	public Sms(Context context) {
 		this.context = context;
 		self_name = "Me";
@@ -54,6 +56,8 @@ public class Sms implements MessageService {
                 PendingIntent.FLAG_ONE_SHOT);
         
         contacts = new HashMap<String, mContact>();
+        
+        self_contact = new mContact("+79279524758");
 	}
 	
 	public List<mDialog> getDialogs(int offset, int count) {
@@ -180,11 +184,11 @@ public class Sms implements MessageService {
 				msg.sendTime = new Time();
 				msg.sendTime.set(cursor.getLong( cursor.getColumnIndex("date") ) );
 				msg.ReadState = cursor.getString( cursor.getColumnIndex("read") );
-				
+				msg.respondent = getContact(address);
 				if (cursor.getString(cursor.getColumnIndex("type")).contains("1")) { //Inbox
-					msg.sender = getContact(address);
+					msg.out = false;
 	            } else if (cursor.getString(cursor.getColumnIndex("type")).contains("2")) { //Sent
-	            	msg.sender = getContact(self_name);
+	            	msg.out = true;
 	            } else {
 	            	cursor.moveToNext();
 	            	continue;
@@ -214,9 +218,8 @@ public class Sms implements MessageService {
 	
 
 	@Override
-	public String getMyAddress() {
-		// TODO Auto-generated method stub
-		return null;
+	public mContact getMyContact() {
+		return self_contact;
 	}
 
 	@Override

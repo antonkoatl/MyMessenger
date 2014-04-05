@@ -77,6 +77,8 @@ public class Vk implements MessageService {
 	
 	boolean authorised;
 	
+	mContact self_contact;
+	
 	public void requestNewMessagesRunnable(AsyncTaskCompleteListener<Runnable> cb){
 		VKRequest request = new VKRequest("messages.getLongPollServer", VKParameters.from(VKApiConst.COUNT, String.valueOf(1)));
 		request.secure = false;
@@ -85,7 +87,7 @@ public class Vk implements MessageService {
 
 					@Override
 				    public void onComplete(VKResponse response) {
-				    	Log.d("getLastDlg", "onComplete" );
+				    	Log.d("requestNewMessagesRunnable", "onComplete" );
 				        try {
 				        	JSONObject response_json = response.json.getJSONObject("response");
 
@@ -121,9 +123,12 @@ public class Vk implements MessageService {
 	}
 	
 	public void authorize(Context acontext){
-		VKUIHelper.onResume((Activity) acontext);
-		VKSdk.authorize(sMyScope, false, false);
-		VKUIHelper.onDestroy((Activity) acontext);
+		if(authorization_finished){
+			VKUIHelper.onResume((Activity) acontext);
+			VKSdk.authorize(sMyScope, false, false);
+			VKUIHelper.onDestroy((Activity) acontext);
+			authorization_finished = false;
+		}
 	}
 	
 	public Vk(Context context) {
@@ -146,6 +151,9 @@ public class Vk implements MessageService {
 		handler = new Handler();
 		
 		nwhandler = new Handler( ((MyApplication) context).netthread.getLooper() );
+		
+		self_contact = new mContact("140195103");
+		requestContactData(self_contact);
 	}
 
 	private void requestActiveDlg() {
@@ -223,9 +231,8 @@ public class Vk implements MessageService {
 	}
 
 	@Override
-	public String getMyAddress() {
-		// TODO Auto-generated method stub
-		return "140195103";
+	public mContact getMyContact() {
+		return self_contact;
 	}
 
 	@Override
@@ -385,11 +392,11 @@ public class Vk implements MessageService {
         	MyApplication app = (MyApplication) context;
         	if(app.getCurrentActivity() != null) authorize(app.getCurrentActivity());
             //VKSdk.authorize(sMyScope, false, false);
-            authorization_finished = false;
         }
 
         @Override
         public void onAccessDenied(VKError authorizationError) {
+        	authorization_finished = true;
         	Log.d("VKSdkListener", "onAccessDenied" );
             new AlertDialog.Builder(Vk.this.context)
                     .setMessage(authorizationError.errorMessage)
@@ -421,8 +428,8 @@ public class Vk implements MessageService {
 		VKParameters preparedParameters = request.getPreparedParameters();
 
 		VKRequestListener rl = new VKRequestListenerWithCallback<List<mMessage>>(cb) {
-				    @Override
-				    public void onComplete(VKResponse response) {
+				    @Override				    
+				    public void onComplete(VKResponse response) {				    	
 				    	Log.d("VKRequestListener", "onComplete" );
 				    	List<mMessage> msgs = new ArrayList<mMessage>();
 				        try {
@@ -433,8 +440,9 @@ public class Vk implements MessageService {
 				    			JSONObject item = items.getJSONObject(i);
 				    			
 				    			mMessage msg = new mMessage();
-				    			msg.sender = getContact( item.getString( "from_id" ) );
-								
+				    			msg.out = item.getInt("out") == 1 ?	true : false;
+				    			
+				    			msg.respondent = getContact( item.getString( "user_id" ) );
 								msg.text = item.getString( "body" );
 								msg.sendTime = new Time();
 								msg.sendTime.set(item.getLong( "date" )*1000);
@@ -588,7 +596,7 @@ public class Vk implements MessageService {
 		@Override
 		public void run() {
 			while(true){
-				//Log.d("LongPollRunnable", "start");
+				Log.d("LongPollRunnable", "start");
 				try {
 				  URL url = new URL("http://"+server+"?act=a_check&key="+key+"&ts="+ts.toString()+"&wait=25&mode=2");
 				  HttpURLConnection con = (HttpURLConnection) url.openConnection();
@@ -613,7 +621,7 @@ public class Vk implements MessageService {
 					  }
 				  }
 	  
-				  //Log.d("LongPollRunnable", page);
+				  Log.d("LongPollRunnable", page);
 				  
 				  JSONObject response_json = new JSONObject(page);
 				  ts = response_json.getInt( "ts" );
@@ -623,24 +631,25 @@ public class Vk implements MessageService {
 					  JSONArray item = updates.getJSONArray(i);
 
 					  if (item.getInt(0) == 4) {
-						 String from_id = item.getString(3);
-						 int timestamp = item.getInt(4);
-						 String subject = item.getString(5);
-						 String text = item.getString(6);
+						  int flags = item.getInt(2);
+						  String from_id = item.getString(3);
+						  int timestamp = item.getInt(4);
+						  String subject = item.getString(5);
+						  String text = item.getString(6);
 						 
-						 mMessage msg = new mMessage();
-						 msg.sender = getContact( from_id );
-						
-						 msg.text = text;
-						 msg.sendTime = new Time();
-						 msg.sendTime.set(timestamp*1000);
+						  mMessage msg = new mMessage();
+						  msg.respondent = getContact( from_id );
+						  msg.out = (flags & 2) == 2;
+			  		 	  msg.text = text;
+				 		  msg.sendTime = new Time();
+			 			  msg.sendTime.set(timestamp*1000);
 						 
-						 Intent intent = new Intent(MsgReceiver.ACTION_RECEIVE);
-				    	 intent.putExtra("service_type", getServiceType());
-				    	 intent.putExtra("msg", msg);
-				    	 context.sendBroadcast(intent);
+						  Intent intent = new Intent(MsgReceiver.ACTION_RECEIVE);
+				    	  intent.putExtra("service_type", getServiceType());
+				    	  intent.putExtra("msg", msg);
+				    	  context.sendBroadcast(intent);
 
-						 //Log.d("LongPollRunnable", text);
+						  //Log.d("LongPollRunnable", text);
 					  }
 				  }
 

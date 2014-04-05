@@ -214,4 +214,8 @@ public class MainActivity extends Activity implements OnClickListener {
 		  }
 	  };
     
+	@Override 
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) { 
+		VKUIHelper.onActivityResult(requestCode, resultCode, data); 
+	} 
 }

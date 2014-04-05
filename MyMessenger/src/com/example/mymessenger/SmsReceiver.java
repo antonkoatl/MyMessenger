@@ -64,7 +64,7 @@ public class SmsReceiver extends BroadcastReceiver {
 		    mMessage msg = new mMessage();
 		    MyApplication app = (MyApplication) context.getApplicationContext();
 		    MessageService sms_service = app.getService(MessageService.SMS);
-		    msg.sender = sms_service.getContact( sms.getDisplayOriginatingAddress() );
+		    msg.respondent = sms_service.getContact( sms.getDisplayOriginatingAddress() );
 			
 			msg.text = sms.getDisplayMessageBody();
 			msg.sendTime = new Time();

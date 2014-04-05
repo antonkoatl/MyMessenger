@@ -22,8 +22,6 @@ public interface MessageService {
 	
 	public void setActiveDialog(mDialog dlg);
 	public mDialog getActiveDialog();
-	
-	public String getMyAddress();
 
 	public boolean sendMessage(String address, String text);
 	
@@ -34,4 +32,5 @@ public interface MessageService {
 	public mContact getContact(String address);
 	public void setContactDataChangedCallback(
 			AsyncTaskCompleteListener<Void> contact_data_changed);
+	public mContact getMyContact();
 }

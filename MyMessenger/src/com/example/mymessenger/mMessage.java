@@ -5,22 +5,17 @@ import android.os.Parcelable;
 import android.text.format.Time;
 
 public class mMessage implements Parcelable {
-	public mContact sender;
+	public mContact respondent; //Собеседник
+	
 	public String text;
 	public Time sendTime;
 	public String ReadState;
-	
-	public String sender_name;
-	public String address_name;
-	
-	public String getSenderName() {
-		return sender.name == null ? sender.address : sender.name;
-	}
-
+	public boolean out; 
+		
 	public mMessage() {
 
 	}
-
+	
 	@Override
 	public int describeContents() {
 		// TODO Auto-generated method stub
@@ -29,22 +24,20 @@ public class mMessage implements Parcelable {
 
 	@Override
 	public void writeToParcel(Parcel dest, int flags) {
-		dest.writeParcelable(sender, flags);
+		dest.writeParcelable(respondent, flags);
 		dest.writeString(text);
 		dest.writeLong(sendTime.toMillis(true));
 		dest.writeString(ReadState);
-		dest.writeString(sender_name);
-		dest.writeString(address_name);
+		dest.writeBooleanArray(new boolean[]{out});
 	}
 
 	public mMessage(Parcel sour) {
-		sender = (mContact) sour.readParcelable(mContact.class.getClassLoader());
+		respondent = (mContact) sour.readParcelable(mContact.class.getClassLoader());
 		text = sour.readString();
 		sendTime = new Time();
 		sendTime.set(sour.readLong());
 		ReadState = sour.readString();
-		sender_name = sour.readString();
-		address_name = sour.readString();
+		out = sour.createBooleanArray()[0];
 	}
 	
 	public static final Parcelable.Creator<mMessage> CREATOR = new Parcelable.Creator<mMessage>() { 

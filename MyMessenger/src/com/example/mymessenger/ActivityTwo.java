@@ -43,6 +43,8 @@ public class ActivityTwo extends Activity implements OnClickListener {
 	public int supposedFVI;
 	private int async_complete_listener_msg_update_total_offset;
 	
+	public String mode;
+	
 	public final static String BROADCAST_ACTION = "ru.mymessage.servicebackbroadcast";
 	
 	@Override
@@ -56,7 +58,7 @@ public class ActivityTwo extends Activity implements OnClickListener {
 		app = (MyApplication) getApplicationContext();
 		
 		Intent intent = getIntent();	    
-	    String mode = intent.getStringExtra("mode");
+	    mode = intent.getStringExtra("mode");
 	    
 	    app.getActiveService().setContactDataChangedCallback(contact_data_changed);
 	    
@@ -297,6 +299,17 @@ public class ActivityTwo extends Activity implements OnClickListener {
 			
 	}
 
+	public void NewMessage(mMessage msg){
+		boolean toScroll = false;
+		int firstVisibleItem = listview.getFirstVisiblePosition();
+		if(listview.getChildAt(listview.getChildCount() - 1).getBottom() == listview.getHeight())
+			toScroll = true;
+		showing_messages.add(msg);
+		msg_adapter.notifyDataSetChanged();
+		if(toScroll)
+			listview.setSelectionFromTop(firstVisibleItem  + 1, 0);
+
+	}
 	
 	public void MsgUpdate(int service_type){
 		MessageService ms = app.getService( service_type );
@@ -307,4 +320,17 @@ public class ActivityTwo extends Activity implements OnClickListener {
 		}
 
 	}
+
+	@Override
+	protected void onResume() { 
+		super.onResume();
+		app.setCurrentActivity(this);
+	} 
+	
+	@Override
+    protected void onPause() {
+    	super.onPause();
+    	app.setCurrentActivity(null);
+    }
+	
 }

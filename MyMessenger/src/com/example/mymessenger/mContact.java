@@ -18,6 +18,15 @@ public class mContact implements Parcelable {
 	public boolean equals(mContact cnt) {
 	    return this.address.equals(cnt.address);
 	}
+	
+	@Override
+	public boolean equals(Object o){
+		  if(o instanceof mContact){
+			  mContact toCompare = (mContact) o;
+		    return this.address.equals(toCompare.address);
+		  }
+		  return false;
+		}
 
 	@Override
 	public int describeContents() {
@@ -44,4 +53,8 @@ public class mContact implements Parcelable {
 			return new mContact[size]; 
 		} 
 	};
+
+	public String getName() {
+		return name == null ? address : name;
+	}
 }

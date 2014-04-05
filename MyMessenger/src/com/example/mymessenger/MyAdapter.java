@@ -66,10 +66,11 @@ public class MyAdapter extends BaseAdapter {
 		    
 		    mMessage msg = data.get(position);
 		    MessageService ser = ((MyApplication) context.getApplicationContext()).getActiveService();
-		    boolean left = msg.sender.equals(ser.getContact( ser.getMyAddress() ));
+		    boolean left = msg.out;
 		    
 	    	TextView textLabel = (TextView) view.findViewById(R.id.author_text);
-	    	textLabel.setText( msg.getSenderName() );
+	    	if(left)textLabel.setText( ser.getMyContact().getName() );
+	    	else textLabel.setText( msg.respondent.getName() );
 	        
 	    	textLabel = (TextView) view.findViewById(R.id.msg_text);
 	    	textLabel.setText( msg.text );

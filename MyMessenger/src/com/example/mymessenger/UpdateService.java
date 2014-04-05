@@ -9,6 +9,7 @@ import android.app.Service;
 import android.content.Intent;
 import android.os.Handler;
 import android.os.IBinder;
+import android.util.Log;
 
 public class UpdateService extends IntentService {
 	Handler handler;
@@ -26,6 +27,7 @@ public class UpdateService extends IntentService {
 		handler = new Handler();
 		
 		for(MessageService i : ( (MyApplication) getApplication() ).myMsgServices){
+			Log.d("UpdateService", "requested");
 			i.requestNewMessagesRunnable(async_complete_listener_runnable);
 		}
 		
@@ -35,6 +37,7 @@ public class UpdateService extends IntentService {
 
 		@Override
 		public void onTaskComplete(Runnable result) {
+			Log.d("UpdateService", "posted");
 			handler.post(result);
 		}
 		
