@@ -80,6 +80,27 @@ public class Vk implements MessageService {
 	mContact self_contact;
 	
 	public void requestNewMessagesRunnable(AsyncTaskCompleteListener<Runnable> cb){
+		if(!authorised){
+			class Runnable_r implements Runnable {
+				AsyncTaskCompleteListener<Runnable> cb;
+				
+				Runnable_r(AsyncTaskCompleteListener<Runnable> cb){
+					this.cb = cb;
+				}
+				
+				@Override
+				public void run() {
+					requestNewMessagesRunnable(cb);
+				}
+				
+			};
+			
+			Runnable r = new Runnable_r(cb);
+			handler.postDelayed(r, 1000);
+			Log.d("requestNewMessagesRunnable", "Not authorised, retrying in 1 sec");
+			return;
+		}
+		
 		VKRequest request = new VKRequest("messages.getLongPollServer", VKParameters.from(VKApiConst.COUNT, String.valueOf(1)));
 		request.secure = false;
 		VKParameters preparedParameters = request.getPreparedParameters();
@@ -408,11 +429,13 @@ public class Vk implements MessageService {
             newToken.saveTokenToSharedPreferences(Vk.this.context, sTokenKey);
             authorization_finished = true;
             Log.d("VKSdkListener", "onReceiveNewToken" );
+            authorised = true;
         }
 
         @Override
         public void onAcceptUserToken(VKAccessToken token) {
         	Log.d("VKSdkListener", "onAcceptUserToken" );
+        	authorised = true;
         }
     };
     
@@ -566,11 +589,10 @@ public class Vk implements MessageService {
 		if(error.apiError.errorCode == 5){ // User authorization failed.
 			if(authorization_finished && error.request.getPreparedParameters().get(VKApiConst.ACCESS_TOKEN).equals(VKSdk.getAccessToken().accessToken) ){
 				Log.d("HandleApiError", "VKSdk.authorize: " + error.apiError.errorMessage);
-				VKSdk.authorize(sMyScope, false, true);
+				MyApplication app = (MyApplication) context;
+	        	if(app.getCurrentActivity() != null) authorize(app.getCurrentActivity());
+				//VKSdk.authorize(sMyScope, false, true);
 				authorization_finished = false;
-			}
-			
-			if(authorization_finished){
 				Log.d("HandleApiError", "error.request.repeat: " + error.apiError.errorMessage);
 				error.request.repeat();
 			}

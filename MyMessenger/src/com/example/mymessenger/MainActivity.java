@@ -165,6 +165,7 @@ public class MainActivity extends Activity implements OnClickListener {
 		if( isServicesButton(view.getId()) ){
 			MessageService ser = getServiceFromButtonId(view.getId());
 			app.active_service = ser.getServiceType();
+			removeDialog(view.getId());
 			showDialog(view.getId());
 		}
 		
@@ -194,7 +195,7 @@ public class MainActivity extends Activity implements OnClickListener {
 
 		return adb.create();
 	}
-	
+			
 	private MessageService getServiceFromButtonId(int id) {
 		switch(id){
 			case 10+0 :
@@ -210,9 +211,10 @@ public class MainActivity extends Activity implements OnClickListener {
 	android.content.DialogInterface.OnClickListener myClickListener = new android.content.DialogInterface.OnClickListener() {
 		public void onClick(DialogInterface dialog, int which) {
 			  MessageService ser = app.getActiveService();
-			  ser.MainViewMenu_click(which, MainActivity.this);			  
+			  ser.MainViewMenu_click(which, MainActivity.this);
 		  }
-	  };
+	};
+	  
     
 	@Override 
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) { 

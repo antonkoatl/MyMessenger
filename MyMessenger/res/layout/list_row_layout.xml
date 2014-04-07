@@ -3,41 +3,27 @@
     android:id="@+id/even_container"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content" >
-		
-	<TextView
+
+    <com.example.mymessenger.WrapWidthTextView
+        android:id="@+id/msg_date"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/msg_text"
+        android:gravity="right"
+        android:text="10:47 \n 01.01.2014"
+        android:textSize="10sp" />
+
+	<com.example.mymessenger.WrapWidthTextView
 	    android:id="@+id/msg_text"
 	    android:layout_width="wrap_content"
 	    android:layout_height="wrap_content"
+	    android:layout_alignParentTop="true"
 	    android:layout_margin="5dip"
-	    android:layout_marginLeft="120dip"
-	    android:layout_marginRight="8dip"
-	    android:layout_marginTop="10dip"
-	    android:background="@drawable/bubble_green"
+	    android:background="@drawable/bubble_yellow"
+	    android:gravity="right"
 	    android:paddingLeft="10dp"
+	    android:text="Ну очень длинный текст в несколько строк"
 	    android:textColor="#000000"
 	    android:textSize="16sp" />
-	
-	<ImageView
-	    android:id="@+id/user_img"
-	    android:layout_width="wrap_content"
-	    android:layout_height="wrap_content"
-	    android:layout_below="@id/msg_text"
-	    android:layout_marginTop="10dp"
-	    android:src="@drawable/sample_image" />
-
-	<TextView
-	    android:id="@+id/author_text"
-	    android:layout_width="wrap_content"
-	    android:layout_height="wrap_content"
-	    android:layout_below="@id/msg_text"
-	    android:layout_marginTop="10dp"
-	    android:layout_toRightOf="@+id/user_img" />
-
-	<TextView
-	    android:id="@+id/msg_date"
-	    android:layout_width="wrap_content"
-	    android:layout_height="wrap_content"
-	    android:layout_below="@+id/author_text"
-	    android:layout_toRightOf="@+id/user_img" />
 
 </RelativeLayout>
