@@ -1,11 +1,12 @@
-<menu xmlns:android="http://schemas.android.com/apk/res/android" >
-    <item android:id="@+id/item1" android:title="@string/menu1"></item>
-    <item android:id="@+id/item2" android:title="@string/menu2"></item>
-    <item android:id="@+id/item3" android:title="@string/menu3"></item>
-    <item android:id="@+id/item4" android:title="@string/menu4"></item>
-    <item android:id="@+id/item5" android:title="@string/menu5"></item>
-    <item android:id="@+id/item6" android:title="@string/menu6"></item>
-    <item android:id="@+id/item7" android:title="@string/menu7"></item>
-    <item android:id="@+id/item8" android:title="@string/menu8"></item>
+<menu xmlns:android="http://schemas.android.com/apk/res/android" 
+    xmlns:sabd="http://schemas.android.com/apk/res-auto" >>
+    <item android:id="@+id/item1" android:title="@string/menu1" sabd:showAsAction="never" ></item>
+    <item android:id="@+id/item2" android:title="@string/menu2" sabd:showAsAction="never"></item>
+    <item android:id="@+id/item3" android:title="@string/menu3" sabd:showAsAction="never"></item>
+    <item android:id="@+id/item4" android:title="@string/menu4" sabd:showAsAction="never"></item>
+    <item android:id="@+id/item5" android:title="@string/menu5" sabd:showAsAction="never"></item>
+    <item android:id="@+id/item6" android:title="@string/menu6" sabd:showAsAction="never"></item>
+    <item android:id="@+id/item7" android:title="@string/menu7" sabd:showAsAction="never"></item>
+    <item android:id="@+id/item8" android:title="@string/menu8" sabd:showAsAction="never"></item>
 
 </menu>

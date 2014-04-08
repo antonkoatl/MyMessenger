@@ -12,6 +12,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -27,7 +28,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.AdapterView.OnItemClickListener;
 
-public class ActivityTwo extends Activity implements OnClickListener {
+public class ActivityTwo extends ActionBarActivity implements OnClickListener {
 	MyApplication app;
 	MyAdapter msg_adapter;
 	MyDialogsAdapter dlg_adapter;
@@ -100,6 +101,9 @@ public class ActivityTwo extends Activity implements OnClickListener {
 	        listview.setOnItemClickListener(DlgClickListener);
 	        listview.setOnScrollListener(DlgScrollListener);
 	    }
+	    
+	    getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+	    getSupportActionBar().setHomeButtonEnabled(true);
 	}
 	
 	

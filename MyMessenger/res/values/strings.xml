@@ -13,5 +13,9 @@
     <string name="menu7">Leave a review</string>
     <string name="menu8">$Donate$</string>
     <string name="vk_retry">Retry</string>
+    
+    <string name="action_item_1">Item 1</string>
+	<string name="action_item_2">Item 2</string>
+	<string name="action_item_3">Item 3</string>
 
 </resources>

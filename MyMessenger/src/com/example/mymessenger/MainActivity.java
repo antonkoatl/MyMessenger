@@ -10,6 +10,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
@@ -26,7 +27,7 @@ import com.example.mymessenger.services.Sms;
 import com.example.mymessenger.services.Vk;
 import com.vk.sdk.VKUIHelper;
 
-public class MainActivity extends Activity implements OnClickListener {
+public class MainActivity extends ActionBarActivity implements OnClickListener {
 	final int MENU_CON_MOVE = 101;
 	final int MENU_CON_DELETE = 102;
 	final int DIALOG_SMS = 1;
@@ -40,6 +41,8 @@ public class MainActivity extends Activity implements OnClickListener {
         Log.d("MainActivity", "onCreate^" + String.valueOf(savedInstanceState == null));
         
         setContentView(R.layout.activity_main);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setHomeButtonEnabled(true);
         app = (MyApplication) getApplicationContext();
         
         sPref = getSharedPreferences("MyPref", MODE_PRIVATE);
