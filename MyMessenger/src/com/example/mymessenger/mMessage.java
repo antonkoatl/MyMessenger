@@ -13,7 +13,7 @@ public class mMessage implements Parcelable {
 	public boolean out; 
 		
 	public mMessage() {
-
+		sendTime = new Time();
 	}
 	
 	@Override
@@ -32,9 +32,10 @@ public class mMessage implements Parcelable {
 	}
 
 	public mMessage(Parcel sour) {
+		sendTime = new Time();
+		
 		respondent = (mContact) sour.readParcelable(mContact.class.getClassLoader());
 		text = sour.readString();
-		sendTime = new Time();
 		sendTime.set(sour.readLong());
 		ReadState = sour.readString();
 		out = sour.createBooleanArray()[0];

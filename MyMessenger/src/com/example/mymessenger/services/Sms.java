@@ -24,6 +24,7 @@ import android.widget.Toast;
 import com.example.mymessenger.ActivityTwo;
 import com.example.mymessenger.AsyncTaskCompleteListener;
 import com.example.mymessenger.MainActivity;
+import com.example.mymessenger.MsgReceiver;
 import com.example.mymessenger.MyApplication;
 import com.example.mymessenger.SmsReceiver;
 import com.example.mymessenger.mContact;
@@ -37,7 +38,6 @@ public class Sms implements MessageService {
 	public String self_address;
 	public mDialog active_dialog;
 	private MyApplication app;
-	BroadcastReceiver br;
 
 	Map<String, mContact> contacts;
 	private AsyncTaskCompleteListener<Void> contact_data_changed;
@@ -256,12 +256,86 @@ public class Sms implements MessageService {
 	private PendingIntent mSentIntent;
     private PendingIntent mDeliveredIntent;
     
+	class mSendReceiver extends BroadcastReceiver {
+		mMessage msg;
+		
+		mSendReceiver(mMessage msg){
+			this.msg = msg;
+		}
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+        	
+        	switch (getResultCode()){
+	        	case Activity.RESULT_OK:
+	        		Toast.makeText(context, "SMS sent", Toast.LENGTH_SHORT).show();
+	                break;
+	
+	        	case SmsManager.RESULT_ERROR_GENERIC_FAILURE:
+	        		Toast.makeText(context, "SMS: Generic failure", Toast.LENGTH_SHORT).show();
+	        		break;
+	
+	            case SmsManager.RESULT_ERROR_NO_SERVICE:
+	            	Toast.makeText(context, "SMS: No service", Toast.LENGTH_SHORT).show();
+	            	break;
+	
+	            case SmsManager.RESULT_ERROR_NULL_PDU:
+	            	Toast.makeText(context, "SMS: Null PDU", Toast.LENGTH_SHORT).show();
+	            	break;
+	
+	            case SmsManager.RESULT_ERROR_RADIO_OFF:
+	            	Toast.makeText(context, "SMS: Radio off", Toast.LENGTH_SHORT).show();
+	            	break;
+            }
+        	
+        	msg.out = true;
+        	
+        	Intent intent2 = new Intent(MsgReceiver.ACTION_RECEIVE);
+			intent2.putExtra("service_type", getServiceType());
+			intent2.putExtra("msg", msg);
+			context.sendBroadcast(intent2);
+        	 
+        	context.unregisterReceiver(this);
+
+        }
+
+    };
+    
+    class mDeliveryReceiver extends BroadcastReceiver {
+    	mMessage msg;
+		
+    	mDeliveryReceiver(mMessage msg){
+			this.msg = msg;
+		}
+
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			switch(getResultCode()) {
+	            case Activity.RESULT_OK:
+	                Toast.makeText(context, "SMS Delivered", Toast.LENGTH_SHORT).show();
+	                break;
+	            case Activity.RESULT_CANCELED:
+	                Toast.makeText(context, "SMS not delivered", Toast.LENGTH_SHORT).show();
+	                break;
+            }
+			
+			context.unregisterReceiver(this);
+		}
+    	
+    };
+
+    
 	@Override
 	public boolean sendMessage(String address, String text) {
+		mMessage msg = new mMessage();
+		msg.text = text;
+		msg.respondent = getContact(address);
+		
 		SmsManager smsManager = SmsManager.getDefault();
 		smsManager.sendTextMessage(address, null, text, mSentIntent, mDeliveredIntent);
-		context.registerReceiver(mSendReceiver, new IntentFilter("CTS_SMS_SEND_ACTION"));
-		context.registerReceiver(mDeliveryReceiver, new IntentFilter("CTS_SMS_DELIVERY_ACTION"));
+		
+		context.registerReceiver(new mSendReceiver(msg), new IntentFilter("CTS_SMS_SEND_ACTION"));
+		context.registerReceiver(new mDeliveryReceiver(msg), new IntentFilter("CTS_SMS_DELIVERY_ACTION"));
 		
 		ContentValues values = new ContentValues();   
 	    values.put("address", address);	              
@@ -274,57 +348,6 @@ public class Sms implements MessageService {
 	    //smsManager.sendMultipartTextMessage(phoneNumber, null, parts, null, null);
 	}
 	
-	private BroadcastReceiver mSendReceiver = new BroadcastReceiver() {
-
-        @Override
-        public void onReceive(Context context, Intent intent) {
-        	
-        	switch (getResultCode()){
-        	case Activity.RESULT_OK:
-        		Toast.makeText(context, "SMS sent", Toast.LENGTH_SHORT).show();
-                break;
-
-        	case SmsManager.RESULT_ERROR_GENERIC_FAILURE:
-        		Toast.makeText(context, "SMS: Generic failure", Toast.LENGTH_SHORT).show();
-        		break;
-
-            case SmsManager.RESULT_ERROR_NO_SERVICE:
-            	Toast.makeText(context, "SMS: No service", Toast.LENGTH_SHORT).show();
-            	break;
-
-            case SmsManager.RESULT_ERROR_NULL_PDU:
-            	Toast.makeText(context, "SMS: Null PDU", Toast.LENGTH_SHORT).show();
-            	break;
-
-            case SmsManager.RESULT_ERROR_RADIO_OFF:
-            	Toast.makeText(context, "SMS: Radio off", Toast.LENGTH_SHORT).show();
-            	break;
-            }
-        	 
-        	context.unregisterReceiver(mSendReceiver);
-
-        }
-
-    };
-    
-    private BroadcastReceiver mDeliveryReceiver = new BroadcastReceiver() {
-
-		@Override
-		public void onReceive(Context context, Intent intent) {
-			switch(getResultCode()) {
-            case Activity.RESULT_OK:
-                Toast.makeText(context, "SMS Delivered", Toast.LENGTH_SHORT).show();
-                break;
-            case Activity.RESULT_CANCELED:
-                Toast.makeText(context, "SMS not delivered", Toast.LENGTH_SHORT).show();
-                break;
-            }
-			
-			context.unregisterReceiver(mDeliveryReceiver);
-		}
-    	
-    };
-
 	@Override
 	public String[] getStringsForMainViewMenu() {
 		String data[] = {"---", "New message", "All messages"};
@@ -423,8 +446,10 @@ public class Sms implements MessageService {
 	@Override
 	public void requestNewMessagesRunnable(
 			AsyncTaskCompleteListener<Runnable> cb) {
-		br = new SmsReceiver();	    
-	    IntentFilter intFilt = new IntentFilter(SmsReceiver.ACTION);
+		BroadcastReceiver br = new SmsReceiver();	    
+	    IntentFilter intFilt = new IntentFilter();
+	    intFilt.addAction(SmsReceiver.SMS_SENT_ACTION);
+	    intFilt.addAction(SmsReceiver.SMS_RECEIVED_ACTION);
 	    context.registerReceiver(br, intFilt);
 	}
 

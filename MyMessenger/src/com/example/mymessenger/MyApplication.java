@@ -18,13 +18,11 @@ public class MyApplication extends Application {
 	public int active_service;
 	PendingIntent pi;
 	private SharedPreferences sPref;
-	public HandlerThread netthread;
 	
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		netthread = new HandlerThread("MyNetThread");
-		netthread.start();
+
 		myMsgServices = new ArrayList<MessageService>();
 		
 		sPref = getSharedPreferences("MyPref", MODE_PRIVATE);

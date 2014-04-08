@@ -5,24 +5,27 @@ import java.util.GregorianCalendar;
 
 import com.example.mymessenger.services.MessageService;
 
+import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.telephony.SmsManager;
 import android.telephony.SmsMessage;
 import android.text.TextUtils;
 import android.text.format.Time;
 import android.widget.Toast;
 
 public class SmsReceiver extends BroadcastReceiver {
-	public static final String ACTION = "android.provider.Telephony.SMS_RECEIVED";
+	public static final String SMS_SENT_ACTION = "mymessenger.SMS_SENT";
+	public static final String SMS_RECEIVED_ACTION = "android.provider.Telephony.SMS_RECEIVED";
 	
 	@Override
 	public void onReceive(Context context, Intent intent) {
-		if (intent != null && intent.getAction() != null && ACTION.compareToIgnoreCase(intent.getAction()) == 0) {
-		    Object[] pduArray = (Object[]) intent.getExtras().get("pdus");
+		if (intent != null && intent.getAction() != null){
+			Object[] pduArray = (Object[]) intent.getExtras().get("pdus");
 		    SmsMessage[] messages = new SmsMessage[pduArray.length];
 		    for (int i = 0; i < pduArray.length; i++) {
 		        messages[i] = SmsMessage.createFromPdu((byte[]) pduArray[i]);
@@ -65,15 +68,18 @@ public class SmsReceiver extends BroadcastReceiver {
 		    MyApplication app = (MyApplication) context.getApplicationContext();
 		    MessageService sms_service = app.getService(MessageService.SMS);
 		    msg.respondent = sms_service.getContact( sms.getDisplayOriginatingAddress() );
-			
+		    
+		    msg.out = false;			
 			msg.text = sms.getDisplayMessageBody();
 			msg.sendTime = new Time();
 			msg.sendTime.set(sms.getTimestampMillis());
-		    
-		    Intent intent2 = new Intent(MsgReceiver.ACTION_RECEIVE);
+						
+			Intent intent2 = new Intent(MsgReceiver.ACTION_RECEIVE);
 		    intent2.putExtra("service_type", MessageService.SMS);
 		    intent2.putExtra("msg", msg);
 		    context.sendBroadcast(intent2);
+		    
+		    
 		}
 	}
 

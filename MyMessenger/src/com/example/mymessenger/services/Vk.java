@@ -73,7 +73,6 @@ public class Vk implements MessageService {
 	
 	private AsyncTaskCompleteListener<Void> contact_data_changed;
 	final Handler handler;
-	final Handler nwhandler;
 	
 	boolean authorised;
 	
@@ -170,9 +169,7 @@ public class Vk implements MessageService {
 		accum_cnt = new ArrayList<mContact>();
 		accum_cnt_handler_isRunning = false;
 		handler = new Handler();
-		
-		nwhandler = new Handler( ((MyApplication) context).netthread.getLooper() );
-		
+				
 		self_contact = new mContact("140195103");
 		requestContactData(self_contact);
 	}
@@ -467,7 +464,6 @@ public class Vk implements MessageService {
 				    			
 				    			msg.respondent = getContact( item.getString( "user_id" ) );
 								msg.text = item.getString( "body" );
-								msg.sendTime = new Time();
 								msg.sendTime.set(item.getLong( "date" )*1000);
 								msg.ReadState = item.getString( "read_state" );
 								
@@ -663,7 +659,6 @@ public class Vk implements MessageService {
 						  msg.respondent = getContact( from_id );
 						  msg.out = (flags & 2) == 2;
 			  		 	  msg.text = text;
-				 		  msg.sendTime = new Time();
 			 			  msg.sendTime.set(timestamp*1000);
 						 
 						  Intent intent = new Intent(MsgReceiver.ACTION_RECEIVE);
