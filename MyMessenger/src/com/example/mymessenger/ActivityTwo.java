@@ -32,14 +32,19 @@ public class ActivityTwo extends ActionBarActivity implements OnClickListener {
 	MyApplication app;
 	MyAdapter msg_adapter;
 	MyDialogsAdapter dlg_adapter;
+	MyContactsAdapter cnt_adapter;
+	
 	List<mMessage> showing_messages;
 	List<mDialog> showing_dialogs;
+	List<mContact> showing_contacts;
 	private ListView listview;
 	
 	private boolean dlg_maxed;
 	private boolean dlg_isLoading;
 	private boolean msg_maxed;
 	private boolean msg_isLoading;
+	private boolean cnt_maxed;
+	private boolean cnt_isLoading;
 	
 	public int supposedFVI;
 	private int async_complete_listener_msg_update_total_offset;
@@ -67,7 +72,7 @@ public class ActivityTwo extends ActionBarActivity implements OnClickListener {
 	    
 	    if (mode.equals("messages")) {
 	    	setContentView(R.layout.msg_list);
-	    	listview = (ListView) findViewById(R.id.msg_listview);
+	    	listview = (ListView) findViewById(R.id.listview_object);
 	    	((Button) findViewById(R.id.msg_sendbutton)).setOnClickListener(this);
 			showing_messages = new ArrayList<mMessage>();
 			
@@ -88,10 +93,10 @@ public class ActivityTwo extends ActionBarActivity implements OnClickListener {
 	    }
 	    
 	    if (mode.equals("dialogs")) {
-	    	setContentView(R.layout.two);
-	    	listview = (ListView) findViewById(R.id.msg_listview);
+	    	setContentView(R.layout.listview_simple);
+	    	listview = (ListView) findViewById(R.id.listview_object);
 	    	
-			showing_dialogs = new ArrayList<mDialog>();
+	    	showing_dialogs = new ArrayList<mDialog>();
 			
 			dlg_adapter = new MyDialogsAdapter(this, showing_dialogs);
 			listview.setAdapter(dlg_adapter);
@@ -100,6 +105,21 @@ public class ActivityTwo extends ActionBarActivity implements OnClickListener {
 			
 	        listview.setOnItemClickListener(DlgClickListener);
 	        listview.setOnScrollListener(DlgScrollListener);
+	    }
+	    
+	    if (mode.equals("contacts")) {
+	    	setContentView(R.layout.listview_simple);
+	    	listview = (ListView) findViewById(R.id.listview_object);
+	    	
+	    	showing_contacts = new ArrayList<mContact>();
+			
+			cnt_adapter = new MyContactsAdapter(this, showing_contacts);
+			listview.setAdapter(cnt_adapter);
+
+			ms.requestContacts(0, 20, async_complete_listener_cnt);
+			
+	        listview.setOnItemClickListener(CntClickListener);
+	        listview.setOnScrollListener(CntScrollListener);
 	    }
 	    
 	    getSupportActionBar().setDisplayHomeAsUpEnabled(true);
@@ -139,11 +159,6 @@ public class ActivityTwo extends ActionBarActivity implements OnClickListener {
 		}
 		
 	};
-	
-	
-	
-	
-	
 	
 	OnItemClickListener MsgClickListener = new OnItemClickListener(){
 
@@ -196,6 +211,42 @@ public class ActivityTwo extends ActionBarActivity implements OnClickListener {
 
 	
 	
+	OnItemClickListener CntClickListener = new OnItemClickListener(){
+
+		@Override
+		public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+			mContact cnt = showing_contacts.get(position);
+			MessageService ms = ((MyApplication) getApplicationContext()).getService( ((MyApplication) getApplicationContext()).active_service );
+			mDialog dlg = new mDialog();
+			dlg.participants.add(cnt);
+			ms.setActiveDialog(dlg);
+			Intent intent = new Intent(ActivityTwo.this, ActivityTwo.class);
+			intent.putExtra("mode", "messages");
+			startActivity(intent);
+		}
+		
+	};
+	
+	
+	OnScrollListener CntScrollListener = new OnScrollListener(){
+
+		@Override
+		public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+			if ( !cnt_maxed && ( (totalItemCount - (firstVisibleItem + visibleItemCount)) < 5 ) && !cnt_isLoading) {
+				MessageService ms = app.getService( app.active_service );
+				ms.requestContacts(showing_contacts.size(), 100, async_complete_listener_cnt);
+				cnt_isLoading = true;
+			}
+		}
+
+		@Override
+		public void onScrollStateChanged(AbsListView view, int scrollState) {
+			// TODO Auto-generated method stub
+			
+		}
+		
+	};
+	
 	
 	
 	
@@ -241,6 +292,25 @@ public class ActivityTwo extends ActionBarActivity implements OnClickListener {
 		}
 		
 	};
+	
+	AsyncTaskCompleteListener<List<mContact>> async_complete_listener_cnt = new AsyncTaskCompleteListener<List<mContact>>(){
+
+		@Override
+		public void onTaskComplete(List<mContact> result) {
+
+			int s = showing_contacts.size();
+			for(mContact cnt : result){
+				showing_contacts.add(cnt);
+	        }
+			cnt_adapter.notifyDataSetChanged();
+			if( (showing_contacts.size() - s) == 0 )cnt_maxed = true;
+			
+			cnt_isLoading = false;
+		
+		}
+		
+	};
+	
 	
 	
 	AsyncTaskCompleteListener<List<mMessage>> async_complete_listener_msg_update = new AsyncTaskCompleteListener<List<mMessage>>(){

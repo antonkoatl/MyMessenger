@@ -372,6 +372,13 @@ public class Sms implements MessageService {
 				con.startActivity(intent);
 			}
 			break;
+		case 1:
+			if(getActiveDialog() != null){
+				intent = new Intent(con, ActivityTwo.class);
+				intent.putExtra("mode", "contacts");
+				con.startActivity(intent);
+			}
+			break;
 		case 2:
 			intent = new Intent(con, ActivityTwo.class);
 			intent.putExtra("mode", "dialogs");
@@ -451,6 +458,13 @@ public class Sms implements MessageService {
 	    intFilt.addAction(SmsReceiver.SMS_SENT_ACTION);
 	    intFilt.addAction(SmsReceiver.SMS_RECEIVED_ACTION);
 	    context.registerReceiver(br, intFilt);
+	}
+
+	@Override
+	public void requestContacts(int offset, int count,
+			AsyncTaskCompleteListener<List<mContact>> cb) {
+		// TODO Auto-generated method stub
+		
 	}
 
 

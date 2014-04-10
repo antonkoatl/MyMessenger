@@ -5,7 +5,7 @@
     android:layout_height="fill_parent" >
 
     <ListView
-        android:id="@+id/msg_listview"
+        android:id="@+id/listview_object"
         android:layout_width="match_parent"
         android:layout_height="fill_parent"
         android:layout_above="@+id/msg_footer"

@@ -20,14 +20,14 @@ import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
-public class MyDialogsAdapter extends BaseAdapter {
+public class MyContactsAdapter extends BaseAdapter {
 	LayoutInflater lInflater;
-	List<mDialog> data;
+	List<mContact> data;
 	Context context;
 	
-	MyDialogsAdapter(Context context, List<mDialog> showing_dialogs) {
+	MyContactsAdapter(Context context, List<mContact> showing_contacts) {
 	    lInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-	    data = showing_dialogs;
+	    data = showing_contacts;
 	    this.context = context;
 	}
 
@@ -52,18 +52,15 @@ public class MyDialogsAdapter extends BaseAdapter {
 		View view = null;
 		
 	    if (view == null) {
-	      view = lInflater.inflate(R.layout.dialogs_row_layout, parent, false);
+	      view = lInflater.inflate(R.layout.contactlist_row_layout, parent, false);
 	    }
 	    
-	    mDialog dlg = data.get(position);
+	    mContact cnt = data.get(position);
 	    
 	    //boolean left = msg.sender == ((MyApplication) context.getApplicationContext()).getService( MessageService.SMS ).getMyName();
 	    
-    	TextView textLabel = (TextView) view.findViewById(R.id.dlgview_dlgname);
-    	textLabel.setText( dlg.getParticipantsNames() );
-        
-    	textLabel = (TextView) view.findViewById(R.id.dlgview_dlgtext);
-    	textLabel.setText( dlg.snippet );
+    	TextView textLabel = (TextView) view.findViewById(R.id.cntview_cntname);
+    	textLabel.setText( cnt.getName() );
 
     	//Log.d("MyDialogsAdapter", data.size() + " : " + position + " : " + dlg.getParticipantsNames());
 		return view;

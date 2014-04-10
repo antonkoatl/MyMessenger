@@ -107,7 +107,7 @@ public class MyAdapter extends BaseAdapter {
 	    	//textLabel_text.setCustomMax(metrics.widthPixels - textLabel_date.getMeasuredWidth() - 20);
 	    	
 	    	
-	    	Log.d("MyAdapter", data.size() + " : " + position + " : " + msg.text);
+	    	//Log.d("MyAdapter", data.size() + " : " + position + " : " + msg.text);
 	    	
 		}
 		

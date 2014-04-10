@@ -126,13 +126,13 @@ public class Vk implements MessageService {
 
 				    @Override
 				    public void onError(VKError error) {
-				    	Log.w("requestActiveDlg", "onError " + error.errorCode + " : " + error.errorMessage + String.valueOf(authorization_finished));
+				    	Log.w("requestNewMessagesRunnable", "onError " + error.errorCode + " : " + error.errorMessage + String.valueOf(authorization_finished));
 				    	if(error.apiError != null) HandleApiError(error);
 				        // Ошибка. Сообщаем пользователю об error.
 				    }
 				    @Override
 				    public void attemptFailed(VKRequest request, int attemptNumber, int totalAttempts) {
-				    	Log.d("getLastDlg", "attemptFailed" );
+				    	Log.d("requestNewMessagesRunnable", "attemptFailed" );
 				        // Неудачная попытка. В аргументах имеется номер попытки и общее их количество.
 				    }
 				    
@@ -184,7 +184,7 @@ public class Vk implements MessageService {
 
 					@Override
 				    public void onComplete(VKResponse response) {
-				    	Log.d("getLastDlg", "onComplete" );
+				    	Log.d("requestActiveDlg", "onComplete" );
 				        try {
 				        	JSONObject response_json = response.json.getJSONObject("response");
 				        	JSONArray items = response_json.getJSONArray("items");
@@ -217,7 +217,7 @@ public class Vk implements MessageService {
 				    }
 				    @Override
 				    public void attemptFailed(VKRequest request, int attemptNumber, int totalAttempts) {
-				    	Log.d("getLastDlg", "attemptFailed" );
+				    	Log.d("requestActiveDlg", "attemptFailed" );
 				        // Неудачная попытка. В аргументах имеется номер попытки и общее их количество.
 				    }
 				    
@@ -386,6 +386,11 @@ public class Vk implements MessageService {
 				intent.putExtra("mode", "messages");
 				con.startActivity(intent);
 			}
+			break;
+		case 1:
+			intent = new Intent(con, ActivityTwo.class);
+			intent.putExtra("mode", "contacts");
+			con.startActivity(intent);
 			break;
 		case 2:
 			intent = new Intent(con, ActivityTwo.class);
@@ -676,5 +681,73 @@ public class Vk implements MessageService {
 			}
 		}			    			
 	}
+
+
+
+	@Override
+	public void requestContacts(int offset, int count, AsyncTaskCompleteListener<List<mContact>> cb) {
+
+		VKRequest request = new VKRequest("friends.get", VKParameters.from("order", "hints",
+				VKApiConst.OFFSET, String.valueOf(offset), VKApiConst.COUNT, String.valueOf(count), VKApiConst.FIELDS, "photo_50"));
+		
+		request.secure = false;
+		VKParameters preparedParameters = request.getPreparedParameters();
+
+		VKRequestListener rl = new VKRequestListenerWithCallback<List<mContact>>(cb) {
+				    @Override				    
+				    public void onComplete(VKResponse response) {				    	
+				    	Log.d("requestContacts", "onComplete" );
+				    	List<mContact> cnts = new ArrayList<mContact>();
+				        try {
+				        	JSONObject response_json = response.json.getJSONObject("response");
+				        	JSONArray items = response_json.getJSONArray("items");
+				    		
+				    		for (int i = 0; i < items.length(); i++) {
+				    			JSONObject item = items.getJSONObject(i);
+				    			
+				    			mContact cnt;
+				    			if(contacts.get(item.getString("id")) == null){
+				    				cnt = new mContact(item.getString("id"));				    				
+				    				
+				    				String name = item.getString("first_name");
+						        	name += " " + item.getString("last_name");
+						        	
+						        	cnt.name = name;
+						        	
+						        	contacts.put(item.getString("id"), cnt);
+				    			}
+				    			cnt = contacts.get(item.getString("id"));
+					        	
+					        	cnt.online = item.getInt("online") == 1 ? true : false;
+				    			
+								cnts.add(cnt);
+				    		}
+				    		callback.onTaskComplete(cnts);
+				        	
+						} catch (JSONException e) {
+							e.printStackTrace();
+						}
+				    }
+
+				    @Override
+				    public void onError(VKError error) {
+				    	Log.w("requestContacts", "onError " + error.errorMessage + ", " + error.apiError.errorMessage);
+				    	if(error.apiError != null) HandleApiError(error);
+				        // Ошибка. Сообщаем пользователю об error.
+				    }
+				    @Override
+				    public void attemptFailed(VKRequest request, int attemptNumber, int totalAttempts) {
+				    	Log.d("requestContacts", "attemptFailed" );
+				        // Неудачная попытка. В аргументах имеется номер попытки и общее их количество.
+				    }
+				    
+				};
+
+		request.executeWithListener(rl);
+		
+	}
+
+
+
 	
 }

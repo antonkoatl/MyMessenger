@@ -33,4 +33,6 @@ public interface MessageService {
 	public void setContactDataChangedCallback(
 			AsyncTaskCompleteListener<Void> contact_data_changed);
 	public mContact getMyContact();
+	
+	public void requestContacts(int offset, int count, AsyncTaskCompleteListener<List<mContact>> cb);
 }

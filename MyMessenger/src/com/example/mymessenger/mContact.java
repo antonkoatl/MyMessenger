@@ -6,10 +6,7 @@ import android.os.Parcelable;
 public class mContact implements Parcelable {
 	public String address;
 	public String name;
-	
-	public mContact() {
-
-	}
+	public boolean online;
 	
 	public mContact(String address) {
 		this.address = address;
@@ -37,11 +34,13 @@ public class mContact implements Parcelable {
 	public void writeToParcel(Parcel dest, int flags) {
 		dest.writeString(address);
 		dest.writeString(name);
+		dest.writeBooleanArray(new boolean[]{online});
 	}
 	
 	public mContact(Parcel sour){
 		address = sour.readString();
 		name = sour.readString();
+		online = sour.createBooleanArray()[0];
 	}
 	
 	public static final Parcelable.Creator<mContact> CREATOR = new Parcelable.Creator<mContact>() { 
