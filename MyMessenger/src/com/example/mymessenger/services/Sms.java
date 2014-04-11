@@ -122,6 +122,8 @@ public class Sms implements MessageService {
 				}
 				
 				mdl.snippet = cursor.getString( cursor.getColumnIndex("snippet") );
+				mdl.last_msg_time.set(cursor.getLong( cursor.getColumnIndex("date") ));
+				mdl.msg_service = MessageService.SMS;
 				
 				return_dialogs.add(mdl);
 			} else break;
@@ -240,11 +242,11 @@ public class Sms implements MessageService {
 	    if(name_cursor != null) {
 	        if (name_cursor.moveToFirst()) {
 	        	name =      name_cursor.getString(name_cursor.getColumnIndex(ContactsContract.PhoneLookup.DISPLAY_NAME));
-	            Log.v("SmsService.getContactName", "Contact Found @ " + cnt.address);            
-	            Log.v("SmsService.getContactName", "Contact name  = " + name);
+	            //Log.v("SmsService.getContactName", "Contact Found @ " + cnt.address);            
+	            //Log.v("SmsService.getContactName", "Contact name  = " + name);
 	        } else {
 	        	name = cnt.address;
-	            Log.v("SmsService.getContactName", "Contact Not Found @ " + cnt.address);
+	            //Log.v("SmsService.getContactName", "Contact Not Found @ " + cnt.address);
 	        }
 	        name_cursor.close();
 	    }
@@ -463,7 +465,33 @@ public class Sms implements MessageService {
 	@Override
 	public void requestContacts(int offset, int count,
 			AsyncTaskCompleteListener<List<mContact>> cb) {
-		// TODO Auto-generated method stub
+		List<mContact> cnts = new ArrayList<mContact>();
+
+		// define the columns I want the query to return
+	    String[] name_projection = new String[] {
+	            ContactsContract.PhoneLookup.DISPLAY_NAME,
+	            ContactsContract.PhoneLookup._ID};
+
+	    // query time
+	    Cursor name_cursor = context.getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null, null, null, ContactsContract.PhoneLookup.DISPLAY_NAME + " ASC");
+
+	    if(name_cursor.moveToFirst()){
+	    	for (int i = 0; i < offset; i++) name_cursor.moveToNext();
+			name_cursor.moveToPrevious();
+	    }
+		
+	    for (int i = 0; i < count; i++) {
+        	if (name_cursor.moveToNext()) {
+    			//if(name_cursor.getInt( name_cursor.getColumnIndex( ContactsContract.Contacts.HAS_PHONE_NUMBER ) ) == 0)continue;
+    			
+    			mContact cnt = new mContact( name_cursor.getString( name_cursor.getColumnIndex( ContactsContract.CommonDataKinds.Phone.NUMBER ) ) );
+    			cnt.name = name_cursor.getString(name_cursor.getColumnIndex(ContactsContract.PhoneLookup.DISPLAY_NAME));
+    			cnts.add(cnt);
+    		}
+    	}
+		name_cursor.close();
+	    
+	    cb.onTaskComplete(cnts);
 		
 	}
 

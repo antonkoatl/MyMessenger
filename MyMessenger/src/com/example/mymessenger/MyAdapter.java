@@ -91,7 +91,7 @@ public class MyAdapter extends BaseAdapter {
 		    
 		    textLabel_text.setText( msg.text );
 	    	
-		    textLabel_text.setBackgroundResource(left ? R.drawable.bubble_yellow : R.drawable.bubble_green);
+		    textLabel_text.setBackgroundResource(left ? R.drawable.bubble_green : R.drawable.bubble_yellow);
 		    textLabel_text.setGravity(left ? Gravity.RIGHT : Gravity.LEFT);
 	    	    	    	
 	    	RelativeLayout.LayoutParams lp_text = (RelativeLayout.LayoutParams) textLabel_text.getLayoutParams();

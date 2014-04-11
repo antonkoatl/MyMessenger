@@ -61,6 +61,9 @@ public class MyDialogsAdapter extends BaseAdapter {
 	    
     	TextView textLabel = (TextView) view.findViewById(R.id.dlgview_dlgname);
     	textLabel.setText( dlg.getParticipantsNames() );
+    	
+    	textLabel = (TextView) view.findViewById(R.id.dlgview_dlgdate);
+    	textLabel.setText( dlg.getLastMessageTime().format("%H:%M %d.%m.%Y") );
         
     	textLabel = (TextView) view.findViewById(R.id.dlgview_dlgtext);
     	textLabel.setText( dlg.snippet );

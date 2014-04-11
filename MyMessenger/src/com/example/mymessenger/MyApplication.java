@@ -69,4 +69,15 @@ public class MyApplication extends Application {
           this.mCurrentActivity = mCurrentActivity;
     }
 
+	public void requestLastDialogs(int offset, int count,
+			AsyncTaskCompleteListener<List<mDialog>> cb) {
+		for(MessageService msg : myMsgServices){
+			msg.requestDialogs(offset, count, cb);
+		}
+	}
+
+	public void setActiveService(int msgService) {
+		active_service = msgService;
+	}
+
 }

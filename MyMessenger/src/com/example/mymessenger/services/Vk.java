@@ -103,7 +103,7 @@ public class Vk implements MessageService {
 		VKRequest request = new VKRequest("messages.getLongPollServer", VKParameters.from(VKApiConst.COUNT, String.valueOf(1)));
 		request.secure = false;
 		VKParameters preparedParameters = request.getPreparedParameters();
-		VKRequestListener rl = 	new VKRequestListenerWithCallback<Runnable>(cb) {
+		VKRequestListener rl = 	new VKRequestListenerWithCallback<Runnable>(cb, Vk.this) {
 
 					@Override
 				    public void onComplete(VKResponse response) {
@@ -123,18 +123,6 @@ public class Vk implements MessageService {
 							e.printStackTrace();
 						}
 					}
-
-				    @Override
-				    public void onError(VKError error) {
-				    	Log.w("requestNewMessagesRunnable", "onError " + error.errorCode + " : " + error.errorMessage + String.valueOf(authorization_finished));
-				    	if(error.apiError != null) HandleApiError(error);
-				        // Ошибка. Сообщаем пользователю об error.
-				    }
-				    @Override
-				    public void attemptFailed(VKRequest request, int attemptNumber, int totalAttempts) {
-				    	Log.d("requestNewMessagesRunnable", "attemptFailed" );
-				        // Неудачная попытка. В аргументах имеется номер попытки и общее их количество.
-				    }
 				    
 				};
 				
@@ -211,7 +199,7 @@ public class Vk implements MessageService {
 
 				    @Override
 				    public void onError(VKError error) {
-				    	Log.w("requestActiveDlg", "onError " + error.errorCode + " : " + error.errorMessage + String.valueOf(authorization_finished));
+				    	Log.w("requestActiveDlg", "onError " + error.errorCode + " : " + error.errorMessage + " : " + error.apiError + " : " + String.valueOf(authorization_finished));
 				    	if(error.apiError != null) HandleApiError(error);
 				        // Ошибка. Сообщаем пользователю об error.
 				    }
@@ -290,7 +278,7 @@ public class Vk implements MessageService {
 					
 					change_sender_name_callback cb = new change_sender_name_callback(accum_cnt);
 					
-					VKRequestListener rl = new VKRequestListenerWithCallback<Void>(cb) {
+					VKRequestListener rl = new VKRequestListenerWithCallback<Void>(cb, Vk.this) {
 					    @Override
 					    public void onComplete(VKResponse response) {
 					    	Log.d("VKRequestListener", "onComplete" );
@@ -315,17 +303,7 @@ public class Vk implements MessageService {
 							}
 					    }
 			
-					    @Override
-					    public void onError(VKError error) {
-					    	Log.w("VKRequestListener.requestContactData", "onError " + error.errorMessage + ", " + error.apiError.errorMessage);
-					    	if(error.apiError != null) HandleApiError(error);
-					        // Ошибка. Сообщаем пользователю об error.
-					    }
-					    @Override
-					    public void attemptFailed(VKRequest request, int attemptNumber, int totalAttempts) {
-					    	Log.d("VKRequestListener", "attemptFailed" );
-					        // Неудачная попытка. В аргументах имеется номер попытки и общее их количество.
-					    }
+					    
 					    
 					};
 			
@@ -452,7 +430,7 @@ public class Vk implements MessageService {
 		request.secure = false;
 		VKParameters preparedParameters = request.getPreparedParameters();
 
-		VKRequestListener rl = new VKRequestListenerWithCallback<List<mMessage>>(cb) {
+		VKRequestListener rl = new VKRequestListenerWithCallback<List<mMessage>>(cb, Vk.this) {
 				    @Override				    
 				    public void onComplete(VKResponse response) {				    	
 				    	Log.d("VKRequestListener", "onComplete" );
@@ -481,18 +459,6 @@ public class Vk implements MessageService {
 							e.printStackTrace();
 						}
 				    }
-
-				    @Override
-				    public void onError(VKError error) {
-				    	Log.w("VKRequestListener.requestMessages", "onError " + error.errorMessage + ", " + error.apiError.errorMessage);
-				    	if(error.apiError != null) HandleApiError(error);
-				        // Ошибка. Сообщаем пользователю об error.
-				    }
-				    @Override
-				    public void attemptFailed(VKRequest request, int attemptNumber, int totalAttempts) {
-				    	Log.d("VKRequestListener", "attemptFailed" );
-				        // Неудачная попытка. В аргументах имеется номер попытки и общее их количество.
-				    }
 				    
 				};
 
@@ -509,7 +475,7 @@ public class Vk implements MessageService {
 		request.secure = false;
 		VKParameters preparedParameters = request.getPreparedParameters();
 		
-		VKRequestListener rl = new VKRequestListenerWithCallback<List<mDialog>>(cb) {
+		VKRequestListener rl = new VKRequestListenerWithCallback<List<mDialog>>(cb, Vk.this) {
 			
 		    @Override
 			    public void onComplete(VKResponse response) {
@@ -530,6 +496,8 @@ public class Vk implements MessageService {
 	    				}
 	    				
 		    			mdl.snippet = item.getString( "body" );
+		    			mdl.last_msg_time.set(item.getLong("date")*1000);
+		    			mdl.msg_service = MessageService.VK;
 		    				
 		    			dlgs.add(mdl);
 
@@ -541,18 +509,6 @@ public class Vk implements MessageService {
 				}
 		    }
 
-		    @Override
-		    public void onError(VKError error) {
-		    	Log.w("VKRequestListener.requestDialogs", "onError " + error.errorMessage + ", " + error.apiError.errorMessage);
-		    	if(error.apiError != null) HandleApiError(error);
-		        // Ошибка. Сообщаем пользователю об error.
-		    }
-		    @Override
-		    public void attemptFailed(VKRequest request, int attemptNumber, int totalAttempts) {
-		    	Log.d("VKRequestListener", "attemptFailed" );
-		        // Неудачная попытка. В аргументах имеется номер попытки и общее их количество.
-		    }
-		    
 		};
 		
 		request.executeWithListener(rl);
@@ -586,7 +542,7 @@ public class Vk implements MessageService {
 	}
     
     
-	private void HandleApiError(VKError error){
+	public void HandleApiError(VKError error){
 		if(error.apiError.errorCode == 5){ // User authorization failed.
 			if(authorization_finished && error.request.getPreparedParameters().get(VKApiConst.ACCESS_TOKEN).equals(VKSdk.getAccessToken().accessToken) ){
 				Log.d("HandleApiError", "VKSdk.authorize: " + error.apiError.errorMessage);
@@ -693,7 +649,7 @@ public class Vk implements MessageService {
 		request.secure = false;
 		VKParameters preparedParameters = request.getPreparedParameters();
 
-		VKRequestListener rl = new VKRequestListenerWithCallback<List<mContact>>(cb) {
+		VKRequestListener rl = new VKRequestListenerWithCallback<List<mContact>>(cb, Vk.this) {
 				    @Override				    
 				    public void onComplete(VKResponse response) {				    	
 				    	Log.d("requestContacts", "onComplete" );
@@ -727,18 +683,6 @@ public class Vk implements MessageService {
 						} catch (JSONException e) {
 							e.printStackTrace();
 						}
-				    }
-
-				    @Override
-				    public void onError(VKError error) {
-				    	Log.w("requestContacts", "onError " + error.errorMessage + ", " + error.apiError.errorMessage);
-				    	if(error.apiError != null) HandleApiError(error);
-				        // Ошибка. Сообщаем пользователю об error.
-				    }
-				    @Override
-				    public void attemptFailed(VKRequest request, int attemptNumber, int totalAttempts) {
-				    	Log.d("requestContacts", "attemptFailed" );
-				        // Неудачная попытка. В аргументах имеется номер попытки и общее их количество.
 				    }
 				    
 				};

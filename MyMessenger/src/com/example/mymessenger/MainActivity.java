@@ -10,6 +10,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.ContextMenu;
@@ -34,34 +35,30 @@ public class MainActivity extends ActionBarActivity implements OnClickListener {
 	MyApplication app;
 	private SharedPreferences sPref;
 	private List<Button> buttons;
+	public ViewPager mViewPager;
+	public MyPagerAdapter pagerAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Log.d("MainActivity", "onCreate^" + String.valueOf(savedInstanceState == null));
         
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.pager);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setHomeButtonEnabled(true);
         app = (MyApplication) getApplicationContext();
+        
+        pagerAdapter = new MyPagerAdapter(getSupportFragmentManager());
+        mViewPager = (ViewPager) findViewById(R.id.pager);
+        mViewPager.setAdapter(pagerAdapter);
+
         
         sPref = getSharedPreferences("MyPref", MODE_PRIVATE);
         
         //((Vk) app.getService(MessageService.VK)).authorize(this);
 
         
-        LinearLayout ll_list = (LinearLayout) findViewById(R.id.linearlay_mainbuttons);
-
-        for(MessageService ser : app.myMsgServices){
-        	Button b = new Button(this);
-            b.setText(ser.getServiceName());
-            b.setId( getButtonIdMainScreen(ser.getServiceType()) ); 
-            b.setOnClickListener(this);
-            ll_list.addView(b);
-            registerForContextMenu(b);
-
-            Log.d("myLogs", "Service button added: " + ser.getServiceName());
-        }
+        
         
     }
 
@@ -99,19 +96,7 @@ public class MainActivity extends ActionBarActivity implements OnClickListener {
 		//VKUIHelper.onDestroy(this); 
 	} 
     
-    private int getButtonIdMainScreen(int type) {
-    	int res = 10;
-		switch(type){
-		case MessageService.SMS :
-			res += 0;
-			break;
-		case MessageService.VK :
-			res += 1;
-			break;
-		}
-		return res;
-	}
-
+    
 
 	@Override
     public boolean onCreateOptionsMenu(Menu menu) {

@@ -3,15 +3,20 @@ package com.example.mymessenger;
 import java.util.ArrayList;
 import java.util.List;
 
+import android.text.format.Time;
+
 public class mDialog {
 	public List<mMessage> messages;
 	public List<mContact> participants;
-	public int mservice;
+	public int msg_service;
+	
+	public Time last_msg_time;
 	public String snippet;
 	
 	public mDialog() {
 		messages = new ArrayList<mMessage>();
 		participants = new ArrayList<mContact>();
+		last_msg_time = new Time();
 	}
 	
 
@@ -52,5 +57,15 @@ public class mDialog {
 		}
 		
 		return res;
+	}
+
+
+	public Time getLastMessageTime() {
+		return last_msg_time;
+	}
+
+
+	public int getMsgService() {
+		return msg_service;
 	}
 }

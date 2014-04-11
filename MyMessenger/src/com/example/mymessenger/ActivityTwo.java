@@ -90,6 +90,8 @@ public class ActivityTwo extends ActionBarActivity implements OnClickListener {
 	        
 	        
 	        supposedFVI = -1;
+	        
+	        setTitle(ms.getActiveDialog().getParticipantsNames());
 	    }
 	    
 	    if (mode.equals("dialogs")) {
