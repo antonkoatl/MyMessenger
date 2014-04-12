@@ -73,7 +73,12 @@ public class MyDialogsAdapter extends BaseAdapter {
         
     	textLabel = (TextView) view.findViewById(R.id.dlgview_dlgtext);
     	textLabel.setText( dlg.snippet );
-
+    	
+    	if(dlg.participants.get(0).icon_100 != null){
+	    	ImageView iv = (ImageView) view.findViewById(R.id.dlgview_iconmain);
+	    	iv.setImageBitmap( dlg.participants.get(0).icon_100 );
+    	}
+    	
     	//Log.d("MyDialogsAdapter", data.size() + " : " + position + " : " + dlg.getParticipantsNames());
 		return view;
 	}

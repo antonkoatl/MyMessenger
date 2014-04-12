@@ -30,6 +30,7 @@ import android.widget.Toast;
 
 import com.example.mymessenger.ActivityTwo;
 import com.example.mymessenger.AsyncTaskCompleteListener;
+import com.example.mymessenger.DownloadService;
 import com.example.mymessenger.MainActivity;
 import com.example.mymessenger.MsgReceiver;
 import com.example.mymessenger.MyApplication;
@@ -37,6 +38,7 @@ import com.example.mymessenger.mContact;
 import com.example.mymessenger.mDialog;
 import com.example.mymessenger.mMessage;
 import com.example.mymessenger.services.Sms.load_msgs_async;
+import com.example.mymessenger.download_waiter;
 import com.vk.sdk.VKAccessToken;
 import com.vk.sdk.VKCaptchaDialog;
 import com.vk.sdk.VKScope;
@@ -77,6 +79,8 @@ public class Vk implements MessageService {
 	boolean authorised;
 	
 	mContact self_contact;
+	
+	
 	
 	public void requestNewMessagesRunnable(AsyncTaskCompleteListener<Runnable> cb){
 		if(!authorised){
@@ -264,7 +268,7 @@ public class Vk implements MessageService {
 						uids += "," + cnt_temp.get(i).address;
 					}
 		
-					VKRequest request = new VKRequest("users.get", VKParameters.from(VKApiConst.USER_IDS, uids));
+					VKRequest request = new VKRequest("users.get", VKParameters.from(VKApiConst.USER_IDS, uids, VKApiConst.FIELDS, "photo_100"));
 					request.secure = false;
 					VKParameters preparedParameters = request.getPreparedParameters();
 					
@@ -284,6 +288,15 @@ public class Vk implements MessageService {
 						        	String name = item.getString("first_name");
 						        	name += " " + item.getString("last_name");
 						        	
+						        	String photo_100_url = item.getString("photo_100");
+						        	
+						        	Intent intent = new Intent(context, DownloadService.class);
+						            intent.putExtra("url", photo_100_url);
+						            context.getApplicationContext().startService(intent);
+						        	
+						            download_waiter tw = new download_waiter(photo_100_url, "cnt_icon_100", cnt);
+						            ((MyApplication) context).dl_waiters.add(tw);
+						        			
 						        	cnt.name = name;
 						        	
 						        	//Log.d("requestContactData", "Contact data for " + cnt.address + " received: " + cnt.name);
@@ -633,7 +646,7 @@ public class Vk implements MessageService {
 	public void requestContacts(int offset, int count, AsyncTaskCompleteListener<List<mContact>> cb) {
 
 		VKRequest request = new VKRequest("friends.get", VKParameters.from("order", "hints",
-				VKApiConst.OFFSET, String.valueOf(offset), VKApiConst.COUNT, String.valueOf(count), VKApiConst.FIELDS, "photo_50"));
+				VKApiConst.OFFSET, String.valueOf(offset), VKApiConst.COUNT, String.valueOf(count), VKApiConst.FIELDS, "photo_100"));
 		
 		request.secure = false;
 		VKParameters preparedParameters = request.getPreparedParameters();
@@ -659,6 +672,15 @@ public class Vk implements MessageService {
 						        	
 						        	cnt.name = name;
 						        	
+						        	String photo_100_url = item.getString("photo_100");
+						        	
+						        	Intent intent = new Intent(context, DownloadService.class);
+						            intent.putExtra("url", photo_100_url);
+						            context.getApplicationContext().startService(intent);
+						        	
+						            download_waiter tw = new download_waiter(photo_100_url, "cnt_icon_100", cnt);
+						            ((MyApplication) context).dl_waiters.add(tw);
+						        	
 						        	contacts.put(item.getString("id"), cnt);
 				    			}
 				    			cnt = contacts.get(item.getString("id"));
@@ -682,5 +704,6 @@ public class Vk implements MessageService {
 
 
 
+	
 	
 }

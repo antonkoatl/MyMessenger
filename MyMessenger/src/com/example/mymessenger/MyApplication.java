@@ -1,6 +1,7 @@
 package com.example.mymessenger;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import com.example.mymessenger.services.MessageService;
 import com.example.mymessenger.services.Sms;
@@ -20,6 +21,7 @@ public class MyApplication extends Application {
 	private SharedPreferences sPref;
 	
 	public List<AsyncTaskCompleteListener<Void>> cnts_updaters;
+	public List<download_waiter> dl_waiters;
 	
 	@Override
 	public void onCreate() {
@@ -41,6 +43,8 @@ public class MyApplication extends Application {
         Intent intent1 = new Intent(this, UpdateService.class);
 
 		startService(intent1);
+		
+		dl_waiters = new ArrayList<download_waiter>();
 
 	}
 	
@@ -104,4 +108,20 @@ public class MyApplication extends Application {
 		}
 		
 	}
+
+	public List<download_waiter> getDownloadWaiters(String url_path) {
+		List<download_waiter> dws = new ArrayList<download_waiter>();
+
+		Iterator<download_waiter> it = dl_waiters.iterator();
+		while (it.hasNext()) {
+			download_waiter dw = it.next();
+			if(dw.url.equals(url_path)){
+				dws.add(dw);
+				it.remove();
+			}
+		}
+		return dws;
+	}
+	
+	
 }
