@@ -253,7 +253,7 @@ public class Sms implements MessageService {
 		    
 
 		cnt.name = name;
-		((MyApplication) context).triggerCntsUpdaters();
+		//((MyApplication) context).triggerCntsUpdaters();
 	}
 		
 	private PendingIntent mSentIntent;

@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.example.mymessenger.services.MessageService;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -59,7 +60,12 @@ public class MyDialogsAdapter extends BaseAdapter {
 	    
 	    //boolean left = msg.sender == ((MyApplication) context.getApplicationContext()).getService( MessageService.SMS ).getMyName();
 	    
-    	TextView textLabel = (TextView) view.findViewById(R.id.dlgview_dlgname);
+	    MyApplication app = (MyApplication) ((Activity) context).getApplication();
+	    
+	    TextView textLabel = (TextView) view.findViewById(R.id.dlgview_dlgsername);
+    	textLabel.setText( app.getService( dlg.getMsgService() ).getServiceName() );
+	    
+    	textLabel = (TextView) view.findViewById(R.id.dlgview_dlgname);
     	textLabel.setText( dlg.getParticipantsNames() );
     	
     	textLabel = (TextView) view.findViewById(R.id.dlgview_dlgdate);

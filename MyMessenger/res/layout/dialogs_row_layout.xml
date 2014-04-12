@@ -13,17 +13,18 @@
 		
 	<TextView
 	    android:id="@+id/dlgview_dlgname"
-	    android:layout_width="128dp"
-	    android:layout_height="32dp"
-	    android:layout_alignParentTop="true"
+	    android:layout_width="256dp"
+	    android:layout_height="16dp"
+	    android:layout_below="@+id/dlgview_dlgsername"
 	    android:layout_toRightOf="@id/dlgview_iconmain"
-	    android:textSize="16sp" />
+	    android:text="Иванов Иван"
+	    android:textSize="14sp" />
 
 	<TextView
 	    android:id="@+id/dlgview_dlgdate"
 	    android:layout_width="128dp"
-	    android:layout_height="32dp"
-	    android:layout_toRightOf="@id/dlgview_dlgname"
+	    android:layout_height="16dp"
+	    android:layout_toRightOf="@id/dlgview_dlgsername"
 	    android:text="00:00 00.00.0000"
 	    android:textSize="14sp" />
 
@@ -43,8 +44,18 @@
 		    android:id="@+id/dlgview_dlgtext"
 		    android:layout_width="match_parent"
 		    android:layout_height="match_parent"
-		    android:gravity="center_vertical" />
+		    android:gravity="center_vertical"
+		    android:text="Simple text message"
+		    android:textSize="14sp" />
 
 	</LinearLayout>
+
+	<TextView
+	    android:id="@+id/dlgview_dlgsername"
+	    android:layout_width="128dp"
+	    android:layout_height="16dp"
+	    android:layout_toRightOf="@id/dlgview_iconmain"
+	    android:text="Sms"
+	    android:textSize="14sp" />
 
 </RelativeLayout>
