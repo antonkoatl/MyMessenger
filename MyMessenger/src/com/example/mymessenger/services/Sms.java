@@ -252,7 +252,8 @@ public class Sms implements MessageService {
 	    }
 		    
 
-		cnt.name = name;		
+		cnt.name = name;
+		((MyApplication) context).triggerCntsUpdaters();
 	}
 		
 	private PendingIntent mSentIntent;
@@ -443,13 +444,6 @@ public class Sms implements MessageService {
 		protected List<mDialog> doInBackground(Integer... params) {
 			return getDialogs(params[0], params[1]);
 		}  
-	}
-
-
-	@Override
-	public void setContactDataChangedCallback(
-			AsyncTaskCompleteListener<Void> contact_data_changed) {
-		this.contact_data_changed = contact_data_changed;		
 	}
 
 	@Override

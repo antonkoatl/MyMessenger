@@ -61,6 +61,7 @@ public class Vk implements MessageService {
 	List<mMessage> return_msgs;
 	
 	List<mContact> accum_cnt;
+	
 	boolean accum_cnt_handler_isRunning;
 	
 	Map<String, mContact> contacts;
@@ -70,8 +71,7 @@ public class Vk implements MessageService {
 	private boolean authorization_finished;
 	private AsyncTaskCompleteListener<List<mMessage>> requestMessagesCallback;
 	private AsyncTaskCompleteListener<List<mDialog>> requestDialogsCallback;
-	
-	private AsyncTaskCompleteListener<Void> contact_data_changed;
+
 	final Handler handler;
 	
 	boolean authorised;
@@ -155,6 +155,7 @@ public class Vk implements MessageService {
 		contacts = new HashMap<String, mContact>();
 		
 		accum_cnt = new ArrayList<mContact>();
+		
 		accum_cnt_handler_isRunning = false;
 		handler = new Handler();
 				
@@ -244,41 +245,32 @@ public class Vk implements MessageService {
 	@Override
 	public void requestContactData(mContact cnt) {
 		accum_cnt.add(cnt);
+		//Log.d("requestContactData", "Requested new contact: " + cnt.address);
 		
 		if(!accum_cnt_handler_isRunning){
 			accum_cnt_handler_isRunning = true;
 			
 			handler.postDelayed(new Runnable() {
+
 				@Override
 				public void run() {
 					//Do something after 500ms
-					String uids = accum_cnt.get(0).address;
-					for(int i = 1; i < accum_cnt.size(); i++){
-						uids += "," + accum_cnt.get(i).address;
+					//Log.d("requestContactData", "Starting downloading contact data...");
+					final List<mContact> cnt_temp = new ArrayList<mContact>(accum_cnt);
+					accum_cnt.clear();
+					
+					String uids = cnt_temp.get(0).address;
+					for(int i = 1; i < cnt_temp.size(); i++){
+						uids += "," + cnt_temp.get(i).address;
 					}
 		
 					VKRequest request = new VKRequest("users.get", VKParameters.from(VKApiConst.USER_IDS, uids));
 					request.secure = false;
 					VKParameters preparedParameters = request.getPreparedParameters();
 					
-					class change_sender_name_callback implements AsyncTaskCompleteListener<Void>{
-						public List<mContact> cnt;
-						
-						public change_sender_name_callback(List<mContact> cnt) {
-							this.cnt = new ArrayList<mContact>(cnt);
-							cnt.clear();
-						}
-			
-						@Override
-						public void onTaskComplete(Void result) {
-							accum_cnt_handler_isRunning = false;
-						}
-						
-					};
 					
-					change_sender_name_callback cb = new change_sender_name_callback(accum_cnt);
 					
-					VKRequestListener rl = new VKRequestListenerWithCallback<Void>(cb, Vk.this) {
+					VKRequestListener rl = new VKRequestListenerWithCallback<Void>(null, Vk.this) {
 					    @Override
 					    public void onComplete(VKResponse response) {
 					    	Log.d("VKRequestListener", "onComplete" );
@@ -286,17 +278,21 @@ public class Vk implements MessageService {
 					        	JSONArray response_json = response.json.getJSONArray("response");
 					        	for(int i = 0; i < response_json.length(); i++){
 						        	JSONObject item = response_json.getJSONObject(i);
-						        	change_sender_name_callback data_cb = (change_sender_name_callback) callback;
-						        	mContact cnt = data_cb.cnt.get(i);
+
+						        	mContact cnt = cnt_temp.get(i);
 						        	
 						        	String name = item.getString("first_name");
 						        	name += " " + item.getString("last_name");
 						        	
 						        	cnt.name = name;
 						        	
-						        	callback.onTaskComplete(null);
+						        	//Log.d("requestContactData", "Contact data for " + cnt.address + " received: " + cnt.name);
+						        	
 					        	}
-					        	if(contact_data_changed != null)contact_data_changed.onTaskComplete(null);
+					        	cnt_temp.clear();
+					        	accum_cnt_handler_isRunning = false;
+					        	
+					        	((MyApplication) context).triggerCntsUpdaters(); 
 					        	
 							} catch (JSONException e) {
 								e.printStackTrace();
@@ -532,13 +528,6 @@ public class Vk implements MessageService {
 		}
 		
 		return cnt;
-	}
-
-	@Override
-	public void setContactDataChangedCallback(
-			AsyncTaskCompleteListener<Void> contact_data_changed) {
-		this.contact_data_changed = contact_data_changed;
-		
 	}
     
     

@@ -48,7 +48,7 @@ public class MainActivity extends ActionBarActivity implements OnClickListener {
         getSupportActionBar().setHomeButtonEnabled(true);
         app = (MyApplication) getApplicationContext();
         
-        pagerAdapter = new MyPagerAdapter(getSupportFragmentManager());
+        pagerAdapter = new MyPagerAdapter(getSupportFragmentManager(), this);
         mViewPager = (ViewPager) findViewById(R.id.pager);
         mViewPager.setAdapter(pagerAdapter);
 

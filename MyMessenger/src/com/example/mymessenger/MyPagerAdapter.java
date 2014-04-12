@@ -2,6 +2,8 @@ package com.example.mymessenger;
 
 import java.util.List;
 
+import android.app.Activity;
+import android.content.Context;
 import android.os.Parcelable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -14,10 +16,11 @@ import android.view.ViewGroup;
 
 public class MyPagerAdapter extends FragmentPagerAdapter {
 	SparseArray<Fragment> registeredFragments = new SparseArray<Fragment>();
+	Context context;
 	
-	public MyPagerAdapter(FragmentManager fm) {
+	public MyPagerAdapter(FragmentManager fm, Context context) {
 		super(fm);
-		// TODO Auto-generated constructor stub
+		this.context = context;
 	}
 
 	@Override
@@ -41,7 +44,12 @@ public class MyPagerAdapter extends FragmentPagerAdapter {
 	// Returns the page title for the top indicator
     @Override
     public CharSequence getPageTitle(int position) {
-        return "Page " + position;
+    	if(position == 2){
+    		MyApplication app = ((MyApplication) ((Activity) context).getApplication()); 
+    		if (!(app.getActiveService() == null) && !(app.getActiveService().getActiveDialog() == null))
+    			return app.getActiveService().getActiveDialog().getParticipantsNames();
+    		else return "---";
+    	} else return "Page " + position;
     }
     
     @Override

@@ -30,7 +30,7 @@ import android.widget.AdapterView.OnItemClickListener;
 
 public class ActivityTwo extends ActionBarActivity implements OnClickListener {
 	MyApplication app;
-	MyAdapter msg_adapter;
+	MyMsgAdapter msg_adapter;
 	MyDialogsAdapter dlg_adapter;
 	MyContactsAdapter cnt_adapter;
 	
@@ -66,8 +66,6 @@ public class ActivityTwo extends ActionBarActivity implements OnClickListener {
 		Intent intent = getIntent();	    
 	    mode = intent.getStringExtra("mode");
 	    
-	    app.getActiveService().setContactDataChangedCallback(contact_data_changed);
-	    
 	    MessageService ms = app.getActiveService();
 	    
 	    if (mode.equals("messages")) {
@@ -76,7 +74,7 @@ public class ActivityTwo extends ActionBarActivity implements OnClickListener {
 	    	((Button) findViewById(R.id.msg_sendbutton)).setOnClickListener(this);
 			showing_messages = new ArrayList<mMessage>();
 			
-			msg_adapter = new MyAdapter(this, showing_messages);
+			msg_adapter = new MyMsgAdapter(this, showing_messages);
 			listview.setAdapter(msg_adapter);
 
 			ms.requestMessages(ms.getActiveDialog(), 0, 20, async_complete_listener_msg);

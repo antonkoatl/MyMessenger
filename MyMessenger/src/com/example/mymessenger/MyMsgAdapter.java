@@ -22,13 +22,13 @@ import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
-public class MyAdapter extends BaseAdapter {
+public class MyMsgAdapter extends BaseAdapter {
 	LayoutInflater lInflater;
 	List<mMessage> data;
 	Context context;
 	public boolean isLoading;
 	
-	MyAdapter(Context context, List<mMessage> msgs) {
+	MyMsgAdapter(Context context, List<mMessage> msgs) {
 	    lInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 	    data = msgs;
 	    isLoading = false;
@@ -57,11 +57,11 @@ public class MyAdapter extends BaseAdapter {
 		
 		if(position == 0 && isLoading){
 			if (view == null) {
-				view = lInflater.inflate(R.layout.list_row_layout, parent, false);
+				view = lInflater.inflate(R.layout.list_row_layout_loading, parent, false);
 			}
 			
-			TextView textLabel = (TextView) view.findViewById(R.id.msg_text);
-	    	textLabel.setText( "loading..." );
+			//TextView textLabel = (TextView) view.findViewById(R.id.msg_text);
+	    	//textLabel.setText( "loading..." );
 	    	
 			
 		} else {		

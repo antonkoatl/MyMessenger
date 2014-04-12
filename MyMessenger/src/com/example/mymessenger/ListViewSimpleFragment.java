@@ -33,7 +33,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 	private boolean msg_isLoading;
 	private boolean dlg_isLoading;
 	int async_complete_listener_msg_update_total_offset;
-	MyAdapter msg_adapter;
+	MyMsgAdapter msg_adapter;
 	MyDialogsAdapter dlg_adapter;
 	private ListView listview;
 	MyApplication app;
@@ -58,7 +58,6 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 		msg_isLoading = false;
 		View rootView = null;
 
-	    //app.getActiveService().setContactDataChangedCallback(contact_data_changed);
 	    //app.active_service = MessageService.VK;
 	    
 	    
@@ -69,7 +68,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 	    	((Button) rootView.findViewById(R.id.msg_sendbutton)).setOnClickListener(this);
 			showing_messages = new ArrayList<mMessage>();
 			
-			msg_adapter = new MyAdapter(getActivity(), showing_messages);
+			msg_adapter = new MyMsgAdapter(getActivity(), showing_messages);
 			listview.setAdapter(msg_adapter);
 			
 			MessageService ms = app.getActiveService();
@@ -129,8 +128,24 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 	
 	@Override
 	public void onResume(){
-		super.onStart();
+		super.onResume();
+		app.registerCntsUpdater(updater);
 		Log.d("ListViewSimpleFragment", "onResume");
+		// Apply any required UI change now that the Fragment is visible.
+	}
+	
+	@Override
+	public void onPause(){
+		super.onPause();
+		app.unregisterCntsUpdater(updater);
+		Log.d("ListViewSimpleFragment", "onPause");
+		// Apply any required UI change now that the Fragment is visible.
+	}
+	
+	@Override
+	public void onStop(){
+		super.onStop();
+		Log.d("ListViewSimpleFragment", "onStop");
 		// Apply any required UI change now that the Fragment is visible.
 	}
 	
@@ -171,9 +186,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 	}
 	
 	
-	
-	
-	AsyncTaskCompleteListener<Void> contact_data_changed = new AsyncTaskCompleteListener<Void>(){
+	AsyncTaskCompleteListener<Void> updater = new AsyncTaskCompleteListener<Void>(){
 		@Override
 		public void onTaskComplete(Void result) {
 			if(msg_adapter != null)msg_adapter.notifyDataSetChanged();
@@ -317,7 +330,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 				supposedFVI = -1;
 			}
 			
-			Log.d("MsgScrollListener", String.valueOf(firstVisibleItem) + ", " + String.valueOf(listview.getFirstVisiblePosition()));
+			//Log.d("MsgScrollListener", String.valueOf(firstVisibleItem) + ", " + String.valueOf(listview.getFirstVisiblePosition()));
 			if (visibleItemCount == 0) return;
 			if ( !msg_maxed && ( firstVisibleItem == 0 ) && !msg_isLoading ) {
 				

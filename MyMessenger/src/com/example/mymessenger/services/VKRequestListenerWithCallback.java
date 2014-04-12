@@ -22,7 +22,7 @@ public abstract class VKRequestListenerWithCallback<T> extends VKRequestListener
 	
 	@Override
     public void onError(VKError error) {
-    	Log.w("VKRequestListener", error.request +  " :: onError " + error.errorCode + ", " + error.errorMessage);
+    	Log.w("VKRequestListener", error.request.methodName +  " :: onError " + error.errorCode + ", " + error.errorMessage);
     	if(error.apiError != null) vk.HandleApiError(error);
         // Ошибка. Сообщаем пользователю об error.
     }

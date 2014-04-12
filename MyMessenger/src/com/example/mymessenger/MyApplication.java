@@ -19,11 +19,14 @@ public class MyApplication extends Application {
 	PendingIntent pi;
 	private SharedPreferences sPref;
 	
+	public List<AsyncTaskCompleteListener<Void>> cnts_updaters;
+	
 	@Override
 	public void onCreate() {
 		super.onCreate();
 
 		myMsgServices = new ArrayList<MessageService>();
+		cnts_updaters = new ArrayList<AsyncTaskCompleteListener<Void>>(); 
 		
 		sPref = getSharedPreferences("MyPref", MODE_PRIVATE);
         String using_services[] = sPref.getString("usingservices", "sms,vk").split(",");
@@ -80,4 +83,25 @@ public class MyApplication extends Application {
 		active_service = msgService;
 	}
 
+	
+	public void registerCntsUpdater(AsyncTaskCompleteListener<Void> updater){
+		if(!cnts_updaters.contains(updater))cnts_updaters.add(updater);
+	}
+	
+	public void unregisterCntsUpdater(AsyncTaskCompleteListener<Void> updater){
+		cnts_updaters.remove(updater);
+	}
+	
+	public void triggerCntsUpdaters(){
+		if(getCurrentActivity() != null){
+			getCurrentActivity().runOnUiThread(new Runnable() {
+			     @Override
+			     public void run() {
+			    	 for(AsyncTaskCompleteListener<Void> updater : cnts_updaters)
+			 			updater.onTaskComplete(null);
+			    }
+			});
+		}
+		
+	}
 }
