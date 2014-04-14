@@ -185,7 +185,7 @@ public class Sms implements MessageService {
 				msg.text = cursor.getString( cursor.getColumnIndex("body") );
 				msg.sendTime = new Time();
 				msg.sendTime.set(cursor.getLong( cursor.getColumnIndex("date") ) );
-				msg.ReadState = cursor.getString( cursor.getColumnIndex("read") );
+				msg.readed = cursor.getInt( cursor.getColumnIndex("read") ) == 1 ? true : false;
 				msg.respondent = getContact(address);
 				if (cursor.getString(cursor.getColumnIndex("type")).contains("1")) { //Inbox
 					msg.out = false;

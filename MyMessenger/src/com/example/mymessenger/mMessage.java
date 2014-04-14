@@ -9,8 +9,9 @@ public class mMessage implements Parcelable {
 	
 	public String text;
 	public Time sendTime;
-	public String ReadState;
-	public boolean out; 
+	
+	public boolean out;
+	public boolean readed;
 		
 	public mMessage() {
 		sendTime = new Time();
@@ -27,8 +28,7 @@ public class mMessage implements Parcelable {
 		dest.writeParcelable(respondent, flags);
 		dest.writeString(text);
 		dest.writeLong(sendTime.toMillis(true));
-		dest.writeString(ReadState);
-		dest.writeBooleanArray(new boolean[]{out});
+		dest.writeBooleanArray(new boolean[]{out, readed});
 	}
 
 	public mMessage(Parcel sour) {
@@ -37,8 +37,9 @@ public class mMessage implements Parcelable {
 		respondent = (mContact) sour.readParcelable(mContact.class.getClassLoader());
 		text = sour.readString();
 		sendTime.set(sour.readLong());
-		ReadState = sour.readString();
-		out = sour.createBooleanArray()[0];
+		boolean ta[] = sour.createBooleanArray(); 
+		out = ta[0];
+		readed = ta[1];
 	}
 	
 	public static final Parcelable.Creator<mMessage> CREATOR = new Parcelable.Creator<mMessage>() { 

@@ -22,11 +22,13 @@ public class MyApplication extends Application {
 	
 	public List<AsyncTaskCompleteListener<Void>> cnts_updaters;
 	public List<download_waiter> dl_waiters;
+	public DBHelper dbHelper;
 	
 	@Override
 	public void onCreate() {
 		super.onCreate();
-
+		
+		
 		myMsgServices = new ArrayList<MessageService>();
 		cnts_updaters = new ArrayList<AsyncTaskCompleteListener<Void>>(); 
 		
@@ -40,12 +42,14 @@ public class MyApplication extends Application {
         		addMsgService(new Vk(this));
         }
         
+        dbHelper = new DBHelper(this);
+        
         Intent intent1 = new Intent(this, UpdateService.class);
 
 		startService(intent1);
 		
 		dl_waiters = new ArrayList<download_waiter>();
-
+		
 	}
 	
 	public void addMsgService(MessageService mServive){

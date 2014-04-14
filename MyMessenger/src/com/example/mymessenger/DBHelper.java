@@ -1,24 +1,60 @@
 package com.example.mymessenger;
 
+import com.example.mymessenger.services.MessageService;
+
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteDatabase.CursorFactory;
 import android.database.sqlite.SQLiteOpenHelper;
 
 public class DBHelper extends SQLiteOpenHelper {
+	public static final String dbName = "myDB";
+	public static final String colId = "_id";
+	public static final String colRespondent = "respondent";
+	public static final String colSendtime = "send_time";
+	public static final String colBody = "body";
+	public static final String colFlags = "flags";
+	public static final String colDlgkey = "dlg_key";
+	
+	public static final String colParticipants = "participants";
+	public static final String colLastmsgtime = "last_msg_time";
+	public static final String colSnippet = "snippet";
+	
+	
+	MyApplication app;
 
 	public DBHelper(Context context) {
 		super(context, "myDB", null, 1);
-		// TODO Auto-generated constructor stub
+		app = (MyApplication) context;
 	}
 
 	@Override
 	public void onCreate(SQLiteDatabase db) {
-		// TODO Auto-generated method stub
-		db.execSQL("create table mytable ("
-		          + "id integer primary key autoincrement," 
-		          + "name text,"
-		          + "email text" + ");");
+		for(MessageService ms : app.myMsgServices){
+			String tn_msgs = "msgs_" + String.valueOf(ms.getServiceType());
+			String tn_dlgs = "dlgs_" + String.valueOf(ms.getServiceType());
+			
+			db.execSQL("create table " + tn_msgs + " ("
+			          + colId + " integer primary key autoincrement," 
+			          + colRespondent + " text,"
+			          + colSendtime + " integer,"
+			          + colBody + " text,"
+			          + colFlags + " integer,"
+			          + colDlgkey + " integer" + ");");
+			
+			db.execSQL("create table " + tn_dlgs + " ("
+			          + colId + " integer primary key autoincrement," 
+			          + colParticipants + " text unique,"
+			          + colLastmsgtime + " integer,"
+			          + colSnippet + " text" + ");");
+			
+			db.execSQL("CREATE TRIGGER tg_dlg_" + tn_msgs
+					  + " Before INSERT ON " + tn_msgs
+					  + " FOR EACH ROW BEGIN"
+					  + " SELECT CASE WHEN ((SELECT " + colId + " FROM " + tn_dlgs + " WHERE " + colId + " =new." + colDlgkey + " ) IS NULL)"
+					  + " THEN RAISE (ABORT,'Foreign Key Violation') END;"
+					  + " END");
+		}
 	}
 
 	@Override

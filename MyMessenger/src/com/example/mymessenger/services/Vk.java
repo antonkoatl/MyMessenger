@@ -17,9 +17,11 @@ import org.json.JSONObject;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Handler;
@@ -30,6 +32,7 @@ import android.widget.Toast;
 
 import com.example.mymessenger.ActivityTwo;
 import com.example.mymessenger.AsyncTaskCompleteListener;
+import com.example.mymessenger.DBHelper;
 import com.example.mymessenger.DownloadService;
 import com.example.mymessenger.MainActivity;
 import com.example.mymessenger.MsgReceiver;
@@ -55,6 +58,7 @@ import com.vk.sdk.api.VKResponse;
 
 public class Vk implements MessageService {
 	private Context context;
+	private MyApplication app;
 	private static String sTokenKey = "VK_ACCESS_TOKEN";
 	private static String[] sMyScope = new String[]{VKScope.FRIENDS, VKScope.WALL, VKScope.PHOTOS, VKScope.NOHTTPS, VKScope.MESSAGES};
 	public mDialog active_dlg;
@@ -99,7 +103,7 @@ public class Vk implements MessageService {
 			};
 			
 			Runnable r = new Runnable_r(cb);
-			handler.postDelayed(r, 1000);
+			handler.postDelayed(r, 10000);
 			Log.d("requestNewMessagesRunnable", "Not authorised, retrying in 1 sec");
 			return;
 		}
@@ -145,6 +149,7 @@ public class Vk implements MessageService {
 	
 	public Vk(Context context) {
 		this.context = context;
+		app = (MyApplication) context;
 		authorization_finished = true;
 		authorised = false;
 		
@@ -457,7 +462,7 @@ public class Vk implements MessageService {
 				    			msg.respondent = getContact( item.getString( "user_id" ) );
 								msg.text = item.getString( "body" );
 								msg.sendTime.set(item.getLong( "date" )*1000);
-								msg.ReadState = item.getString( "read_state" );
+								msg.readed = item.getInt( "read_state" ) == 1 ? true : false;
 								
 				    				
 								msgs.add(msg);
@@ -477,6 +482,9 @@ public class Vk implements MessageService {
 	@Override
 	public void requestDialogs(int offset, int count,
 			AsyncTaskCompleteListener<List<mDialog>> cb) {
+		
+		
+		
 
 		VKRequest request = new VKRequest("messages.getDialogs", VKParameters.from(VKApiConst.COUNT, String.valueOf(count),
 				VKApiConst.OFFSET, String.valueOf(offset),
@@ -486,7 +494,7 @@ public class Vk implements MessageService {
 		
 		VKRequestListener rl = new VKRequestListenerWithCallback<List<mDialog>>(cb, Vk.this) {
 			
-		    @Override
+				@Override
 			    public void onComplete(VKResponse response) {
 		    	Log.d("VKRequestListener", "onComplete" );
 		    	List<mDialog> dlgs = new ArrayList<mDialog>();
@@ -509,9 +517,62 @@ public class Vk implements MessageService {
 		    			mdl.msg_service = MessageService.VK;
 		    				
 		    			dlgs.add(mdl);
-
 		    		}
-		    		callback.onTaskComplete(dlgs);
+		    		
+		    		SQLiteDatabase db = app.dbHelper.getWritableDatabase();
+		    		String my_table_name = "dlgs_" + String.valueOf(getServiceType());		    		
+		    		
+		    		boolean all_new = true;
+		    		
+		    		for(mDialog dlg : dlgs){
+		    			String selection = DBHelper.colParticipants + " = ?";
+		    			String[] selectionArgs = {dlg.getParticipantsNames()};
+		    			Cursor c = db.query(my_table_name, null, selection, selectionArgs, null, null, null);
+		    			
+		    			if(c.moveToFirst()){
+		    				Time last_time_in_db = new Time();
+		    				last_time_in_db.set( c.getLong( c.getColumnIndex(DBHelper.colLastmsgtime)) );
+		    				
+		    				if(dlg.last_msg_time.after(last_time_in_db)){
+		    					//update
+		    					int id = c.getInt(c.getColumnIndex(DBHelper.colId));
+		    					c.close();
+			    				
+			    				ContentValues cv = new ContentValues();
+			    				cv.put(DBHelper.colParticipants, dlg.getParticipantsNames());
+			    				cv.put(DBHelper.colLastmsgtime, dlg.last_msg_time.toMillis(false));
+			    				cv.put(DBHelper.colSnippet, dlg.snippet);
+			    				
+			    				db.update(my_table_name, cv, "_id=" + id, null);
+		    				} else {
+		    					//not update
+		    					c.close();
+		    					all_new = false;
+		    					break;
+		    				}		    				
+		    			} else {
+		    				//add
+		    				c.close();
+		    				
+		    				ContentValues cv = new ContentValues();
+		    				cv.put(DBHelper.colParticipants, dlg.getParticipantsNames());
+		    				cv.put(DBHelper.colLastmsgtime, dlg.last_msg_time.toMillis(false));
+		    				cv.put(DBHelper.colSnippet, dlg.snippet);
+		    				
+		    				db.insert(my_table_name, null, cv);
+		    			}		    					    			
+		    		}
+		    		
+		    		db.close();
+		    		
+		    		if(all_new){
+		    			int offset = Integer.valueOf((String) response.request.getMethodParameters().get(VKApiConst.OFFSET));
+		    			int count = Integer.valueOf((String) response.request.getMethodParameters().get(VKApiConst.COUNT));
+		    			if(dlgs.size() == count)
+		    				requestDialogs(offset + count, count, null);
+		    		}
+		    		
+		    		if(callback != null)callback.onTaskComplete(dlgs);
 		        	
 				} catch (JSONException e) {
 					e.printStackTrace();
@@ -704,6 +765,38 @@ public class Vk implements MessageService {
 
 
 
-	
+	private List<mDialog> load_dialogs_from_db(int count, int offset){
+		List<mDialog> result = new ArrayList<mDialog>();
+		
+		SQLiteDatabase db = app.dbHelper.getReadableDatabase();
+		
+		String my_table_name = String.valueOf(getServiceType()) + "_dlgs";
+		
+		Cursor c = db.query(my_table_name, null, null, null, null, null, null);
+		
+		if (c.moveToFirst()) {
+
+	        // определяем номера столбцов по имени в выборке
+	        int idColIndex = c.getColumnIndex( DBHelper.colId );
+	        int partColIndex = c.getColumnIndex( DBHelper.colParticipants );
+	        int lastMTColIndex = c.getColumnIndex( DBHelper.colLastmsgtime );
+	        int snipColIndex = c.getColumnIndex( DBHelper.colSnippet );
+
+	        do {
+	        	mDialog dlg = new mDialog();
+	        	dlg.participants.add( getContact( c.getString(partColIndex) ) );
+	        	dlg.last_msg_time.set( c.getLong(lastMTColIndex) );
+	        	dlg.snippet = c.getString(snipColIndex);
+	        	
+	        	result.add(dlg);
+
+	        } while (c.moveToNext());
+	      }
+		
+		c.close();
+		db.close();
+		
+		return result;
+	}
 	
 }
