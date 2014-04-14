@@ -40,6 +40,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 	private int supposedFVI;
 	
 	int loaded_dlgs_from_each;
+	int last_requested_msgs_size = 0;
 	
 	// newInstance constructor for creating fragment with arguments
     public static ListViewSimpleFragment newInstance(String mode) {
@@ -151,6 +152,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 	protected void refresh_data() {
 		if (mode.equals("messages")) {
 			showing_messages.clear();
+			last_requested_msgs_size = 0;
 
 			msg_adapter.notifyDataSetChanged();
 			
@@ -189,6 +191,8 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 
 		@Override
 		public void onTaskComplete(List<mMessage> result) {
+			Log.d("async_complete_listener_msg", "completed :: " + String.valueOf(app.getActiveService().getActiveDialog().loading_msgs));
+			
 			if(msg_adapter.isLoading && app.getActiveService().getActiveDialog().loading_msgs == 0){
 				showing_messages.remove(0);
 				msg_adapter.isLoading = false;
@@ -213,16 +217,25 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 				if(!added)showing_messages.add(msg);
 	        }
 			
-			msg_adapter.notifyDataSetChanged();
+			final int result_size = result.size();
+			final int current_ic = listview.getCount();
+				
+			listview.post(new Runnable() {
+	            @Override
+	            public void run() {
+	            	if(listview.getLastVisiblePosition() > 1){
+	            		int di = listview.getCount() - current_ic;
+		            	int firstVisibleItem = listview.getFirstVisiblePosition();
+		            	int seltop_pos = msg_adapter.isLoading ? firstVisibleItem  + result_size + 1 : firstVisibleItem  + result_size;
+		            	seltop_pos += di;
+		            	Log.d("async_complete_listener_msg", String.valueOf(seltop_pos));
+		            	listview.setSelectionFromTop(seltop_pos, listview.getChildAt(1).getTop()); //listView.getChildAt(i) works where 0 is the very first visible row and (n-1) is the last visible row (where n is the number of visible views you see).
+	            	}
+	            }
+	        });
+				
 			
-			int firstVisibleItem = listview.getFirstVisiblePosition();
-
-			if(listview.getLastVisiblePosition() > 0){
-				int seltop_pos = firstVisibleItem  + result.size();
-				if(msg_adapter.isLoading)seltop_pos++;
-				listview.setSelectionFromTop(seltop_pos, listview.getChildAt(1).getTop()); //listView.getChildAt(i) works where 0 is the very first visible row and (n-1) is the last visible row (where n is the number of visible views you see).
-			}
-
+			msg_adapter.notifyDataSetChanged();
 			//msg_adapter.isLoading = false;			
 		}
 		
@@ -336,6 +349,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 	
 	OnScrollListener MsgScrollListener = new OnScrollListener(){
 
+
 		@Override
 		public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
 			if(supposedFVI != -1){
@@ -348,14 +362,19 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 			
 			//Log.d("MsgScrollListener", String.valueOf(firstVisibleItem) + ", " + String.valueOf(listview.getFirstVisiblePosition()));
 			if (visibleItemCount == 0) return;
-			if ( !app.msgs_loading_maxed && ( firstVisibleItem == 0 ) && app.getActiveService().getActiveDialog().loading_msgs == 0 ) {
-				showing_messages.add(0, null);
-				msg_adapter.isLoading = true;
-				msg_adapter.notifyDataSetChanged();
-				listview.setSelectionFromTop(firstVisibleItem  + 1, listview.getChildAt(firstVisibleItem).getTop());
+			if ( !app.msgs_loading_maxed && ( firstVisibleItem == 0 ) ){
+				if(app.getActiveService().getActiveDialog().loading_msgs == 0 && !msg_adapter.isLoading) {			
+					showing_messages.add(0, null);
+					msg_adapter.isLoading = true;
+					msg_adapter.notifyDataSetChanged();
+					listview.setSelectionFromTop(firstVisibleItem  + 1, listview.getChildAt(firstVisibleItem).getTop());
+				}
 				
-				MessageService ms = app.getActiveService();
-				ms.requestMessages(ms.getActiveDialog(), showing_messages.size(), 20, async_complete_listener_msg);
+				if(showing_messages.size() > last_requested_msgs_size){			
+					MessageService ms = app.getActiveService();
+					last_requested_msgs_size = showing_messages.size();
+					ms.requestMessages(ms.getActiveDialog(), showing_messages.size(), 20, async_complete_listener_msg);					
+				}
 				
 				//Log.d("MsgScrollListener", String.valueOf(firstVisibleItem + lmsgs.size()) + ", " + String.valueOf(listview.getChildAt(firstVisibleItem).getTop()));
 				

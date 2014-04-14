@@ -456,8 +456,10 @@ public class Vk implements MessageService {
 	
     @Override
 	public void requestMessages(mDialog dlg, int offset, int count, AsyncTaskCompleteListener<List<mMessage>> cb) {
+    	Log.d("requestMessages", "requested :: " + String.valueOf(dlg.loading_msgs));
     	dlg.loading_msgs++;
 
+    	Log.d("requestMessages", "onTaskComplete - bd :: " + String.valueOf(dlg.loading_msgs));
     	cb.onTaskComplete( load_msgs_from_db(dlg, count, offset) );
     	
 		VKRequest request = new VKRequest("messages.getHistory", VKParameters.from(VKApiConst.COUNT, String.valueOf(count),
@@ -502,7 +504,7 @@ public class Vk implements MessageService {
 				    			if(c.moveToFirst()){
 				    				c.close();
 				    				all_new = false;
-				    				break;
+				    				//break;
 				    			} else {
 				    				//add
 				    				c.close();
@@ -523,7 +525,7 @@ public class Vk implements MessageService {
 				    			}
 				    		}
 				    		
-				    		dlg.loading_msgs--;
+				    		
 				    		//db.close();
 				    		if(all_new){
 				    			all_msgs_downloaded = false;
@@ -543,6 +545,9 @@ public class Vk implements MessageService {
 				    		} else {
 				    			all_msgs_downloaded = true;
 				    		}
+				    		
+				    		dlg.loading_msgs--;
+				    		Log.d("requestMessages", "onTaskComplete - net :: " + String.valueOf(dlg.loading_msgs));
 				    		if(callback != null)callback.onTaskComplete(msgs);
 				        	
 						} catch (JSONException e) {
