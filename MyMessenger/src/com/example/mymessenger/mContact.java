@@ -4,7 +4,7 @@ import android.graphics.Bitmap;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-public class mContact implements Parcelable {
+public class mContact implements Parcelable, Comparable<mContact> {
 	public String address;
 	public String name;
 	public boolean online;
@@ -59,5 +59,10 @@ public class mContact implements Parcelable {
 
 	public String getName() {
 		return name == null ? address : name;
+	}
+
+	@Override
+	public int compareTo(mContact another) {
+		return address.compareTo(another.address);
 	}
 }

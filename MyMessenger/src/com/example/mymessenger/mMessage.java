@@ -5,6 +5,9 @@ import android.os.Parcelable;
 import android.text.format.Time;
 
 public class mMessage implements Parcelable {
+	public static final int OUT = 1;
+	public static final int READED = 2;
+	
 	public mContact respondent; //Собеседник
 	
 	public String text;
@@ -51,4 +54,13 @@ public class mMessage implements Parcelable {
 			return new mMessage[size]; 
 		} 
 	};
+	
+	@Override
+	public boolean equals(Object o){
+		if(o instanceof mMessage){
+			mMessage toCompare = (mMessage) o;
+		    return this.text.equals(toCompare.text) && Time.compare(this.sendTime, toCompare.sendTime) == 0;
+		}
+        return false;
+	}
 }

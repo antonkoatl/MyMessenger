@@ -13,6 +13,8 @@ public class mDialog {
 	public Time last_msg_time;
 	public String snippet;
 	
+	public int loading_msgs = 0;
+	
 	public mDialog() {
 		messages = new ArrayList<mMessage>();
 		participants = new ArrayList<mContact>();
@@ -68,4 +70,21 @@ public class mDialog {
 	public int getMsgService() {
 		return msg_service;
 	}
+		
+	@Override
+	public boolean equals(Object o){
+		  if(o instanceof mDialog){
+			  mDialog toCompare = (mDialog) o;
+		    return this.participants.equals(toCompare.participants);
+		  }
+		  return false;
+		}
+
+
+	public String getParticipantsAddresses() {
+		String res = "";
+		for(mContact cnt : participants)res += cnt.address;
+		return res;
+	}
+
 }

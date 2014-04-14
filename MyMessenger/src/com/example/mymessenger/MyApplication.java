@@ -24,6 +24,9 @@ public class MyApplication extends Application {
 	public List<download_waiter> dl_waiters;
 	public DBHelper dbHelper;
 	
+	public boolean msgs_loading_maxed = false;
+	public boolean dlgs_loading_maxed = false;
+	
 	@Override
 	public void onCreate() {
 		super.onCreate();
@@ -49,6 +52,8 @@ public class MyApplication extends Application {
 		startService(intent1);
 		
 		dl_waiters = new ArrayList<download_waiter>();
+		
+		for(MessageService ms : myMsgServices)ms.init();
 		
 	}
 	
@@ -80,7 +85,7 @@ public class MyApplication extends Application {
           this.mCurrentActivity = mCurrentActivity;
     }
 
-	public void requestLastDialogs(int offset, int count,
+	public void requestLastDialogs(int count, int offset,
 			AsyncTaskCompleteListener<List<mDialog>> cb) {
 		for(MessageService msg : myMsgServices){
 			msg.requestDialogs(offset, count, cb);

@@ -84,6 +84,12 @@ public class Vk implements MessageService {
 	
 	mContact self_contact;
 	
+	boolean all_dlgs_downloaded = false;
+	boolean all_msgs_downloaded = false;
+	
+	List<mDialog> loading_msgs = new ArrayList<mDialog>();
+	
+	int dlgs_count = 0;
 	
 	
 	public void requestNewMessagesRunnable(AsyncTaskCompleteListener<Runnable> cb){
@@ -170,6 +176,15 @@ public class Vk implements MessageService {
 				
 		self_contact = new mContact("140195103");
 		requestContactData(self_contact);
+	}
+	
+	public void init(){
+		SQLiteDatabase db = app.dbHelper.getReadableDatabase();		
+		String my_table_name = "dlgs_" + String.valueOf(getServiceType());
+		Cursor c = db.query(my_table_name, null, null, null, null, null, null);
+		dlgs_count = c.getCount();
+		c.close();
+		db.close();
 	}
 
 	private void requestActiveDlg() {
@@ -259,75 +274,79 @@ public class Vk implements MessageService {
 		if(!accum_cnt_handler_isRunning){
 			accum_cnt_handler_isRunning = true;
 			
-			handler.postDelayed(new Runnable() {
-
-				@Override
-				public void run() {
-					//Do something after 500ms
-					//Log.d("requestContactData", "Starting downloading contact data...");
-					final List<mContact> cnt_temp = new ArrayList<mContact>(accum_cnt);
-					accum_cnt.clear();
-					
-					String uids = cnt_temp.get(0).address;
-					for(int i = 1; i < cnt_temp.size(); i++){
-						uids += "," + cnt_temp.get(i).address;
-					}
-		
-					VKRequest request = new VKRequest("users.get", VKParameters.from(VKApiConst.USER_IDS, uids, VKApiConst.FIELDS, "photo_100"));
-					request.secure = false;
-					VKParameters preparedParameters = request.getPreparedParameters();
-					
-					
-					
-					VKRequestListener rl = new VKRequestListenerWithCallback<Void>(null, Vk.this) {
-					    @Override
-					    public void onComplete(VKResponse response) {
-					    	Log.d("VKRequestListener", "onComplete" );
-					        try {
-					        	JSONArray response_json = response.json.getJSONArray("response");
-					        	for(int i = 0; i < response_json.length(); i++){
-						        	JSONObject item = response_json.getJSONObject(i);
-
-						        	mContact cnt = cnt_temp.get(i);
-						        	
-						        	String name = item.getString("first_name");
-						        	name += " " + item.getString("last_name");
-						        	
-						        	String photo_100_url = item.getString("photo_100");
-						        	
-						        	Intent intent = new Intent(context, DownloadService.class);
-						            intent.putExtra("url", photo_100_url);
-						            context.getApplicationContext().startService(intent);
-						        	
-						            download_waiter tw = new download_waiter(photo_100_url, "cnt_icon_100", cnt);
-						            ((MyApplication) context).dl_waiters.add(tw);
-						        			
-						        	cnt.name = name;
-						        	
-						        	//Log.d("requestContactData", "Contact data for " + cnt.address + " received: " + cnt.name);
-						        	
-					        	}
-					        	cnt_temp.clear();
-					        	accum_cnt_handler_isRunning = false;
-					        	
-					        	((MyApplication) context).triggerCntsUpdaters(); 
-					        	
-							} catch (JSONException e) {
-								e.printStackTrace();
-							}
-					    }
-			
-					    
-					    
-					};
-			
-					request.executeWithListener(rl);
-					
-				}
-			}, 500);
+			handler.postDelayed(cnts_request_runnable, 500);
 		}
 			
 	}
+	
+	Runnable cnts_request_runnable = new Runnable(){
+
+		@Override
+		public void run() {
+			//Do something after 500ms
+			//Log.d("requestContactData", "Starting downloading contact data...");
+			final List<mContact> cnt_temp = new ArrayList<mContact>(accum_cnt);
+			accum_cnt.clear();
+			
+			String uids = cnt_temp.get(0).address;
+			for(int i = 1; i < cnt_temp.size(); i++){
+				uids += "," + cnt_temp.get(i).address;
+			}
+
+			VKRequest request = new VKRequest("users.get", VKParameters.from(VKApiConst.USER_IDS, uids, VKApiConst.FIELDS, "photo_100"));
+			request.secure = false;
+			VKParameters preparedParameters = request.getPreparedParameters();
+			
+			
+			
+			VKRequestListener rl = new VKRequestListenerWithCallback<Void>(null, Vk.this) {
+			    @Override
+			    public void onComplete(VKResponse response) {
+			    	Log.d("VKRequestListener", response.request.methodName +  " :: onComplete");
+			        try {
+			        	JSONArray response_json = response.json.getJSONArray("response");
+			        	for(int i = 0; i < response_json.length(); i++){
+				        	JSONObject item = response_json.getJSONObject(i);
+
+				        	mContact cnt = cnt_temp.get(i);
+				        	
+				        	String name = item.getString("first_name");
+				        	name += " " + item.getString("last_name");
+				        	
+				        	String photo_100_url = item.getString("photo_100");
+				        	
+				        	Intent intent = new Intent(context, DownloadService.class);
+				            intent.putExtra("url", photo_100_url);
+				            context.getApplicationContext().startService(intent);
+				        	
+				            download_waiter tw = new download_waiter(photo_100_url, "cnt_icon_100", cnt);
+				            ((MyApplication) context).dl_waiters.add(tw);
+				        			
+				        	cnt.name = name;
+				        	
+				        	//Log.d("requestContactData", "Contact data for " + cnt.address + " received: " + cnt.name);
+				        	
+			        	}
+			        	cnt_temp.clear();
+			        	accum_cnt_handler_isRunning = false;
+			        	if(accum_cnt.size() > 0)handler.postDelayed(cnts_request_runnable, 500);
+			        	
+			        	((MyApplication) context).triggerCntsUpdaters(); 
+			        	
+					} catch (JSONException e) {
+						e.printStackTrace();
+					}
+			    }
+	
+			    
+			    
+			};
+	
+			request.executeWithListener(rl);
+			
+		}
+		
+	};
 
 
 	@Override
@@ -436,22 +455,33 @@ public class Vk implements MessageService {
 
 	
     @Override
-	public void requestMessages(mDialog activeDialog, int offset, int count, AsyncTaskCompleteListener<List<mMessage>> cb) {
+	public void requestMessages(mDialog dlg, int offset, int count, AsyncTaskCompleteListener<List<mMessage>> cb) {
+    	dlg.loading_msgs++;
 
-
+    	cb.onTaskComplete( load_msgs_from_db(dlg, count, offset) );
+    	
 		VKRequest request = new VKRequest("messages.getHistory", VKParameters.from(VKApiConst.COUNT, String.valueOf(count),
-				VKApiConst.OFFSET, String.valueOf(offset), VKApiConst.USER_ID, activeDialog.getParticipants()));
+				VKApiConst.OFFSET, String.valueOf(offset), VKApiConst.USER_ID, dlg.getParticipants()));
 		request.secure = false;
 		VKParameters preparedParameters = request.getPreparedParameters();
 
 		VKRequestListener rl = new VKRequestListenerWithCallback<List<mMessage>>(cb, Vk.this) {
 				    @Override				    
 				    public void onComplete(VKResponse response) {				    	
-				    	Log.d("VKRequestListener", "onComplete" );
+				    	Log.d("VKRequestListener", response.request.methodName +  " :: onComplete");
 				    	List<mMessage> msgs = new ArrayList<mMessage>();
+				    	boolean all_new = true;
 				        try {
 				        	JSONObject response_json = response.json.getJSONObject("response");
 				        	JSONArray items = response_json.getJSONArray("items");
+				        	
+				        	SQLiteDatabase db = app.dbHelper.getWritableDatabase();
+				    		String my_table_name = "msgs_" + String.valueOf(getServiceType());
+				    		
+				    		mDialog dlg = (mDialog) params.get(0);
+				    		int dlg_key = app.dbHelper.getDlgId(dlg, getServiceType());
+				    		
+				    		if(items.length() == 0)app.msgs_loading_maxed = true;
 				    		
 				    		for (int i = 0; i < items.length(); i++) {
 				    			JSONObject item = items.getJSONObject(i);
@@ -465,9 +495,55 @@ public class Vk implements MessageService {
 								msg.readed = item.getInt( "read_state" ) == 1 ? true : false;
 								
 				    				
-								msgs.add(msg);
+								String selection = DBHelper.colDlgkey + " = ? AND " + DBHelper.colSendtime + " = ? AND " + DBHelper.colBody + " = ?";
+				    			String[] selectionArgs = { String.valueOf(dlg_key), String.valueOf(msg.sendTime.toMillis(false)), msg.text };
+				    			Cursor c = db.query(my_table_name, null, selection, selectionArgs, null, null, null);
+		
+				    			if(c.moveToFirst()){
+				    				c.close();
+				    				all_new = false;
+				    				break;
+				    			} else {
+				    				//add
+				    				c.close();
+				    				
+				    				ContentValues cv = new ContentValues();
+				    				cv.put(DBHelper.colRespondent, msg.respondent.address);
+				    				cv.put(DBHelper.colSendtime, msg.sendTime.toMillis(false));
+				    				cv.put(DBHelper.colBody, msg.text);
+				    				cv.put(DBHelper.colDlgkey, dlg_key);
+				    				
+				    				int flags = 0;
+				    				if(msg.out) flags += mMessage.OUT;
+				    				if(msg.readed) flags += mMessage.READED;
+				    				cv.put(DBHelper.colFlags, flags);
+				    				
+				    				db.insert(my_table_name, null, cv);		    				
+				    				msgs.add(msg);
+				    			}
 				    		}
-				    		callback.onTaskComplete(msgs);
+				    		
+				    		dlg.loading_msgs--;
+				    		//db.close();
+				    		if(all_new){
+				    			all_msgs_downloaded = false;
+				    			int count = Integer.valueOf( (String) response.request.getMethodParameters().get( VKApiConst.COUNT) );
+				    			int offset = Integer.valueOf( (String) response.request.getMethodParameters().get( VKApiConst.OFFSET) );
+				    			
+				    			int msgs_count = 0;
+				    			String selection = DBHelper.colDlgkey + " = ?";
+				    			String[] selectionArgs = { String.valueOf(dlg_key) };
+				    			Cursor c = db.query(my_table_name, null, selection, selectionArgs, null, null, null);
+				    			msgs_count = c.getCount();
+				    			
+				    			if((count + offset) < msgs_count){
+				    				requestDialogs(offset + count, count, null);
+				    			}
+				    			
+				    		} else {
+				    			all_msgs_downloaded = true;
+				    		}
+				    		if(callback != null)callback.onTaskComplete(msgs);
 				        	
 						} catch (JSONException e) {
 							e.printStackTrace();
@@ -476,112 +552,126 @@ public class Vk implements MessageService {
 				    
 				};
 
+		((VKRequestListenerWithCallback<List<mMessage>>) rl).setParams(dlg);
 		request.executeWithListener(rl);
+
 	}
 
 	@Override
-	public void requestDialogs(int offset, int count,
-			AsyncTaskCompleteListener<List<mDialog>> cb) {
+	public void requestDialogs(int offset, int count, AsyncTaskCompleteListener<List<mDialog>> cb) {
 		
+		if(cb != null)cb.onTaskComplete( load_dialogs_from_db(count, offset) );
 		
-		
+		if(!all_dlgs_downloaded || (count + offset) > dlgs_count){
+			//if(all_dlgs_downloaded)return;
 
-		VKRequest request = new VKRequest("messages.getDialogs", VKParameters.from(VKApiConst.COUNT, String.valueOf(count),
-				VKApiConst.OFFSET, String.valueOf(offset),
-				VKApiConst.FIELDS, "first_name,last_name,photo_50"));
-		request.secure = false;
-		VKParameters preparedParameters = request.getPreparedParameters();
-		
-		VKRequestListener rl = new VKRequestListenerWithCallback<List<mDialog>>(cb, Vk.this) {
+			VKRequest request = new VKRequest("messages.getDialogs", VKParameters.from(VKApiConst.COUNT, String.valueOf(count),
+					VKApiConst.OFFSET, String.valueOf(offset),
+					VKApiConst.FIELDS, "first_name,last_name,photo_50"));
+			request.secure = false;
+			VKParameters preparedParameters = request.getPreparedParameters();
 			
-				@Override
-			    public void onComplete(VKResponse response) {
-		    	Log.d("VKRequestListener", "onComplete" );
-		    	List<mDialog> dlgs = new ArrayList<mDialog>();
-		        try {
-		        	JSONObject response_json = response.json.getJSONObject("response");
-		        	JSONArray items = response_json.getJSONArray("items");
-		    		
-		    		for (int i = 0; i < items.length(); i++) {
-		    			JSONObject item = items.getJSONObject(i);
-		    			
-	    				mDialog mdl = new mDialog();			    				
-	    				String[] recipient_ids = item.getString( "user_id" ).split(",");
-
-	    				for(String rid : recipient_ids){
-    						mdl.participants.add( getContact( rid ) );
-	    				}
-	    				
-		    			mdl.snippet = item.getString( "body" );
-		    			mdl.last_msg_time.set(item.getLong("date")*1000);
-		    			mdl.msg_service = MessageService.VK;
+			VKRequestListener rl = new VKRequestListenerWithCallback<List<mDialog>>(cb, Vk.this) {
+				
+					@Override
+				    public void onComplete(VKResponse response) {
+						Log.d("VKRequestListener", response.request.methodName +  " :: onComplete");
+			    	List<mDialog> dlgs = new ArrayList<mDialog>();
+			    	boolean all_new = true;
+			        try {
+			        	JSONObject response_json = response.json.getJSONObject("response");
+			        	JSONArray items = response_json.getJSONArray("items");
+			        	
+			        	SQLiteDatabase db = app.dbHelper.getWritableDatabase();
+			    		String my_table_name = "dlgs_" + String.valueOf(getServiceType());	
+			    		
+			    		if(items.length() == 0)app.dlgs_loading_maxed = true;
+			    		
+			    		for (int i = 0; i < items.length(); i++) {
+			    			JSONObject item = items.getJSONObject(i);
+			    			
+		    				mDialog mdl = new mDialog();			    				
+		    				String[] recipient_ids = item.getString( "user_id" ).split(",");
+	
+		    				for(String rid : recipient_ids){
+	    						mdl.participants.add( getContact( rid ) );
+		    				}
 		    				
-		    			dlgs.add(mdl);
-		    		}
-		    		
-		    		SQLiteDatabase db = app.dbHelper.getWritableDatabase();
-		    		String my_table_name = "dlgs_" + String.valueOf(getServiceType());		    		
-		    		
-		    		boolean all_new = true;
-		    		
-		    		for(mDialog dlg : dlgs){
-		    			String selection = DBHelper.colParticipants + " = ?";
-		    			String[] selectionArgs = {dlg.getParticipantsNames()};
-		    			Cursor c = db.query(my_table_name, null, selection, selectionArgs, null, null, null);
-		    			
-		    			if(c.moveToFirst()){
-		    				Time last_time_in_db = new Time();
-		    				last_time_in_db.set( c.getLong( c.getColumnIndex(DBHelper.colLastmsgtime)) );
-		    				
-		    				if(dlg.last_msg_time.after(last_time_in_db)){
-		    					//update
-		    					int id = c.getInt(c.getColumnIndex(DBHelper.colId));
-		    					c.close();
+			    			mdl.snippet = item.getString( "body" );
+			    			mdl.last_msg_time.set(item.getLong("date")*1000);
+			    			mdl.msg_service = MessageService.VK;
+			    			
+			    			
+			    			String selection = DBHelper.colParticipants + " = ?";
+			    			String[] selectionArgs = {mdl.getParticipantsNames()};
+			    			Cursor c = db.query(my_table_name, null, selection, selectionArgs, null, null, null);
+	
+			    			if(c.moveToFirst()){
+			    				Time last_time_in_db = new Time();
+			    				last_time_in_db.set( c.getLong( c.getColumnIndex(DBHelper.colLastmsgtime)) );
+			    				
+			    				if(mdl.last_msg_time.after(last_time_in_db)){
+			    					//update
+			    					int id = c.getInt(c.getColumnIndex(DBHelper.colId));
+			    					c.close();
+				    				
+				    				ContentValues cv = new ContentValues();
+				    				cv.put(DBHelper.colParticipants, mdl.getParticipantsAddresses());
+				    				cv.put(DBHelper.colLastmsgtime, mdl.last_msg_time.toMillis(false));
+				    				cv.put(DBHelper.colSnippet, mdl.snippet);
+				    				
+				    				db.update(my_table_name, cv, "_id=" + id, null);			    				
+				    				dlgs.add(mdl);
+			    				} else {
+			    					//not update
+			    					c.close();
+			    					all_new = false;
+			    					break;
+			    				}		    				
+			    			} else {
+			    				//add
+			    				c.close();
 			    				
 			    				ContentValues cv = new ContentValues();
-			    				cv.put(DBHelper.colParticipants, dlg.getParticipantsNames());
-			    				cv.put(DBHelper.colLastmsgtime, dlg.last_msg_time.toMillis(false));
-			    				cv.put(DBHelper.colSnippet, dlg.snippet);
+			    				cv.put(DBHelper.colParticipants, mdl.getParticipantsAddresses());
+			    				cv.put(DBHelper.colLastmsgtime, mdl.last_msg_time.toMillis(false));
+			    				cv.put(DBHelper.colSnippet, mdl.snippet);
 			    				
-			    				db.update(my_table_name, cv, "_id=" + id, null);
-		    				} else {
-		    					//not update
-		    					c.close();
-		    					all_new = false;
-		    					break;
-		    				}		    				
-		    			} else {
-		    				//add
-		    				c.close();
-		    				
-		    				ContentValues cv = new ContentValues();
-		    				cv.put(DBHelper.colParticipants, dlg.getParticipantsNames());
-		    				cv.put(DBHelper.colLastmsgtime, dlg.last_msg_time.toMillis(false));
-		    				cv.put(DBHelper.colSnippet, dlg.snippet);
-		    				
-		    				db.insert(my_table_name, null, cv);
-		    			}		    					    			
-		    		}
-		    		
-		    		db.close();
-		    		
-		    		if(all_new){
-		    			int offset = Integer.valueOf((String) response.request.getMethodParameters().get(VKApiConst.OFFSET));
-		    			int count = Integer.valueOf((String) response.request.getMethodParameters().get(VKApiConst.COUNT));
-		    			if(dlgs.size() == count)
-		    				requestDialogs(offset + count, count, null);
-		    		}
-		    		
-		    		if(callback != null)callback.onTaskComplete(dlgs);
-		        	
-				} catch (JSONException e) {
-					e.printStackTrace();
-				}
-		    }
-
-		};
-		
-		request.executeWithListener(rl);
+			    				db.insert(my_table_name, null, cv);		    				
+			    				dlgs.add(mdl);
+			    				dlgs_count++;
+			    			}
+			    				
+			    			
+			    		}
+			    		
+			    		//db.close();
+			    		
+			    		if(all_new){
+			    			all_dlgs_downloaded = false;
+			    			int count = Integer.valueOf( (String) response.request.getMethodParameters().get( VKApiConst.COUNT) );
+			    			int offset = Integer.valueOf( (String) response.request.getMethodParameters().get( VKApiConst.OFFSET) );
+			    			
+			    			if((count + offset) < dlgs_count){
+			    				requestDialogs(offset + count, count, null);
+			    			}
+			    			
+			    		} else {
+			    			all_dlgs_downloaded = true;
+			    		}
+			    		
+			    		
+			    		if(callback != null)callback.onTaskComplete(dlgs);
+			        	
+					} catch (JSONException e) {
+						e.printStackTrace();
+					}
+			    }
+	
+			};
+			
+			request.executeWithListener(rl);
+		}
 		
 	}
 
@@ -767,34 +857,80 @@ public class Vk implements MessageService {
 
 	private List<mDialog> load_dialogs_from_db(int count, int offset){
 		List<mDialog> result = new ArrayList<mDialog>();
+		if(offset > dlgs_count)return result;
 		
 		SQLiteDatabase db = app.dbHelper.getReadableDatabase();
 		
-		String my_table_name = String.valueOf(getServiceType()) + "_dlgs";
+		String my_table_name = "dlgs_" + String.valueOf(getServiceType());
+		String order_by = DBHelper.colLastmsgtime + " DESC";
 		
-		Cursor c = db.query(my_table_name, null, null, null, null, null, null);
+		Cursor cursor = db.query(my_table_name, null, null, null, null, null, order_by);
 		
-		if (c.moveToFirst()) {
-
-	        // определяем номера столбцов по имени в выборке
-	        int idColIndex = c.getColumnIndex( DBHelper.colId );
-	        int partColIndex = c.getColumnIndex( DBHelper.colParticipants );
-	        int lastMTColIndex = c.getColumnIndex( DBHelper.colLastmsgtime );
-	        int snipColIndex = c.getColumnIndex( DBHelper.colSnippet );
-
-	        do {
-	        	mDialog dlg = new mDialog();
-	        	dlg.participants.add( getContact( c.getString(partColIndex) ) );
-	        	dlg.last_msg_time.set( c.getLong(lastMTColIndex) );
-	        	dlg.snippet = c.getString(snipColIndex);
+		if(!cursor.moveToFirst()){return result;}
+		boolean cursor_chk = true;
+		for (int i = 0; i < offset; i++) cursor_chk = cursor.moveToNext();
+				
+		// определяем номера столбцов по имени в выборке
+        int idColIndex = cursor.getColumnIndex( DBHelper.colId );
+        int partColIndex = cursor.getColumnIndex( DBHelper.colParticipants );
+        int lastMTColIndex = cursor.getColumnIndex( DBHelper.colLastmsgtime );
+        int snipColIndex = cursor.getColumnIndex( DBHelper.colSnippet );
+		
+		for (int i = 0; i < count; i++) {
+			if(cursor_chk){
+				mDialog dlg = new mDialog();
+	        	dlg.participants.add( getContact( cursor.getString(partColIndex) ) );
+	        	dlg.last_msg_time.set( cursor.getLong(lastMTColIndex) );
+	        	dlg.snippet = cursor.getString(snipColIndex);
+	        	dlg.msg_service = getServiceType();
 	        	
 	        	result.add(dlg);
+	        	cursor_chk = cursor.moveToNext();
 
-	        } while (c.moveToNext());
-	      }
+	        }
+	    }
 		
-		c.close();
-		db.close();
+		cursor.close();
+		
+		return result;
+	}
+	
+	private List<mMessage> load_msgs_from_db(mDialog dlg, int count, int offset){
+		List<mMessage> result = new ArrayList<mMessage>();
+		//if(offset > 100)return result;
+		
+		int dlg_key = app.dbHelper.getDlgId(dlg, getServiceType());
+		
+		SQLiteDatabase db = app.dbHelper.getReadableDatabase();
+		
+		String my_table_name = "msgs_" + String.valueOf(getServiceType());
+		String selection = DBHelper.colDlgkey + " = " + String.valueOf(dlg_key);
+		String order_by = DBHelper.colSendtime + " DESC";
+		
+		
+		Cursor cursor = db.query(my_table_name, null, selection, null, null, null, order_by);
+		
+		if(!cursor.moveToFirst()){return result;}
+		boolean cursor_chk = true;
+		for (int i = 0; i < offset; i++) cursor_chk = cursor.moveToNext();
+		
+		for (int i = 0; i < count; i++) {
+			if(cursor_chk){
+	        	mMessage msg = new mMessage();
+	        	msg.respondent = getContact( cursor.getString( cursor.getColumnIndex(DBHelper.colRespondent) ) );
+	        	msg.sendTime.set( cursor.getLong(cursor.getColumnIndex(DBHelper.colSendtime)) );
+	        	msg.text = cursor.getString(cursor.getColumnIndex(DBHelper.colBody));
+	        	int flags = cursor.getInt(cursor.getColumnIndex(DBHelper.colFlags));
+	        	
+	        	msg.out = (flags & mMessage.OUT) == mMessage.OUT ? true : false;
+	        	msg.readed = (flags & mMessage.READED) == mMessage.READED ? true : false;
+
+	        	result.add(msg);
+	        	cursor_chk = cursor.moveToNext();
+	        } 
+	    }
+		
+		cursor.close();
 		
 		return result;
 	}

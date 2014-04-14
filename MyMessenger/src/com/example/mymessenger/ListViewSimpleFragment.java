@@ -28,9 +28,7 @@ import android.widget.AdapterView.OnItemClickListener;
 public class ListViewSimpleFragment extends Fragment implements OnClickListener {
 	Context context;
 	String mode;
-	private boolean dlg_maxed;
-	private boolean msg_maxed;
-	private boolean msg_isLoading;
+
 	private boolean dlg_isLoading;
 	int async_complete_listener_msg_update_total_offset;
 	MyMsgAdapter msg_adapter;
@@ -53,9 +51,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 	@Override
     public View onCreateView(LayoutInflater inflater,
             ViewGroup container, Bundle savedInstanceState) {
-		dlg_maxed = false;
-		msg_maxed = false;
-		msg_isLoading = false;
+
 		View rootView = null;
 
 	    //app.active_service = MessageService.VK;
@@ -74,10 +70,9 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 			MessageService ms = app.getActiveService();
 			if(ms != null)ms.requestMessages(ms.getActiveDialog(), 0, 20, async_complete_listener_msg);
 			
-			showing_messages.add(0, null);
-			msg_isLoading = true;
-			msg_adapter.isLoading = true;
-			msg_adapter.notifyDataSetChanged();
+	
+			//msg_adapter.isLoading = true;
+			//msg_adapter.notifyDataSetChanged();
 			
 	        listview.setOnItemClickListener(MsgClickListener);
 	        listview.setOnScrollListener(MsgScrollListener);
@@ -97,7 +92,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 			dlg_adapter = new MyDialogsAdapter(getActivity(), showing_dialogs);
 			listview.setAdapter(dlg_adapter);
 
-			app.requestLastDialogs(0, 20, async_complete_listener_dlg);
+			app.requestLastDialogs(20, 0, async_complete_listener_dlg);
 			loaded_dlgs_from_each = 20;
 			
 	        listview.setOnItemClickListener(DlgClickListener);
@@ -156,16 +151,13 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 	protected void refresh_data() {
 		if (mode.equals("messages")) {
 			showing_messages.clear();
-			msg_maxed = false;
-			msg_isLoading = false;
-			
+
 			msg_adapter.notifyDataSetChanged();
 			
 			MessageService ms = app.getActiveService();
 			if(ms != null){
 				ms.requestMessages(ms.getActiveDialog(), 0, 20, async_complete_listener_msg);
 				showing_messages.add(0, null);
-				msg_isLoading = true;
 				msg_adapter.isLoading = true;
 				msg_adapter.notifyDataSetChanged();
 			}
@@ -174,9 +166,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 		
 		if (mode.equals("dialogs")) {
 			showing_dialogs.clear();		
-			
-			dlg_maxed = false;
-			
+
 			dlg_adapter.notifyDataSetChanged();
 			
 			app.requestLastDialogs(0, 20, async_complete_listener_dlg);
@@ -199,21 +189,41 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 
 		@Override
 		public void onTaskComplete(List<mMessage> result) {
-			showing_messages.remove(0);
-			int s = showing_messages.size();
+			if(msg_adapter.isLoading && app.getActiveService().getActiveDialog().loading_msgs == 0){
+				showing_messages.remove(0);
+				msg_adapter.isLoading = false;
+			}
+			
 			for(mMessage msg : result){
-	        	showing_messages.add(0, msg);
+				boolean added = false;
+				
+				int tind = showing_messages.indexOf(msg);
+				if(tind != -1){
+					added = true;
+				} else {				
+					for(int i = 0; i < showing_messages.size(); i++){
+						if(showing_messages.get(i) == null)continue;
+						if( msg.sendTime.before( showing_messages.get(i).sendTime ) ){
+							showing_messages.add(i, msg);
+							added = true;
+							break;
+						}	
+					}
+				}
+				if(!added)showing_messages.add(msg);
 	        }
+			
 			msg_adapter.notifyDataSetChanged();
-			if( (showing_messages.size() - s) == 0 )msg_maxed = true;
 			
 			int firstVisibleItem = listview.getFirstVisiblePosition();
 
-			if(listview.getLastVisiblePosition() > 0)
-				listview.setSelectionFromTop(firstVisibleItem  + result.size(), listview.getChildAt(1).getTop()); //listView.getChildAt(i) works where 0 is the very first visible row and (n-1) is the last visible row (where n is the number of visible views you see).
+			if(listview.getLastVisiblePosition() > 0){
+				int seltop_pos = firstVisibleItem  + result.size();
+				if(msg_adapter.isLoading)seltop_pos++;
+				listview.setSelectionFromTop(seltop_pos, listview.getChildAt(1).getTop()); //listView.getChildAt(i) works where 0 is the very first visible row and (n-1) is the last visible row (where n is the number of visible views you see).
+			}
 
-			msg_isLoading = false;
-			msg_adapter.isLoading = false;			
+			//msg_adapter.isLoading = false;			
 		}
 		
 	};
@@ -223,26 +233,32 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 
 		@Override
 		public void onTaskComplete(List<mDialog> result) {
-			int s = showing_dialogs.size();
+			//int s = showing_dialogs.size();
+			
 			for(mDialog dlg : result){
 				boolean added = false;
-				for(int i = 0; i < showing_dialogs.size(); i++){
-					if(showing_dialogs.get(i).getLastMessageTime() == null || dlg.getLastMessageTime() == null){
-						Log.d("smth", "wrong");
+				
+				int tind = showing_dialogs.indexOf(dlg);
+				if(tind != -1){
+					showing_dialogs.set(tind, dlg);
+					added = true;
+				} else {				
+					for(int i = 0; i < showing_dialogs.size(); i++){
+						if(showing_dialogs.get(i).getLastMessageTime() == null || dlg.getLastMessageTime() == null){
+							Log.d("smth", "wrong");
+						}
+						if( dlg.getLastMessageTime().after( showing_dialogs.get(i).getLastMessageTime() ) ){
+							showing_dialogs.add(i, dlg);
+							added = true;
+							break;
+						}	
 					}
-					if( dlg.getLastMessageTime().after( showing_dialogs.get(i).getLastMessageTime() ) ){
-						showing_dialogs.add(i, dlg);
-						added = true;
-						break;
-					}	
 				}
 				if(!added)showing_dialogs.add(dlg);
 	        }
 			dlg_adapter.notifyDataSetChanged();
-			if( (showing_dialogs.size() - s) == 0 )dlg_maxed = true;
 			
-			dlg_isLoading = false;
-		
+			dlg_isLoading = false;		
 		}
 		
 	};
@@ -293,8 +309,8 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 
 		@Override
 		public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
-			if ( !dlg_maxed && ( (totalItemCount - (firstVisibleItem + visibleItemCount)) < 5 ) && !dlg_isLoading) {
-				app.requestLastDialogs(loaded_dlgs_from_each, 20, async_complete_listener_dlg);
+			if ( !app.dlgs_loading_maxed && ( (totalItemCount - (firstVisibleItem + visibleItemCount)) < 5 ) && !dlg_isLoading) {
+				app.requestLastDialogs(20, loaded_dlgs_from_each, async_complete_listener_dlg);
 				loaded_dlgs_from_each += 20;
 				dlg_isLoading = true;
 			}
@@ -332,16 +348,15 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 			
 			//Log.d("MsgScrollListener", String.valueOf(firstVisibleItem) + ", " + String.valueOf(listview.getFirstVisiblePosition()));
 			if (visibleItemCount == 0) return;
-			if ( !msg_maxed && ( firstVisibleItem == 0 ) && !msg_isLoading ) {
-				
-				msg_isLoading = true;
-
-				MessageService ms = app.getActiveService();
-				ms.requestMessages(ms.getActiveDialog(), showing_messages.size(), 20, async_complete_listener_msg);
+			if ( !app.msgs_loading_maxed && ( firstVisibleItem == 0 ) && app.getActiveService().getActiveDialog().loading_msgs == 0 ) {
 				showing_messages.add(0, null);
 				msg_adapter.isLoading = true;
 				msg_adapter.notifyDataSetChanged();
 				listview.setSelectionFromTop(firstVisibleItem  + 1, listview.getChildAt(firstVisibleItem).getTop());
+				
+				MessageService ms = app.getActiveService();
+				ms.requestMessages(ms.getActiveDialog(), showing_messages.size(), 20, async_complete_listener_msg);
+				
 				//Log.d("MsgScrollListener", String.valueOf(firstVisibleItem + lmsgs.size()) + ", " + String.valueOf(listview.getChildAt(firstVisibleItem).getTop()));
 				
 				//supposedFVI = firstVisibleItem + lmsgs.size();

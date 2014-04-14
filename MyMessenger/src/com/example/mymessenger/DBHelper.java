@@ -1,8 +1,11 @@
 package com.example.mymessenger;
 
+import java.util.Collections;
+
 import com.example.mymessenger.services.MessageService;
 
 import android.content.Context;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteDatabase.CursorFactory;
 import android.database.sqlite.SQLiteOpenHelper;
@@ -61,6 +64,24 @@ public class DBHelper extends SQLiteOpenHelper {
 	public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
 		// TODO Auto-generated method stub
 
+	}
+	
+	public int getDlgId(mDialog dlg, int ms_type){
+		SQLiteDatabase db = getReadableDatabase();
+		
+		String my_table_name = "dlgs_" + String.valueOf(ms_type);
+		Collections.sort(dlg.participants);
+		String selection = DBHelper.colParticipants + " = " + dlg.getParticipantsAddresses();
+		Cursor c = db.query(my_table_name, null, selection, null, null, null, null);
+		
+		int dlg_key = 0;
+		
+		if(c.moveToFirst()){
+			dlg_key = c.getInt( c.getColumnIndex(DBHelper.colId) );
+		}
+		c.close();
+		
+		return dlg_key;
 	}
 
 }

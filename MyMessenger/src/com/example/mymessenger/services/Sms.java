@@ -43,6 +43,7 @@ public class Sms implements MessageService {
 	private AsyncTaskCompleteListener<Void> contact_data_changed;
 	
 	mContact self_contact;
+	int dlgs_count;
 	
 	public Sms(Context context) {
 		this.context = context;
@@ -58,6 +59,8 @@ public class Sms implements MessageService {
         contacts = new HashMap<String, mContact>();
         
         self_contact = new mContact("+79279524758");
+        
+        
 	}
 	
 	public List<mDialog> getDialogs(int offset, int count) {
@@ -486,6 +489,14 @@ public class Sms implements MessageService {
 		name_cursor.close();
 	    
 	    cb.onTaskComplete(cnts);
+		
+	}
+
+	@Override
+	public void init() {
+		Cursor cursor = context.getContentResolver().query(Uri.parse("content://mms-sms/conversations?simple=true"), null, null, null, null);
+        dlgs_count = cursor.getCount();
+        cursor.close();
 		
 	}
 

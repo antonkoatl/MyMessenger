@@ -35,4 +35,5 @@ public interface MessageService {
 	
 	public void requestContacts(int offset, int count, AsyncTaskCompleteListener<List<mContact>> cb);
 
+	public void init();
 }
