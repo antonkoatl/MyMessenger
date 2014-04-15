@@ -33,9 +33,10 @@ public class DBHelper extends SQLiteOpenHelper {
 
 	@Override
 	public void onCreate(SQLiteDatabase db) {
-		for(MessageService ms : app.myMsgServices){
-			String tn_msgs = "msgs_" + String.valueOf(ms.getServiceType());
-			String tn_dlgs = "dlgs_" + String.valueOf(ms.getServiceType());
+		int ms_types[] = {MessageService.SMS, MessageService.VK };
+		for(int ms_type : ms_types){
+			String tn_msgs = "msgs_" + String.valueOf(ms_type);
+			String tn_dlgs = "dlgs_" + String.valueOf(ms_type);
 			
 			db.execSQL("create table " + tn_msgs + " ("
 			          + colId + " integer primary key autoincrement," 

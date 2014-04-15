@@ -57,7 +57,6 @@ import com.vk.sdk.api.VKRequest.VKRequestListener;
 import com.vk.sdk.api.VKResponse;
 
 public class Vk implements MessageService {
-	private Context context;
 	private MyApplication app;
 	private static String sTokenKey = "VK_ACCESS_TOKEN";
 	private static String[] sMyScope = new String[]{VKScope.FRIENDS, VKScope.WALL, VKScope.PHOTOS, VKScope.NOHTTPS, VKScope.MESSAGES};
@@ -68,19 +67,19 @@ public class Vk implements MessageService {
 	
 	List<mContact> accum_cnt;
 	
-	boolean accum_cnt_handler_isRunning;
+	boolean accum_cnt_handler_isRunning = false;
 	
 	Map<String, mContact> contacts;
 	
 	boolean finished;
 	boolean handling;
-	private boolean authorization_finished;
+	private boolean authorization_finished = true;
 	private AsyncTaskCompleteListener<List<mMessage>> requestMessagesCallback;
 	private AsyncTaskCompleteListener<List<mDialog>> requestDialogsCallback;
 
 	final Handler handler;
 	
-	boolean authorised;
+	boolean authorised = false;
 	
 	mContact self_contact;
 	
@@ -153,90 +152,47 @@ public class Vk implements MessageService {
 		}
 	}
 	
-	public Vk(Context context) {
-		this.context = context;
-		app = (MyApplication) context;
-		authorization_finished = true;
-		authorised = false;
+	public Vk(MyApplication app) {
+		this.app = app;
 		
-		//VKUIHelper.onResume((Activity) this.context);
-		VKSdk.initialize(sdkListener, "4161005", VKAccessToken.tokenFromSharedPreferences(this.context, sTokenKey));
-		//VKSdk.authorize(sMyScope, false, true);
-		
-		active_dlg = new mDialog();
-		requestActiveDlg();
-		//VKUIHelper.onDestroy((Activity) this.context);
-
 		contacts = new HashMap<String, mContact>();
-		
 		accum_cnt = new ArrayList<mContact>();
+		handler = new Handler(); //?
 		
-		accum_cnt_handler_isRunning = false;
-		handler = new Handler();
-				
-		self_contact = new mContact("140195103");
-		requestContactData(self_contact);
-	}
-	
-	public void init(){
+		//Подключение к базе данных, получение количества диалогов
 		SQLiteDatabase db = app.dbHelper.getReadableDatabase();		
 		String my_table_name = "dlgs_" + String.valueOf(getServiceType());
 		Cursor c = db.query(my_table_name, null, null, null, null, null, null);
 		dlgs_count = c.getCount();
 		c.close();
-		db.close();
+		//db.close();
+		
+		//Инициализация VkSdk		
+		//VKUIHelper.onResume((Activity) this.context);
+		VKSdk.initialize(sdkListener, "4161005", VKAccessToken.tokenFromSharedPreferences(this.app.getApplicationContext(), sTokenKey));
+		//VKSdk.authorize(sMyScope, false, true);		
+		//VKUIHelper.onDestroy((Activity) this.context);
+
+		//Действия, требующие авторизации
+		requestActiveDlg();		
+		self_contact = getContact("140195103"); //Должно получатся программно
+	}
+	
+	public void init(){
+		
 	}
 
 	private void requestActiveDlg() {
-		VKRequest request = new VKRequest("messages.getDialogs", VKParameters.from(VKApiConst.COUNT, String.valueOf(1)));
-		request.secure = false;
-		VKParameters preparedParameters = request.getPreparedParameters();
+		AsyncTaskCompleteListener<List<mDialog>> acb = new AsyncTaskCompleteListener<List<mDialog>>(){
 
-		request.executeWithListener(
-				new VKRequestListener() {
-
-					@Override
-				    public void onComplete(VKResponse response) {
-				    	Log.d("requestActiveDlg", "onComplete" );
-				        try {
-				        	JSONObject response_json = response.json.getJSONObject("response");
-				        	JSONArray items = response_json.getJSONArray("items");
-				    		
-
-			    			JSONObject item = items.getJSONObject(0);
-				    			
-		    				mDialog mdl = new mDialog();			    				
-		    				String[] recipient_ids = item.getString( "user_id" ).split(",");
-
-		    				for(String rid : recipient_ids){
-	    						mdl.participants.add( getContact(rid) );
-		    				}
-		    				
-			    			mdl.snippet = item.getString( "body" );
-			    				
-			    			active_dlg = mdl;
-
-				        	
-						} catch (JSONException e) {
-							e.printStackTrace();
-						}
-				    }
-
-				    @Override
-				    public void onError(VKError error) {
-				    	Log.w("requestActiveDlg", "onError " + error.errorCode + " : " + error.errorMessage + " : " + error.apiError + " : " + String.valueOf(authorization_finished));
-				    	if(error.apiError != null) HandleApiError(error);
-				        // Ошибка. Сообщаем пользователю об error.
-				    }
-				    @Override
-				    public void attemptFailed(VKRequest request, int attemptNumber, int totalAttempts) {
-				    	Log.d("requestActiveDlg", "attemptFailed" );
-				        // Неудачная попытка. В аргументах имеется номер попытки и общее их количество.
-				    }
-				    
-				}
-				
-				);
+			@Override
+			public void onTaskComplete(List<mDialog> result) {
+				if(result.size() > 0)active_dlg = result.get(0);
+			}
+			
+		};
+		
+		requestDialogs(0, 1, acb);
 		
 	}
 
@@ -333,7 +289,7 @@ public class Vk implements MessageService {
 			        	accum_cnt_handler_isRunning = false;
 			        	if(accum_cnt.size() > 0)handler.postDelayed(cnts_request_runnable, 500);
 			        	
-			        	((MyApplication) context).triggerCntsUpdaters(); 
+			        	app.triggerCntsUpdaters(); 
 			        	
 					} catch (JSONException e) {
 						e.printStackTrace();
@@ -425,7 +381,6 @@ public class Vk implements MessageService {
         @Override
         public void onTokenExpired(VKAccessToken expiredToken) {
         	Log.d("VKSdkListener", "onTokenExpired" );
-        	MyApplication app = (MyApplication) context;
         	if(app.getCurrentActivity() != null) authorize(app.getCurrentActivity());
             //VKSdk.authorize(sMyScope, false, false);
         }
@@ -434,14 +389,14 @@ public class Vk implements MessageService {
         public void onAccessDenied(VKError authorizationError) {
         	authorization_finished = true;
         	Log.d("VKSdkListener", "onAccessDenied" );
-            new AlertDialog.Builder(Vk.this.context)
+            new AlertDialog.Builder(app.getApplicationContext())
                     .setMessage(authorizationError.errorMessage)
                     .show();
         }
 
         @Override
         public void onReceiveNewToken(VKAccessToken newToken) {
-            newToken.saveTokenToSharedPreferences(Vk.this.context, sTokenKey);
+            newToken.saveTokenToSharedPreferences(app.getApplicationContext(), sTokenKey);
             authorization_finished = true;
             Log.d("VKSdkListener", "onReceiveNewToken" );
             authorised = true;
@@ -706,7 +661,6 @@ public class Vk implements MessageService {
 		if(error.apiError.errorCode == 5){ // User authorization failed.
 			if(authorization_finished && error.request.getPreparedParameters().get(VKApiConst.ACCESS_TOKEN).equals(VKSdk.getAccessToken().accessToken) ){
 				Log.d("HandleApiError", "VKSdk.authorize: " + error.apiError.errorMessage);
-				MyApplication app = (MyApplication) context;
 	        	if(app.getCurrentActivity() != null) authorize(app.getCurrentActivity());
 				//VKSdk.authorize(sMyScope, false, true);
 				authorization_finished = false;
@@ -785,7 +739,7 @@ public class Vk implements MessageService {
 						  Intent intent = new Intent(MsgReceiver.ACTION_RECEIVE);
 				    	  intent.putExtra("service_type", getServiceType());
 				    	  intent.putExtra("msg", msg);
-				    	  context.sendBroadcast(intent);
+				    	  app.sendBroadcast(intent);
 
 						  //Log.d("LongPollRunnable", text);
 					  }
@@ -832,12 +786,12 @@ public class Vk implements MessageService {
 						        	
 						        	String photo_100_url = item.getString("photo_100");
 						        	
-						        	Intent intent = new Intent(context, DownloadService.class);
+						        	Intent intent = new Intent(app.getApplicationContext(), DownloadService.class);
 						            intent.putExtra("url", photo_100_url);
-						            context.getApplicationContext().startService(intent);
+						            app.getApplicationContext().startService(intent);
 						        	
 						            download_waiter tw = new download_waiter(photo_100_url, "cnt_icon_100", cnt);
-						            ((MyApplication) context).dl_waiters.add(tw);
+						            app.dl_waiters.add(tw);
 						        	
 						        	contacts.put(item.getString("id"), cnt);
 				    			}

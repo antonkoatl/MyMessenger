@@ -31,30 +31,25 @@ public class MyApplication extends Application {
 	public void onCreate() {
 		super.onCreate();
 		
+		dbHelper = new DBHelper(this); //Класс для работы с бд
+		myMsgServices = new ArrayList<MessageService>(); //Активные сервисы сообщений
+		cnts_updaters = new ArrayList<AsyncTaskCompleteListener<Void>>(); //Обработчики обвновлений контактных данных //? 
+		dl_waiters = new ArrayList<download_waiter>(); //Обработчики завершения загрузок
 		
-		myMsgServices = new ArrayList<MessageService>();
-		cnts_updaters = new ArrayList<AsyncTaskCompleteListener<Void>>(); 
+		sPref = getSharedPreferences("MyPref", MODE_PRIVATE); //загрузка конфигов
 		
-		sPref = getSharedPreferences("MyPref", MODE_PRIVATE);
-        String using_services[] = sPref.getString("usingservices", "sms,vk").split(",");
-
+		//загрузка активных сервисов
+        String using_services[] = sPref.getString("usingservices", "10,11").split(",");
         for(String i : using_services){        	
-        	if(i.equals("sms"))
+        	if(i.equals( String.valueOf(MessageService.SMS) ))
         		addMsgService(new Sms(this));
-        	if(i.equals("vk"))
+        	if(i.equals( String.valueOf(MessageService.VK) ))
         		addMsgService(new Vk(this));
         }
         
-        dbHelper = new DBHelper(this);
-        
+        //Запуск сервиса обновлений        
         Intent intent1 = new Intent(this, UpdateService.class);
-
-		startService(intent1);
-		
-		dl_waiters = new ArrayList<download_waiter>();
-		
-		for(MessageService ms : myMsgServices)ms.init();
-		
+		startService(intent1);		
 	}
 	
 	public void addMsgService(MessageService mServive){

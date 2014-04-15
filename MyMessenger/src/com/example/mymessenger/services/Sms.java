@@ -60,7 +60,9 @@ public class Sms implements MessageService {
         
         self_contact = new mContact("+79279524758");
         
-        
+        Cursor cursor = context.getContentResolver().query(Uri.parse("content://mms-sms/conversations?simple=true"), null, null, null, null);
+        dlgs_count = cursor.getCount();
+        cursor.close();
 	}
 	
 	public List<mDialog> getDialogs(int offset, int count) {
@@ -491,18 +493,6 @@ public class Sms implements MessageService {
 	    cb.onTaskComplete(cnts);
 		
 	}
-
-	@Override
-	public void init() {
-		Cursor cursor = context.getContentResolver().query(Uri.parse("content://mms-sms/conversations?simple=true"), null, null, null, null);
-        dlgs_count = cursor.getCount();
-        cursor.close();
-		
-	}
-
-
-	
-
 	
 	
 
