@@ -42,6 +42,10 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 	int loaded_dlgs_from_each;
 	int last_requested_msgs_size = 0;
 	
+	List<Integer> lv_dpos = new ArrayList<Integer>();
+	boolean lv_update_pos_running = false
+			;
+	
 	// newInstance constructor for creating fragment with arguments
     public static ListViewSimpleFragment newInstance(String mode) {
     	ListViewSimpleFragment fragmentFirst = new ListViewSimpleFragment();
@@ -50,8 +54,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
     }
 	
 	@Override
-    public View onCreateView(LayoutInflater inflater,
-            ViewGroup container, Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 
 		View rootView = null;
 
@@ -186,6 +189,37 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 		}
 		
 	};
+	
+	class lvRunnable implements Runnable{
+		ListViewSimpleFragment lf;
+		
+		lvRunnable(ListViewSimpleFragment lf){
+			this.lf = lf;					
+		}
+
+		@Override
+		public void run() {
+			if(listview.getLastVisiblePosition() > 0){
+				int firstVisibleItem = listview.getFirstVisiblePosition();
+				int seltop_pos = firstVisibleItem;
+				for(Integer dp : lf.lv_dpos)seltop_pos += dp;
+				lf.lv_dpos.clear();
+				listview.setSelectionFromTop(seltop_pos, listview.getChildAt(1).getTop());
+				lf.lv_update_pos_running = false;
+				//listView.getChildAt(i) works where 0 is the very first visible row and (n-1) is the last visible row (where n is the number of visible views you see).
+				Log.d("async_complete_listener_msg", String.valueOf(seltop_pos) + " :: " + String.valueOf(firstVisibleItem));
+			}
+		}
+		
+	};
+	
+	public void change_lv_pos(int pos){
+		lv_dpos.add(pos);
+		if(!lv_update_pos_running){
+			listview.post(new lvRunnable(ListViewSimpleFragment.this));
+			lv_update_pos_running = true;
+		}
+	}
 
 	AsyncTaskCompleteListener<List<mMessage>> async_complete_listener_msg = new AsyncTaskCompleteListener<List<mMessage>>(){
 
@@ -196,8 +230,9 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 			if(msg_adapter.isLoading && app.getActiveService().getActiveDialog().loading_msgs == 0){
 				showing_messages.remove(0);
 				msg_adapter.isLoading = false;
+				change_lv_pos(-1);
 			}
-			
+		
 			for(mMessage msg : result){
 				boolean added = false;
 				
@@ -217,6 +252,10 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 				if(!added)showing_messages.add(msg);
 	        }
 			
+
+			change_lv_pos(result.size());				
+			
+			/*
 			final int result_size = result.size();
 			final int current_ic = listview.getCount();
 				
@@ -232,7 +271,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 		            	listview.setSelectionFromTop(seltop_pos, listview.getChildAt(1).getTop()); //listView.getChildAt(i) works where 0 is the very first visible row and (n-1) is the last visible row (where n is the number of visible views you see).
 	            	}
 	            }
-	        });
+	        });*/
 				
 			
 			msg_adapter.notifyDataSetChanged();
@@ -354,10 +393,11 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 		public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
 			if(supposedFVI != -1){
 				if(supposedFVI != firstVisibleItem){
-					Log.d("MsgScrollListener", "Wrong firstVisibleItem!!");
+					Log.d("MsgScrollListener", "Wrong firstVisibleItem!! :: " + String.valueOf(supposedFVI) + " :: " + String.valueOf(firstVisibleItem));
 					firstVisibleItem = supposedFVI;
+				} else {
+					supposedFVI = -1;
 				}
-				supposedFVI = -1;
 			}
 			
 			//Log.d("MsgScrollListener", String.valueOf(firstVisibleItem) + ", " + String.valueOf(listview.getFirstVisiblePosition()));
@@ -367,10 +407,11 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 					showing_messages.add(0, null);
 					msg_adapter.isLoading = true;
 					msg_adapter.notifyDataSetChanged();
-					listview.setSelectionFromTop(firstVisibleItem  + 1, listview.getChildAt(firstVisibleItem).getTop());
+					//listview.setSelectionFromTop(firstVisibleItem  + 1, listview.getChildAt(firstVisibleItem).getTop());
+					change_lv_pos(1);
 				}
 				
-				if(showing_messages.size() > last_requested_msgs_size){			
+				if(showing_messages.size() > last_requested_msgs_size && app.getActiveService().getActiveDialog().loading_msgs < 2){	
 					MessageService ms = app.getActiveService();
 					last_requested_msgs_size = showing_messages.size();
 					ms.requestMessages(ms.getActiveDialog(), showing_messages.size(), 20, async_complete_listener_msg);					

@@ -9,6 +9,7 @@ public class mContact implements Parcelable, Comparable<mContact> {
 	public String name;
 	public boolean online;
 	public Bitmap icon_100;
+	public String icon_100_url;
 	
 	public mContact(String address) {
 		this.address = address;

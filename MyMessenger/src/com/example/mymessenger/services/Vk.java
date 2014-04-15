@@ -315,12 +315,14 @@ public class Vk implements MessageService {
 				        	
 				        	String photo_100_url = item.getString("photo_100");
 				        	
-				        	Intent intent = new Intent(context, DownloadService.class);
-				            intent.putExtra("url", photo_100_url);
-				            context.getApplicationContext().startService(intent);
+				        	//Intent intent = new Intent(context, DownloadService.class);
+				            //intent.putExtra("url", photo_100_url);
+				            //context.getApplicationContext().startService(intent);
+				            
+				            cnt.icon_100_url = photo_100_url;
 				        	
-				            download_waiter tw = new download_waiter(photo_100_url, "cnt_icon_100", cnt);
-				            ((MyApplication) context).dl_waiters.add(tw);
+				            //download_waiter tw = new download_waiter(photo_100_url, "cnt_icon_100", cnt);
+				            //((MyApplication) context).dl_waiters.add(tw);
 				        			
 				        	cnt.name = name;
 				        	

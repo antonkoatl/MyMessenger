@@ -74,9 +74,19 @@ public class MyDialogsAdapter extends BaseAdapter {
     	textLabel = (TextView) view.findViewById(R.id.dlgview_dlgtext);
     	textLabel.setText( dlg.snippet );
     	
-    	if(dlg.participants.get(0).icon_100 != null){
-	    	ImageView iv = (ImageView) view.findViewById(R.id.dlgview_iconmain);
+    	ImageView iv = (ImageView) view.findViewById(R.id.dlgview_iconmain);
+    	if(dlg.participants.get(0).icon_100 != null){	    	
 	    	iv.setImageBitmap( dlg.participants.get(0).icon_100 );
+    	} else if(dlg.participants.get(0).icon_100_url != null){
+    		download_waiter tw = new download_waiter(dlg.participants.get(0).icon_100_url, "iv_cnt_icon_100", iv);
+            app.dl_waiters.add(tw);
+            
+            tw = new download_waiter(dlg.participants.get(0).icon_100_url, "cnt_icon_100", dlg.participants.get(0));
+            app.dl_waiters.add(tw);
+            
+            Intent intent = new Intent(context, DownloadService.class);
+            intent.putExtra("url", dlg.participants.get(0).icon_100_url);
+            context.getApplicationContext().startService(intent);
     	}
     	
     	//Log.d("MyDialogsAdapter", data.size() + " : " + position + " : " + dlg.getParticipantsNames());
