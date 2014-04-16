@@ -45,6 +45,9 @@ public class Sms implements MessageService {
 	mContact self_contact;
 	int dlgs_count;
 	
+	mDialog dl_current_dlg;
+	boolean dl_all_msgs_downloaded = false;
+	
 	public Sms(Context context) {
 		this.context = context;
 		self_name = "Me";
@@ -203,6 +206,8 @@ public class Sms implements MessageService {
 				return_msgs.add(msg);
 			} else break;
 		}
+		
+		if(return_msgs.size() == 0)dl_all_msgs_downloaded = true;
 		
 		cursor.close();
 		return return_msgs;
@@ -398,7 +403,11 @@ public class Sms implements MessageService {
 	@Override
 	public void requestMessages(mDialog dlg, int offset, int count,
 			AsyncTaskCompleteListener<List<mMessage>> cb) {
-
+		if(dl_current_dlg != dlg){
+    		dl_current_dlg = dlg;
+    		dl_all_msgs_downloaded = false;
+    	}
+		
 		new load_msgs_async(this.context, cb, dlg).execute(offset, count);
 		
 	}
@@ -492,6 +501,11 @@ public class Sms implements MessageService {
 	    
 	    cb.onTaskComplete(cnts);
 		
+	}
+
+	@Override
+	public boolean isAllMsgsDownloaded() {
+		return dl_all_msgs_downloaded;
 	}
 	
 	

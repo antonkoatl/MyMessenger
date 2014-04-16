@@ -427,7 +427,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 			if (visibleItemCount == 0) return;
 			
 			
-			if ( !app.msgs_loading_maxed && ( firstVisibleItem == 0 ) && app.getActiveService() != null && app.getActiveService().getActiveDialog() != null){
+			if ( ( firstVisibleItem == 0 ) && app.getActiveService() != null && app.getActiveService().getActiveDialog() != null && !app.getActiveService().isAllMsgsDownloaded()){
 				if(!listview.isRefreshing()){	
 					MessageService ms = app.getActiveService();
 					//last_requested_msgs_size = showing_messages.size();

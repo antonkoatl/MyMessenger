@@ -84,7 +84,10 @@ public class Vk implements MessageService {
 	mContact self_contact;
 	
 	boolean all_dlgs_downloaded = false;
-	boolean all_msgs_downloaded = false;
+	
+	mDialog dl_current_dlg;
+	boolean dl_all_new_msgs_downloaded = false;
+	boolean dl_all_msgs_downloaded = false;
 	
 	List<mDialog> loading_msgs = new ArrayList<mDialog>();
 	
@@ -414,10 +417,26 @@ public class Vk implements MessageService {
     @Override
 	public void requestMessages(mDialog dlg, int offset, int count, AsyncTaskCompleteListener<List<mMessage>> cb) {
     	Log.d("requestMessages", "requested :: " + String.valueOf(dlg.loading_msgs));
+    	
+    	if(dl_current_dlg != dlg){
+    		dl_current_dlg = dlg;
+    		dl_all_new_msgs_downloaded = false;
+    		dl_all_msgs_downloaded = false;
+    	}
+    	
     	dlg.loading_msgs++;
 
     	Log.d("requestMessages", "onTaskComplete - bd :: " + String.valueOf(dlg.loading_msgs));
-    	cb.onTaskComplete( load_msgs_from_db(dlg, count, offset) );
+    	
+    	List<mMessage> db_data = load_msgs_from_db(dlg, count, offset);
+    	cb.onTaskComplete( db_data );
+    	
+    	if(dl_all_new_msgs_downloaded && db_data.size() == count){    		
+    		return;
+    	}
+    	
+    	
+    	
     	
 		VKRequest request = new VKRequest("messages.getHistory", VKParameters.from(VKApiConst.COUNT, String.valueOf(count),
 				VKApiConst.OFFSET, String.valueOf(offset), VKApiConst.USER_ID, dlg.getParticipants()));
@@ -440,7 +459,7 @@ public class Vk implements MessageService {
 				    		mDialog dlg = (mDialog) params.get(0);
 				    		int dlg_key = app.dbHelper.getDlgId(dlg, getServiceType());
 				    		
-				    		if(items.length() == 0)app.msgs_loading_maxed = true;
+				    		if(items.length() == 0)dl_all_msgs_downloaded = true;
 				    		
 				    		for (int i = 0; i < items.length(); i++) {
 				    			JSONObject item = items.getJSONObject(i);
@@ -485,7 +504,7 @@ public class Vk implements MessageService {
 				    		
 				    		//db.close();
 				    		if(all_new){
-				    			all_msgs_downloaded = false;
+				    			dl_all_new_msgs_downloaded = false;
 				    			int count = Integer.valueOf( (String) response.request.getMethodParameters().get( VKApiConst.COUNT) );
 				    			int offset = Integer.valueOf( (String) response.request.getMethodParameters().get( VKApiConst.OFFSET) );
 				    			
@@ -500,7 +519,7 @@ public class Vk implements MessageService {
 				    			}
 				    			
 				    		} else {
-				    			all_msgs_downloaded = true;
+				    			dl_all_new_msgs_downloaded = true;
 				    		}
 				    		
 				    		dlg.loading_msgs--;
@@ -894,6 +913,11 @@ public class Vk implements MessageService {
 		cursor.close();
 		
 		return result;
+	}
+
+	@Override
+	public boolean isAllMsgsDownloaded() {
+		return dl_all_msgs_downloaded;
 	}
 	
 }

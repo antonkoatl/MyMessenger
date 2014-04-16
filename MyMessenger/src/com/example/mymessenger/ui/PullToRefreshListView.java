@@ -199,10 +199,10 @@ public class PullToRefreshListView extends ListView{
     }
     
     public void onRefreshCompleteNoAnimation(){
-    	state = State.PULL_TO_REFRESH;
+    	//state = State.PULL_TO_REFRESH;
+    	setState(State.PULL_TO_REFRESH);
         if(getFirstVisiblePosition() > 0){
-        	setHeaderPadding(-header.getHeight());
-            setState(State.PULL_TO_REFRESH);
+        	setHeaderPadding(-header.getHeight());            
         }
         lastUpdated = System.currentTimeMillis();
     }

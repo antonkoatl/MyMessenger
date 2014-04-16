@@ -36,6 +36,7 @@ public interface MessageService {
 	public mDialog getActiveDialog();
 	public mContact getContact(String address);
 	public mContact getMyContact();
+	public boolean isAllMsgsDownloaded();
 	
 	public void setActiveDialog(mDialog dlg);
 	
