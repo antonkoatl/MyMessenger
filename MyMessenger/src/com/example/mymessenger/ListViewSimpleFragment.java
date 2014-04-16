@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.example.mymessenger.services.MessageService;
+import com.example.mymessenger.ui.PullToRefreshListView;
+import com.example.mymessenger.ui.PullToRefreshListView.OnRefreshListener;
+
 
 import android.app.Activity;
 import android.content.Context;
@@ -20,7 +23,6 @@ import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.LinearLayout;
-import android.widget.ListView;
 import android.widget.AbsListView.OnScrollListener;
 import android.widget.AdapterView.OnItemClickListener;
 
@@ -33,7 +35,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 	int async_complete_listener_msg_update_total_offset;
 	MyMsgAdapter msg_adapter;
 	MyDialogsAdapter dlg_adapter;
-	private ListView listview;
+	private PullToRefreshListView listview;
 	MyApplication app;
 	List<mMessage> showing_messages;
 	List<mDialog> showing_dialogs;
@@ -64,7 +66,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 	    if (mode.equals("messages")) {
 	    	rootView = inflater.inflate(R.layout.msg_list, container, false);
 
-	    	listview = (ListView) rootView.findViewById(R.id.listview_object);
+	    	listview = (PullToRefreshListView) rootView.findViewById(R.id.listview_object);
 	    	((Button) rootView.findViewById(R.id.msg_sendbutton)).setOnClickListener(this);
 			showing_messages = new ArrayList<mMessage>();
 			
@@ -85,11 +87,29 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 	        supposedFVI = -1;
 	        
 	        //setTitle(ms.getActiveDialog().getParticipantsNames());
+	        
+	        final PullToRefreshListView listView = (PullToRefreshListView) rootView.findViewById(R.id.listview_object);
+	        listView.setOnRefreshListener(new OnRefreshListener() {
+
+	            @Override
+	            public void onRefresh() {
+	                // Your code to refresh the list contents
+
+	                // ...
+
+	                // Make sure you call listView.onRefreshComplete()
+	                // when the loading is done. This can be done from here or any
+	                // other place, like on a broadcast receive from your loading
+	                // service or the onPostExecute of your AsyncTask.
+
+	                listView.onRefreshComplete();
+	            }
+	        });
 	    }
 	    
 	    if (mode.equals("dialogs")) {
 	    	rootView = inflater.inflate(R.layout.listview_simple, container, false);
-	    	listview = (ListView) rootView.findViewById(R.id.listview_object);
+	    	listview = (PullToRefreshListView) rootView.findViewById(R.id.listview_object);
 	    	
 	    	showing_dialogs = new ArrayList<mDialog>();
 			
@@ -162,9 +182,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 			MessageService ms = app.getActiveService();
 			if(ms != null){
 				ms.requestMessages(ms.getActiveDialog(), 0, 20, async_complete_listener_msg);
-				showing_messages.add(0, null);
-				msg_adapter.isLoading = true;
-				msg_adapter.notifyDataSetChanged();
+				listview.setRefreshing();
 			}
 			
 		}
@@ -204,7 +222,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 				int seltop_pos = firstVisibleItem;
 				for(Integer dp : lf.lv_dpos)seltop_pos += dp;
 				lf.lv_dpos.clear();
-				listview.setSelectionFromTop(seltop_pos, listview.getChildAt(1).getTop());
+				listview.setSelectionFromTop(seltop_pos, listview.getChildAt(0).getTop());
 				lf.lv_update_pos_running = false;
 				//listView.getChildAt(i) works where 0 is the very first visible row and (n-1) is the last visible row (where n is the number of visible views you see).
 				Log.d("async_complete_listener_msg", String.valueOf(seltop_pos) + " :: " + String.valueOf(firstVisibleItem));
@@ -227,12 +245,6 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 		public void onTaskComplete(List<mMessage> result) {
 			Log.d("async_complete_listener_msg", "completed :: " + String.valueOf(app.getActiveService().getActiveDialog().loading_msgs));
 			
-			if(msg_adapter.isLoading && app.getActiveService().getActiveDialog().loading_msgs == 0){
-				showing_messages.remove(0);
-				msg_adapter.isLoading = false;
-				change_lv_pos(-1);
-			}
-		
 			for(mMessage msg : result){
 				boolean added = false;
 				
@@ -252,8 +264,14 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 				if(!added)showing_messages.add(msg);
 	        }
 			
-
-			change_lv_pos(result.size());				
+			if(result.size() > 0)listview.scrollItems(result.size());
+			
+			if(app.getActiveService().getActiveDialog().loading_msgs == 0){
+				listview.onRefreshCompleteNoAnimation();
+			}
+			
+			msg_adapter.notifyDataSetChanged();
+			//change_lv_pos(result.size());		
 			
 			/*
 			final int result_size = result.size();
@@ -274,7 +292,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 	        });*/
 				
 			
-			msg_adapter.notifyDataSetChanged();
+			
 			//msg_adapter.isLoading = false;			
 		}
 		
@@ -389,6 +407,11 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 	OnScrollListener MsgScrollListener = new OnScrollListener(){
 
 
+		/* Если после открытия быстро перемотать наверх, то будет висеть загрузка, не загружаясь из бд
+		 * Возникает, когда достигнут верх экрана, а предыдущий запрос всё ещё висит.
+		 * Предыдущий запрос завершается -> Лист не обвновляется -> Тут же onScroll и лист снова обновляется, загружая новую порцию данных
+		 */
+		
 		@Override
 		public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
 			if(supposedFVI != -1){
@@ -402,19 +425,14 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 			
 			//Log.d("MsgScrollListener", String.valueOf(firstVisibleItem) + ", " + String.valueOf(listview.getFirstVisiblePosition()));
 			if (visibleItemCount == 0) return;
-			if ( !app.msgs_loading_maxed && ( firstVisibleItem == 0 ) ){
-				if(app.getActiveService().getActiveDialog().loading_msgs == 0 && !msg_adapter.isLoading) {			
-					showing_messages.add(0, null);
-					msg_adapter.isLoading = true;
-					msg_adapter.notifyDataSetChanged();
-					//listview.setSelectionFromTop(firstVisibleItem  + 1, listview.getChildAt(firstVisibleItem).getTop());
-					change_lv_pos(1);
-				}
-				
-				if(showing_messages.size() > last_requested_msgs_size && app.getActiveService().getActiveDialog().loading_msgs < 2){	
+			
+			
+			if ( !app.msgs_loading_maxed && ( firstVisibleItem == 0 ) && app.getActiveService() != null && app.getActiveService().getActiveDialog() != null){
+				if(!listview.isRefreshing()){	
 					MessageService ms = app.getActiveService();
-					last_requested_msgs_size = showing_messages.size();
-					ms.requestMessages(ms.getActiveDialog(), showing_messages.size(), 20, async_complete_listener_msg);					
+					//last_requested_msgs_size = showing_messages.size();
+					ms.requestMessages(ms.getActiveDialog(), showing_messages.size(), 20, async_complete_listener_msg);		
+					listview.setRefreshingNoAnimation();
 				}
 				
 				//Log.d("MsgScrollListener", String.valueOf(firstVisibleItem + lmsgs.size()) + ", " + String.valueOf(listview.getChildAt(firstVisibleItem).getTop()));

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.example.mymessenger.services.MessageService;
+import com.example.mymessenger.ui.PullToRefreshListView;
 
 import android.app.Activity;
 import android.content.BroadcastReceiver;
@@ -37,7 +38,7 @@ public class ActivityTwo extends ActionBarActivity implements OnClickListener {
 	List<mMessage> showing_messages;
 	List<mDialog> showing_dialogs;
 	List<mContact> showing_contacts;
-	private ListView listview;
+	private PullToRefreshListView listview;
 	
 	private boolean dlg_maxed;
 	private boolean dlg_isLoading;
@@ -70,7 +71,7 @@ public class ActivityTwo extends ActionBarActivity implements OnClickListener {
 	    
 	    if (mode.equals("messages")) {
 	    	setContentView(R.layout.msg_list);
-	    	listview = (ListView) findViewById(R.id.listview_object);
+	    	listview = (PullToRefreshListView) findViewById(R.id.listview_object);
 	    	((Button) findViewById(R.id.msg_sendbutton)).setOnClickListener(this);
 			showing_messages = new ArrayList<mMessage>();
 			
@@ -78,10 +79,7 @@ public class ActivityTwo extends ActionBarActivity implements OnClickListener {
 			listview.setAdapter(msg_adapter);
 
 			ms.requestMessages(ms.getActiveDialog(), 0, 20, async_complete_listener_msg);
-			showing_messages.add(0, null);
-			msg_isLoading = true;
-			msg_adapter.isLoading = true;
-			msg_adapter.notifyDataSetChanged();
+			listview.setRefreshing();
 			
 	        listview.setOnItemClickListener(MsgClickListener);
 	        listview.setOnScrollListener(MsgScrollListener);
@@ -94,7 +92,7 @@ public class ActivityTwo extends ActionBarActivity implements OnClickListener {
 	    
 	    if (mode.equals("dialogs")) {
 	    	setContentView(R.layout.listview_simple);
-	    	listview = (ListView) findViewById(R.id.listview_object);
+	    	listview = (PullToRefreshListView) findViewById(R.id.listview_object);
 	    	
 	    	showing_dialogs = new ArrayList<mDialog>();
 			
@@ -109,7 +107,7 @@ public class ActivityTwo extends ActionBarActivity implements OnClickListener {
 	    
 	    if (mode.equals("contacts")) {
 	    	setContentView(R.layout.listview_simple);
-	    	listview = (ListView) findViewById(R.id.listview_object);
+	    	listview = (PullToRefreshListView) findViewById(R.id.listview_object);
 	    	
 	    	showing_contacts = new ArrayList<mContact>();
 			
@@ -190,9 +188,7 @@ public class ActivityTwo extends ActionBarActivity implements OnClickListener {
 
 				MessageService ms = app.getActiveService();
 				ms.requestMessages(ms.getActiveDialog(), showing_messages.size(), 20, async_complete_listener_msg);
-				showing_messages.add(0, null);
-				msg_adapter.isLoading = true;
-				msg_adapter.notifyDataSetChanged();
+				listview.setRefreshing();
 				listview.setSelectionFromTop(firstVisibleItem  + 1, listview.getChildAt(firstVisibleItem).getTop());
 				//Log.d("MsgScrollListener", String.valueOf(firstVisibleItem + lmsgs.size()) + ", " + String.valueOf(listview.getChildAt(firstVisibleItem).getTop()));
 				
@@ -255,7 +251,7 @@ public class ActivityTwo extends ActionBarActivity implements OnClickListener {
 
 		@Override
 		public void onTaskComplete(List<mMessage> result) {
-			showing_messages.remove(0);
+			listview.onRefreshComplete();
 			int s = showing_messages.size();
 			for(mMessage msg : result){
 	        	showing_messages.add(0, msg);
@@ -269,7 +265,7 @@ public class ActivityTwo extends ActionBarActivity implements OnClickListener {
 				listview.setSelectionFromTop(firstVisibleItem  + result.size(), listview.getChildAt(1).getTop()); //listView.getChildAt(i) works where 0 is the very first visible row and (n-1) is the last visible row (where n is the number of visible views you see).
 
 			msg_isLoading = false;
-			msg_adapter.isLoading = false;			
+	
 		}
 		
 	};

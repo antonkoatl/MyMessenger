@@ -565,7 +565,7 @@ public class Vk implements MessageService {
 			    			
 			    			
 			    			String selection = DBHelper.colParticipants + " = ?";
-			    			String[] selectionArgs = {mdl.getParticipantsNames()};
+			    			String[] selectionArgs = {mdl.getParticipantsAddresses()};
 			    			Cursor c = db.query(my_table_name, null, selection, selectionArgs, null, null, null);
 	
 			    			if(c.moveToFirst()){
