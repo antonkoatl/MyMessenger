@@ -72,7 +72,7 @@ public class MainActivity extends ActionBarActivity implements OnClickListener {
 	protected void onResume() { 
 		super.onResume();
 		Log.d("MainActivity", "onResume");
-		//VKUIHelper.onResume(this);
+		VKUIHelper.onResume(this);
 		app.setCurrentActivity(this);
 	} 
 
@@ -205,7 +205,8 @@ public class MainActivity extends ActionBarActivity implements OnClickListener {
 	  
     
 	@Override 
-	protected void onActivityResult(int requestCode, int resultCode, Intent data) { 
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+		super.onActivityResult(requestCode, resultCode, data);
 		VKUIHelper.onActivityResult(requestCode, resultCode, data); 
 	} 
 }

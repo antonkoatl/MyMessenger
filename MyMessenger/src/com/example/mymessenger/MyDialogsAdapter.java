@@ -26,7 +26,7 @@ public class MyDialogsAdapter extends BaseAdapter {
 	List<mDialog> data;
 	Context context;
 	
-	MyDialogsAdapter(Context context, List<mDialog> showing_dialogs) {
+	public MyDialogsAdapter(Context context, List<mDialog> showing_dialogs) {
 	    lInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 	    data = showing_dialogs;
 	    this.context = context;

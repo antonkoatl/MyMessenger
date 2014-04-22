@@ -56,42 +56,34 @@ import com.vk.sdk.api.VKRequest;
 import com.vk.sdk.api.VKRequest.VKRequestListener;
 import com.vk.sdk.api.VKResponse;
 
-public class Vk implements MessageService {
-	private MyApplication app;
+public class Vk extends MessageService {
 	private static String sTokenKey = "VK_ACCESS_TOKEN";
 	private static String[] sMyScope = new String[]{VKScope.FRIENDS, VKScope.WALL, VKScope.PHOTOS, VKScope.NOHTTPS, VKScope.MESSAGES};
-	public mDialog active_dlg;
 	
-	List<mDialog> return_dialogs;
-	List<mMessage> return_msgs;
+	boolean accum_cnt_handler_isRunning = false; //??
 	
-	List<mContact> accum_cnt;
+	boolean finished; //??
+	boolean handling; //??
 	
-	boolean accum_cnt_handler_isRunning = false;
-	
-	Map<String, mContact> contacts;
-	
-	boolean finished;
-	boolean handling;
 	private boolean authorization_finished = true;
-	private AsyncTaskCompleteListener<List<mMessage>> requestMessagesCallback;
-	private AsyncTaskCompleteListener<List<mDialog>> requestDialogsCallback;
+	
+	private AsyncTaskCompleteListener<List<mMessage>> requestMessagesCallback; //??
+	private AsyncTaskCompleteListener<List<mDialog>> requestDialogsCallback; //??
 
-	final Handler handler;
+	final Handler handler; //??
 	
-	boolean authorised = false;
+	private List<mContact> accum_cnt;
 	
-	mContact self_contact;
 	
-	boolean all_dlgs_downloaded = false;
+	
+	
 	
 	mDialog dl_current_dlg;
-	boolean dl_all_new_msgs_downloaded = false;
-	boolean dl_all_msgs_downloaded = false;
+	
 	
 	List<mDialog> loading_msgs = new ArrayList<mDialog>();
+
 	
-	int dlgs_count = 0;
 	
 	
 	public void requestNewMessagesRunnable(AsyncTaskCompleteListener<Runnable> cb){
@@ -149,18 +141,22 @@ public class Vk implements MessageService {
 	public void authorize(Context acontext){
 		if(authorization_finished){
 			VKUIHelper.onResume((Activity) acontext);
-			VKSdk.authorize(sMyScope, false, false);
-			VKUIHelper.onDestroy((Activity) acontext);
+			VKSdk.authorize(sMyScope, false, true);
+			//VKUIHelper.onDestroy((Activity) acontext);
 			authorization_finished = false;
 		}
 	}
 	
 	public Vk(MyApplication app) {
-		this.app = app;
+		super(app);
+		service_name = "Vk";
+		service_type = VK;
+	
 		
-		contacts = new HashMap<String, mContact>();
 		accum_cnt = new ArrayList<mContact>();
 		handler = new Handler(); //?
+		
+		
 		
 		//Подключение к базе данных, получение количества диалогов
 		SQLiteDatabase db = app.dbHelper.getReadableDatabase();		
@@ -181,10 +177,6 @@ public class Vk implements MessageService {
 		self_contact = getContact("140195103"); //Должно получатся программно
 	}
 	
-	public void init(){
-		
-	}
-
 	private void requestActiveDlg() {
 		AsyncTaskCompleteListener<List<mDialog>> acb = new AsyncTaskCompleteListener<List<mDialog>>(){
 
@@ -200,30 +192,6 @@ public class Vk implements MessageService {
 	}
 
 
-	@Override
-	public String getServiceName() {
-		return "Vk";
-	}
-
-	@Override
-	public int getServiceType() {
-		return MessageService.VK;
-	}
-
-	@Override
-	public void setActiveDialog(mDialog dlg) {
-		active_dlg = dlg;
-	}
-
-	@Override
-	public mDialog getActiveDialog() {
-		return active_dlg;
-	}
-
-	@Override
-	public mContact getMyContact() {
-		return self_contact;
-	}
 
 	@Override
 	public void requestContactData(mContact cnt) {
@@ -424,14 +392,18 @@ public class Vk implements MessageService {
     		dl_all_msgs_downloaded = false;
     	}
     	
-    	dlg.loading_msgs++;
+    	Integer lm_count = msgs_thread_count.get(dlg);
+    	if(lm_count == null)msgs_thread_count.put(dlg, 2);
+    	else lm_count += 2;
 
     	Log.d("requestMessages", "onTaskComplete - bd :: " + String.valueOf(dlg.loading_msgs));
     	
     	List<mMessage> db_data = load_msgs_from_db(dlg, count, offset);
+    	lm_count--;
     	cb.onTaskComplete( db_data );
     	
-    	if(dl_all_new_msgs_downloaded && db_data.size() == count){    		
+    	if(dl_all_new_msgs_downloaded && db_data.size() == count){
+    		lm_count--;
     		return;
     	}
     	
@@ -522,7 +494,9 @@ public class Vk implements MessageService {
 				    			dl_all_new_msgs_downloaded = true;
 				    		}
 				    		
-				    		dlg.loading_msgs--;
+				    		Integer lm_count = msgs_thread_count.get(dlg);
+				    		lm_count--;
+				    		
 				    		Log.d("requestMessages", "onTaskComplete - net :: " + String.valueOf(dlg.loading_msgs));
 				    		if(callback != null)callback.onTaskComplete(msgs);
 				        	
@@ -540,10 +514,13 @@ public class Vk implements MessageService {
 
 	@Override
 	public void requestDialogs(int offset, int count, AsyncTaskCompleteListener<List<mDialog>> cb) {
+		dlgs_thread_count += 2;
 		
+		dlgs_thread_count--;
 		if(cb != null)cb.onTaskComplete( load_dialogs_from_db(count, offset) );
 		
-		if(!all_dlgs_downloaded || (count + offset) > dlgs_count){
+		
+		if(!dl_all_dlgs_downloaded || (count + offset) > dlgs_count){
 			//if(all_dlgs_downloaded)return;
 
 			VKRequest request = new VKRequest("messages.getDialogs", VKParameters.from(VKApiConst.COUNT, String.valueOf(count),
@@ -629,7 +606,7 @@ public class Vk implements MessageService {
 			    		//db.close();
 			    		
 			    		if(all_new){
-			    			all_dlgs_downloaded = false;
+			    			dl_all_dlgs_downloaded = false;
 			    			int count = Integer.valueOf( (String) response.request.getMethodParameters().get( VKApiConst.COUNT) );
 			    			int offset = Integer.valueOf( (String) response.request.getMethodParameters().get( VKApiConst.OFFSET) );
 			    			
@@ -638,10 +615,10 @@ public class Vk implements MessageService {
 			    			}
 			    			
 			    		} else {
-			    			all_dlgs_downloaded = true;
+			    			dl_all_dlgs_downloaded = true;
 			    		}
 			    		
-			    		
+			    		dlgs_thread_count--;
 			    		if(callback != null)callback.onTaskComplete(dlgs);
 			        	
 					} catch (JSONException e) {
@@ -652,29 +629,13 @@ public class Vk implements MessageService {
 			};
 			
 			request.executeWithListener(rl);
+		} else {
+			dlgs_thread_count--;
 		}
 		
 	}
 
 	
-
-
-
-	@Override
-	public mContact getContact(String address) {
-		mContact cnt = contacts.get(address);
-		
-		if(cnt == null){
-			cnt = new mContact(address);
-			
-			requestContactData(cnt);
-			
-			contacts.put(address, cnt);
-		}
-		
-		return cnt;
-	}
-    
     
 	public void HandleApiError(VKError error){
 		if(error.apiError.errorCode == 5){ // User authorization failed.
@@ -915,9 +876,6 @@ public class Vk implements MessageService {
 		return result;
 	}
 
-	@Override
-	public boolean isAllMsgsDownloaded() {
-		return dl_all_msgs_downloaded;
-	}
-	
+
+
 }

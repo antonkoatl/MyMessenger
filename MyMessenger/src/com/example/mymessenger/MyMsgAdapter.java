@@ -27,7 +27,7 @@ public class MyMsgAdapter extends BaseAdapter {
 	List<mMessage> data;
 	Context context;
 	
-	MyMsgAdapter(Context context, List<mMessage> msgs) {
+	public MyMsgAdapter(Context context, List<mMessage> msgs) {
 	    lInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 	    data = msgs;
 	    this.context = context;

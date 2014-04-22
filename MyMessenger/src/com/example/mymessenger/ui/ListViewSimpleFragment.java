@@ -1,10 +1,20 @@
-package com.example.mymessenger;
+package com.example.mymessenger.ui;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import com.example.mymessenger.AsyncTaskCompleteListener;
+import com.example.mymessenger.MainActivity;
+import com.example.mymessenger.MyApplication;
+import com.example.mymessenger.MyDialogsAdapter;
+import com.example.mymessenger.MyMsgAdapter;
+import com.example.mymessenger.R;
+import com.example.mymessenger.mContact;
+import com.example.mymessenger.mDialog;
+import com.example.mymessenger.mMessage;
+import com.example.mymessenger.R.id;
+import com.example.mymessenger.R.layout;
 import com.example.mymessenger.services.MessageService;
-import com.example.mymessenger.ui.PullToRefreshListView;
 import com.example.mymessenger.ui.PullToRefreshListView.OnRefreshListener;
 
 
@@ -18,10 +28,12 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.inputmethod.InputMethodManager;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.AbsListView.OnScrollListener;
 import android.widget.AdapterView.OnItemClickListener;
@@ -31,7 +43,9 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 	Context context;
 	String mode;
 
-	private boolean dlg_isLoading;
+	private boolean dlg_isLoading = false; //Индикатор загрузки, для автоматической подгрузки диалогов при пролистывании
+	private boolean listview_refreshing_for_dlgs = false;
+	
 	int async_complete_listener_msg_update_total_offset;
 	MyMsgAdapter msg_adapter;
 	MyDialogsAdapter dlg_adapter;
@@ -45,8 +59,8 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 	int last_requested_msgs_size = 0;
 	
 	List<Integer> lv_dpos = new ArrayList<Integer>();
-	boolean lv_update_pos_running = false
-			;
+	boolean lv_update_pos_running = false;
+	private View rootView;
 	
 	// newInstance constructor for creating fragment with arguments
     public static ListViewSimpleFragment newInstance(String mode) {
@@ -58,7 +72,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 	@Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 
-		View rootView = null;
+		rootView = null;
 
 	    //app.active_service = MessageService.VK;
 	    
@@ -121,15 +135,47 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 			
 	        listview.setOnItemClickListener(DlgClickListener);
 	        listview.setOnScrollListener(DlgScrollListener);
+	        
+	        final PullToRefreshListView listView = (PullToRefreshListView) rootView.findViewById(R.id.listview_object);
+	        listView.setOnRefreshListener(new OnRefreshListener() {
+
+	            @Override
+	            public void onRefresh() {
+	            	listview_refreshing_for_dlgs = true;
+	            	app.refreshServices(async_complete_listener_dlg);
+	            	//app.requestLastDialogs(20, 0, async_complete_listener_dlg);	            	               
+	            }
+	        });
 	    }
 	  
         return rootView;
     }
 	
 	@Override
-	public void onClick(View v) {
-		// TODO Auto-generated method stub
-		
+	public void onClick(View view) {
+		switch (view.getId()){
+			case R.id.msg_sendbutton :
+				EditText textLabel = (EditText) rootView.findViewById(R.id.msg_entertext);
+				String text = textLabel.getText().toString();
+				textLabel.setText("");
+				
+				InputMethodManager inputManager = (InputMethodManager) app.getSystemService(Context.INPUT_METHOD_SERVICE); 
+				inputManager.hideSoftInputFromWindow(
+				        app.getCurrentActivity().getCurrentFocus().getWindowToken(),
+				        InputMethodManager.HIDE_NOT_ALWAYS); 
+				
+				Log.d("ActivityTwo.onClick.msg_sendbutton", text);
+				MessageService ms = app.getActiveService();
+				mDialog dlg = ms.getActiveDialog();
+				
+				for(mContact cnt : dlg.participants){
+					ms.sendMessage(cnt.address, text);
+				}
+				
+				ms.requestMessages(dlg, 0, 1, async_complete_listener_msg);
+	
+				break;
+			}
 	}
 	
 	@Override
@@ -298,13 +344,10 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 		
 	};
 	
-	
 	AsyncTaskCompleteListener<List<mDialog>> async_complete_listener_dlg = new AsyncTaskCompleteListener<List<mDialog>>(){
 
 		@Override
 		public void onTaskComplete(List<mDialog> result) {
-			//int s = showing_dialogs.size();
-			
 			for(mDialog dlg : result){
 				boolean added = false;
 				
@@ -326,13 +369,17 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 				}
 				if(!added)showing_dialogs.add(dlg);
 	        }
-			dlg_adapter.notifyDataSetChanged();
 			
-			dlg_isLoading = false;		
+			dlg_adapter.notifyDataSetChanged();			
+			dlg_isLoading = false;
+			
+			if(listview_refreshing_for_dlgs && app.isLoadingDlgs()){
+				listview.onRefreshComplete();
+				listview_refreshing_for_dlgs = false;
+			}
 		}
 		
 	};
-		
 	
 	AsyncTaskCompleteListener<List<mMessage>> async_complete_listener_msg_update = new AsyncTaskCompleteListener<List<mMessage>>(){
 		@Override
@@ -373,8 +420,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 		}
 		
 	};
-	
-	
+		
 	OnScrollListener DlgScrollListener = new OnScrollListener(){
 
 		@Override
@@ -402,8 +448,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 		}
 		
 	};
-	
-	
+		
 	OnScrollListener MsgScrollListener = new OnScrollListener(){
 
 

@@ -2,6 +2,9 @@ package com.example.mymessenger;
 
 import java.util.List;
 
+import com.example.mymessenger.ui.ListViewSimpleFragment;
+import com.example.mymessenger.ui.ServicesMenuFragment;
+
 import android.app.Activity;
 import android.content.Context;
 import android.os.Parcelable;

@@ -31,39 +31,27 @@ import com.example.mymessenger.mContact;
 import com.example.mymessenger.mDialog;
 import com.example.mymessenger.mMessage;
 
-public class Sms implements MessageService {
-	private Context context;
-	private List<mDialog> dialogs;
-	public String self_name;
-	public String self_address;
-	public mDialog active_dialog;
-	private MyApplication app;
+public class Sms extends MessageService {
 
-	Map<String, mContact> contacts;
-	private AsyncTaskCompleteListener<Void> contact_data_changed;
+	private AsyncTaskCompleteListener<Void> contact_data_changed; //??
 	
-	mContact self_contact;
-	int dlgs_count;
 	
-	mDialog dl_current_dlg;
-	boolean dl_all_msgs_downloaded = false;
+	mDialog dl_current_dlg; //??
+
 	
-	public Sms(Context context) {
-		this.context = context;
-		self_name = "Me";
-		dialogs = new ArrayList<mDialog>();
-		app = (MyApplication) context.getApplicationContext();
-		
-		mSentIntent = PendingIntent.getBroadcast(context, 0, new Intent("CTS_SMS_SEND_ACTION"),
+	public Sms(MyApplication app) {
+		super(app);
+		service_name = "Sms";
+		service_type = SMS;
+				
+		mSentIntent = PendingIntent.getBroadcast(app.getApplicationContext(), 0, new Intent("CTS_SMS_SEND_ACTION"),
                 PendingIntent.FLAG_ONE_SHOT);
-        mDeliveredIntent = PendingIntent.getBroadcast(context, 0, new Intent("CTS_SMS_DELIVERY_ACTION"),
+        mDeliveredIntent = PendingIntent.getBroadcast(app.getApplicationContext(), 0, new Intent("CTS_SMS_DELIVERY_ACTION"),
                 PendingIntent.FLAG_ONE_SHOT);
-        
-        contacts = new HashMap<String, mContact>();
         
         self_contact = new mContact("+79279524758");
         
-        Cursor cursor = context.getContentResolver().query(Uri.parse("content://mms-sms/conversations?simple=true"), null, null, null, null);
+        Cursor cursor = app.getApplicationContext().getContentResolver().query(Uri.parse("content://mms-sms/conversations?simple=true"), null, null, null, null);
         dlgs_count = cursor.getCount();
         cursor.close();
 	}
@@ -102,7 +90,7 @@ public class Sms implements MessageService {
 		String selection = null; // A filter declaring which rows to return, formatted as an SQL WHERE clause (excluding the WHERE itself). Passing null will return all rows for the given URI
 		String[] selectionArgs = null; // You may include ?s in selection, which will be replaced by the values from selectionArgs, in the order that they appear in the selection. The values will be bound as Strings
 		String sortOrder = null; // How to order the rows, formatted as an SQL ORDER BY clause (excluding the ORDER BY itself). Passing null will use the default sort order, which may be unordered
-		Cursor cursor = context.getContentResolver().query(Uri.parse("content://mms-sms/conversations?simple=true"), projection, selection, selectionArgs, sortOrder);
+		Cursor cursor = app.getApplicationContext().getContentResolver().query(Uri.parse("content://mms-sms/conversations?simple=true"), projection, selection, selectionArgs, sortOrder);
 		
 		int total = cursor.getCount();
 		List<mDialog> return_dialogs = new ArrayList<mDialog>();
@@ -117,7 +105,7 @@ public class Sms implements MessageService {
 				String[] recipient_ids = cursor.getString( cursor.getColumnIndex("recipient_ids") ).split(" ");
 
 				for(String rid : recipient_ids){
-					Cursor c = context.getContentResolver().query(Uri.parse("content://mms-sms/canonical-addresses"), null, "_id = ?", new String[]{rid}, null);
+					Cursor c = app.getApplicationContext().getContentResolver().query(Uri.parse("content://mms-sms/canonical-addresses"), null, "_id = ?", new String[]{rid}, null);
 					if(c.moveToNext()){
 						mdl.participants.add( getContact( c.getString( c.getColumnIndex("address") ) ) );
 					} else {
@@ -141,26 +129,6 @@ public class Sms implements MessageService {
 		return return_dialogs;
 	}
 
-	@Override
-	public String getServiceName() {
-		return "Sms";
-	}
-
-
-	@Override
-	public int getServiceType() {
-		return MessageService.SMS;
-	}
-
-	@Override
-	public void setActiveDialog(mDialog mdl) {
-		active_dialog = mdl;
-	}
-
-	@Override
-	public mDialog getActiveDialog() {
-		return active_dialog;
-	}
 
 	public List<mMessage> getMessages(mDialog dlg, int offset, int count) {
 		/* MESSAGE_TYPE_ALL    = 0;
@@ -178,7 +146,7 @@ public class Sms implements MessageService {
 		String selection = "address=?"; // A filter declaring which rows to return, formatted as an SQL WHERE clause (excluding the WHERE itself). Passing null will return all rows for the given URI
 		String[] selectionArgs = {dlg.participants.get(0).address}; // You may include ?s in selection, which will be replaced by the values from selectionArgs, in the order that they appear in the selection. The values will be bound as Strings
 		String sortOrder = null; // How to order the rows, formatted as an SQL ORDER BY clause (excluding the ORDER BY itself). Passing null will use the default sort order, which may be unordered
-		Cursor cursor = context.getContentResolver().query(Uri.parse("content://sms"), projection, selection, selectionArgs, sortOrder);
+		Cursor cursor = app.getApplicationContext().getContentResolver().query(Uri.parse("content://sms"), projection, selection, selectionArgs, sortOrder);
 		
 		int total = cursor.getCount();
 		
@@ -213,26 +181,6 @@ public class Sms implements MessageService {
 		return return_msgs;
 	}
 
-	@Override
-	public mContact getContact(String address) {
-		mContact cnt = contacts.get(address);
-		
-		if(cnt == null){
-			cnt = new mContact(address);
-			
-			requestContactData(cnt);
-			
-			contacts.put(address, cnt);
-		}
-		
-		return cnt;
-	}
-	
-
-	@Override
-	public mContact getMyContact() {
-		return self_contact;
-	}
 
 	@Override
 	public void requestContactData(mContact cnt) {
@@ -247,7 +195,7 @@ public class Sms implements MessageService {
 	    Uri contactUri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(cnt.address));
 
 	    // query time
-	    Cursor name_cursor = context.getContentResolver().query(contactUri, name_projection, null, null, null);
+	    Cursor name_cursor = app.getApplicationContext().getContentResolver().query(contactUri, name_projection, null, null, null);
 
 	    if(name_cursor != null) {
 	        if (name_cursor.moveToFirst()) {
@@ -347,13 +295,13 @@ public class Sms implements MessageService {
 		SmsManager smsManager = SmsManager.getDefault();
 		smsManager.sendTextMessage(address, null, text, mSentIntent, mDeliveredIntent);
 		
-		context.registerReceiver(new mSendReceiver(msg), new IntentFilter("CTS_SMS_SEND_ACTION"));
-		context.registerReceiver(new mDeliveryReceiver(msg), new IntentFilter("CTS_SMS_DELIVERY_ACTION"));
+		app.getApplicationContext().registerReceiver(new mSendReceiver(msg), new IntentFilter("CTS_SMS_SEND_ACTION"));
+		app.getApplicationContext().registerReceiver(new mDeliveryReceiver(msg), new IntentFilter("CTS_SMS_DELIVERY_ACTION"));
 		
 		ContentValues values = new ContentValues();   
 	    values.put("address", address);	              
 	    values.put("body", text);
-	    context.getContentResolver().insert(Uri.parse("content://sms/sent"), values);
+	    app.getApplicationContext().getContentResolver().insert(Uri.parse("content://sms/sent"), values);
 		
 		return false;
 		
@@ -407,25 +355,23 @@ public class Sms implements MessageService {
     		dl_current_dlg = dlg;
     		dl_all_msgs_downloaded = false;
     	}
-		
-		new load_msgs_async(this.context, cb, dlg).execute(offset, count);
+
+		new load_msgs_async(cb, dlg).execute(offset, count);
 		
 	}
 	
 	@Override
 	public void requestDialogs(int offset, int count,
 			AsyncTaskCompleteListener<List<mDialog>> cb) {
-		
-		new load_dlgs_async(this.context, cb).execute(offset, count);		
+		dlgs_thread_count++;
+		new load_dlgs_async(cb).execute(offset, count);		
 	}
 	
 	class load_msgs_async extends AsyncTask<Integer, Void, List<mMessage>> {
 	    private AsyncTaskCompleteListener<List<mMessage>> callback;
-		private Context context;
 		private mDialog dlg;
 
-	    public load_msgs_async(Context context, AsyncTaskCompleteListener<List<mMessage>> cb, mDialog dialog) {
-	        this.context = context;
+	    public load_msgs_async(AsyncTaskCompleteListener<List<mMessage>> cb, mDialog dialog) {
 	        this.callback = cb;
 	        this.dlg = dialog;
 	    }
@@ -443,16 +389,15 @@ public class Sms implements MessageService {
 	
 	class load_dlgs_async extends AsyncTask<Integer, Void, List<mDialog>> {
 	    private AsyncTaskCompleteListener<List<mDialog>> callback;
-		private Context context;
 
-	    public load_dlgs_async(Context context, AsyncTaskCompleteListener<List<mDialog>> cb) {
-	        this.context = context;
+	    public load_dlgs_async(AsyncTaskCompleteListener<List<mDialog>> cb) {
 	        this.callback = cb;
 	    }
 
 	    protected void onPostExecute(List<mDialog> result) {
-	       callback.onTaskComplete(result);
-	   }
+	    	dlgs_thread_count--;
+	        callback.onTaskComplete(result);
+	    }
 
 		@Override
 		protected List<mDialog> doInBackground(Integer... params) {
@@ -467,7 +412,7 @@ public class Sms implements MessageService {
 	    IntentFilter intFilt = new IntentFilter();
 	    intFilt.addAction(SmsReceiver.SMS_SENT_ACTION);
 	    intFilt.addAction(SmsReceiver.SMS_RECEIVED_ACTION);
-	    context.registerReceiver(br, intFilt);
+	    app.getApplicationContext().registerReceiver(br, intFilt);
 	}
 
 	@Override
@@ -481,7 +426,7 @@ public class Sms implements MessageService {
 	            ContactsContract.PhoneLookup._ID};
 
 	    // query time
-	    Cursor name_cursor = context.getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null, null, null, ContactsContract.PhoneLookup.DISPLAY_NAME + " ASC");
+	    Cursor name_cursor = app.getApplicationContext().getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null, null, null, ContactsContract.PhoneLookup.DISPLAY_NAME + " ASC");
 
 	    if(name_cursor.moveToFirst()){
 	    	for (int i = 0; i < offset; i++) name_cursor.moveToNext();
@@ -503,12 +448,7 @@ public class Sms implements MessageService {
 		
 	}
 
-	@Override
-	public boolean isAllMsgsDownloaded() {
-		return dl_all_msgs_downloaded;
-	}
-	
-	
+
 
 	
 

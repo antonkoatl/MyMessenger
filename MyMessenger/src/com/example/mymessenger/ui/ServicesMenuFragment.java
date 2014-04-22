@@ -1,5 +1,9 @@
-package com.example.mymessenger;
+package com.example.mymessenger.ui;
 
+import com.example.mymessenger.MyApplication;
+import com.example.mymessenger.R;
+import com.example.mymessenger.R.id;
+import com.example.mymessenger.R.layout;
 import com.example.mymessenger.services.MessageService;
 
 import android.content.Context;

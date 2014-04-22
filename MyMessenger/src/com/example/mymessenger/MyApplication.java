@@ -80,8 +80,7 @@ public class MyApplication extends Application {
           this.mCurrentActivity = mCurrentActivity;
     }
 
-	public void requestLastDialogs(int count, int offset,
-			AsyncTaskCompleteListener<List<mDialog>> cb) {
+	public void requestLastDialogs(int count, int offset, AsyncTaskCompleteListener<List<mDialog>> cb) {
 		for(MessageService msg : myMsgServices){
 			msg.requestDialogs(offset, count, cb);
 		}
@@ -125,6 +124,19 @@ public class MyApplication extends Application {
 			}
 		}
 		return dws;
+	}
+
+	public boolean isLoadingDlgs() {
+		boolean res = false;
+		for(MessageService ms : myMsgServices)if(ms.isLoadingDlgs())res = true;
+		return res;
+	}
+
+	public void refreshServices(AsyncTaskCompleteListener<List<mDialog>> async_complete_listener_dlg) {
+		for(MessageService ms : myMsgServices){
+			ms.refresh();
+			ms.requestDialogs(0, 20, async_complete_listener_dlg);
+		}
 	}
 	
 	
