@@ -26,6 +26,7 @@ public abstract class MessageService {
 	
 	protected int dlgs_count;
 	protected boolean dl_all_dlgs_downloaded = false; //Все диалоги загружены из сети
+	protected mDialog dl_current_dlg; //При загрузке сообщений для одного диалога, показывает что все загружены
 	protected boolean dl_all_msgs_downloaded = false;
 	protected boolean dl_all_new_msgs_downloaded = false;
 	protected int dlgs_thread_count = 0; //Количество потоков, загружающих диалоги в данных момент
@@ -55,9 +56,9 @@ public abstract class MessageService {
 	public abstract void requestContactData(mContact cnt);
 	public abstract void requestContacts(int offset, int count, AsyncTaskCompleteListener<List<mContact>> cb);
 	
-	//Запросить алгоритм для отслеживания новых сообщений	
-	public abstract void requestNewMessagesRunnable(AsyncTaskCompleteListener<Runnable> cb);
-	
+	public abstract void requestNewMessagesRunnable(AsyncTaskCompleteListener<Runnable> cb); //Запросить алгоритм для отслеживания новых сообщений	
+	public abstract void setup(); //Подготовить сервис для работы
+	 
 	//Служебные функции
 	public final String getServiceName() {
 		return service_name;

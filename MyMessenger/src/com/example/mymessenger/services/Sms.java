@@ -12,11 +12,15 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.provider.ContactsContract;
 import android.telephony.SmsManager;
+import android.telephony.SmsMessage;
+import android.telephony.TelephonyManager;
 import android.text.format.Time;
 import android.util.Log;
 import android.widget.Toast;
@@ -32,30 +36,37 @@ import com.example.mymessenger.mDialog;
 import com.example.mymessenger.mMessage;
 
 public class Sms extends MessageService {
-
-	private AsyncTaskCompleteListener<Void> contact_data_changed; //??
-	
-	
-	mDialog dl_current_dlg; //??
-
-	
+	private PendingIntent mSentIntent;
+    private PendingIntent mDeliveredIntent;
+    
 	public Sms(MyApplication app) {
 		super(app);
 		service_name = "Sms";
 		service_type = SMS;
+
+		SharedPreferences sPref = app.getSharedPreferences(service_name, Context.MODE_PRIVATE); //загрузка конфигов
 				
 		mSentIntent = PendingIntent.getBroadcast(app.getApplicationContext(), 0, new Intent("CTS_SMS_SEND_ACTION"),
                 PendingIntent.FLAG_ONE_SHOT);
         mDeliveredIntent = PendingIntent.getBroadcast(app.getApplicationContext(), 0, new Intent("CTS_SMS_DELIVERY_ACTION"),
                 PendingIntent.FLAG_ONE_SHOT);
         
-        self_contact = new mContact("+79279524758");
+        self_contact = new mContact("");
+        self_contact.name = sPref.getString("current_account", "account_name");        
         
         Cursor cursor = app.getApplicationContext().getContentResolver().query(Uri.parse("content://mms-sms/conversations?simple=true"), null, null, null, null);
         dlgs_count = cursor.getCount();
         cursor.close();
 	}
 	
+	@Override
+	public void setup() {    	
+    	SharedPreferences sPref = app.getSharedPreferences(service_name, Context.MODE_PRIVATE); //загрузка конфигов
+    	Editor ed = sPref.edit();
+    	ed.putString("current_account", "");
+    	ed.commit();
+	}
+
 	public List<mDialog> getDialogs(int offset, int count) {
 		/*
 		 * Inbox = "content://sms/inbox"
@@ -214,8 +225,7 @@ public class Sms extends MessageService {
 		//((MyApplication) context).triggerCntsUpdaters();
 	}
 		
-	private PendingIntent mSentIntent;
-    private PendingIntent mDeliveredIntent;
+	
     
 	class mSendReceiver extends BroadcastReceiver {
 		mMessage msg;

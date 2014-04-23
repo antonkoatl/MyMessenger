@@ -20,6 +20,7 @@ import android.app.AlertDialog;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
@@ -70,7 +71,7 @@ public class Vk extends MessageService {
 	private AsyncTaskCompleteListener<List<mMessage>> requestMessagesCallback; //??
 	private AsyncTaskCompleteListener<List<mDialog>> requestDialogsCallback; //??
 
-	final Handler handler; //??
+	final Handler handler; //Для отложенного запроса данных о пользователях
 	
 	private List<mContact> accum_cnt;
 	
@@ -152,9 +153,10 @@ public class Vk extends MessageService {
 		service_name = "Vk";
 		service_type = VK;
 	
+		SharedPreferences sPref = app.getSharedPreferences(service_name, Context.MODE_PRIVATE); //загрузка конфигов
 		
 		accum_cnt = new ArrayList<mContact>();
-		handler = new Handler(); //?
+		handler = new Handler();
 		
 		
 		
@@ -171,12 +173,54 @@ public class Vk extends MessageService {
 		VKSdk.initialize(sdkListener, "4161005", VKAccessToken.tokenFromSharedPreferences(this.app.getApplicationContext(), sTokenKey));
 		//VKSdk.authorize(sMyScope, false, true);		
 		//VKUIHelper.onDestroy((Activity) this.context);
-
+		
+		String my_account = sPref.getString("current_account", "140195103");
+		
 		//Действия, требующие авторизации
 		requestActiveDlg();		
-		self_contact = getContact("140195103"); //Должно получатся программно
+		self_contact = getContact(my_account); //Должно получатся программно
+		requestContactData(self_contact);
 	}
 	
+	private void requestAccountInfo() {
+		VKRequest request = new VKRequest("users.get", VKParameters.from(VKApiConst.FIELDS, "photo_100"));
+		request.secure = false;
+		VKParameters preparedParameters = request.getPreparedParameters();
+				
+		VKRequestListener rl = new VKRequestListenerWithCallback<Void>(null, Vk.this) {
+		    @Override
+		    public void onComplete(VKResponse response) {
+		    	Log.d("VKRequestListener", response.request.methodName +  " :: onComplete");
+		        try {
+		        	JSONArray response_json = response.json.getJSONArray("response");
+		        	if(response_json.length() > 0){
+			        	JSONObject item = response_json.getJSONObject(0);
+
+			        	mContact cnt = new mContact(item.getString("id"));
+			        	
+			        	String name = item.getString("first_name");
+			        	name += " " + item.getString("last_name");
+			        	
+			        	String photo_100_url = item.getString("photo_100");
+			            cnt.icon_100_url = photo_100_url;
+			        	cnt.name = name;
+			        	
+			        	
+		        	}
+		        	
+				} catch (JSONException e) {
+					e.printStackTrace();
+				}
+		    }
+
+		    
+		    
+		};
+
+		request.executeWithListener(rl);
+		
+	}
+
 	private void requestActiveDlg() {
 		AsyncTaskCompleteListener<List<mDialog>> acb = new AsyncTaskCompleteListener<List<mDialog>>(){
 
@@ -393,7 +437,10 @@ public class Vk extends MessageService {
     	}
     	
     	Integer lm_count = msgs_thread_count.get(dlg);
-    	if(lm_count == null)msgs_thread_count.put(dlg, 2);
+    	if(lm_count == null){
+    		lm_count = 2;
+    		msgs_thread_count.put(dlg, lm_count);
+    	}
     	else lm_count += 2;
 
     	Log.d("requestMessages", "onTaskComplete - bd :: " + String.valueOf(dlg.loading_msgs));
@@ -874,6 +921,12 @@ public class Vk extends MessageService {
 		cursor.close();
 		
 		return result;
+	}
+
+	@Override
+	public void setup() {
+		// TODO Auto-generated method stub
+		
 	}
 
 

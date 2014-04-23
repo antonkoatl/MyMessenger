@@ -55,11 +55,6 @@ public class MainActivity extends ActionBarActivity implements OnClickListener {
         
         sPref = getSharedPreferences("MyPref", MODE_PRIVATE);
         
-        //((Vk) app.getService(MessageService.VK)).authorize(this);
-
-        
-        
-        
     }
 
     @Override
@@ -113,7 +108,13 @@ public class MainActivity extends ActionBarActivity implements OnClickListener {
     
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-    	Toast.makeText(this, item.getTitle(), Toast.LENGTH_SHORT).show();
+    	Toast.makeText(this, String.valueOf(item.getItemId()), Toast.LENGTH_SHORT).show();
+    	switch (item.getItemId()) {
+    	case R.id.menuitem_addservice:
+    		Intent intent = new Intent(this, SelectServiceActivity.class);
+			startActivity(intent);
+    	}
+    	
     	return super.onOptionsItemSelected(item);
     }
     
