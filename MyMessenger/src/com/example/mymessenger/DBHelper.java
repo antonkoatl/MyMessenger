@@ -33,31 +33,8 @@ public class DBHelper extends SQLiteOpenHelper {
 
 	@Override
 	public void onCreate(SQLiteDatabase db) {
-		int ms_types[] = {MessageService.SMS, MessageService.VK };
-		for(int ms_type : ms_types){
-			String tn_msgs = "msgs_" + String.valueOf(ms_type);
-			String tn_dlgs = "dlgs_" + String.valueOf(ms_type);
-			
-			db.execSQL("create table " + tn_msgs + " ("
-			          + colId + " integer primary key autoincrement," 
-			          + colRespondent + " text,"
-			          + colSendtime + " integer,"
-			          + colBody + " text,"
-			          + colFlags + " integer,"
-			          + colDlgkey + " integer" + ");");
-			
-			db.execSQL("create table " + tn_dlgs + " ("
-			          + colId + " integer primary key autoincrement," 
-			          + colParticipants + " text unique,"
-			          + colLastmsgtime + " integer,"
-			          + colSnippet + " text" + ");");
-			
-			db.execSQL("CREATE TRIGGER tg_dlg_" + tn_msgs
-					  + " Before INSERT ON " + tn_msgs
-					  + " FOR EACH ROW BEGIN"
-					  + " SELECT CASE WHEN ((SELECT " + colId + " FROM " + tn_dlgs + " WHERE " + colId + " =new." + colDlgkey + " ) IS NULL)"
-					  + " THEN RAISE (ABORT,'Foreign Key Violation') END;"
-					  + " END");
+		for(MessageService ms : app.myMsgServices){
+			createTablesDb(ms, db);
 		}
 	}
 
@@ -67,10 +44,10 @@ public class DBHelper extends SQLiteOpenHelper {
 
 	}
 	
-	public int getDlgId(mDialog dlg, int ms_type){
+	public int getDlgId(mDialog dlg, MessageService ms){
 		SQLiteDatabase db = getReadableDatabase();
 		
-		String my_table_name = "dlgs_" + String.valueOf(ms_type);
+		String my_table_name = getTableNameDlgs(ms);
 		Collections.sort(dlg.participants);
 		String selection = DBHelper.colParticipants + " = " + dlg.getParticipantsAddresses();
 		Cursor c = db.query(my_table_name, null, selection, null, null, null, null);
@@ -85,4 +62,43 @@ public class DBHelper extends SQLiteOpenHelper {
 		return dlg_key;
 	}
 
+	private void createTablesDb(MessageService ms, SQLiteDatabase db){
+		String tn_msgs = getTableNameMsgs(ms);
+		String tn_dlgs = getTableNameDlgs(ms);
+		
+		db.execSQL("create table IF NOT EXISTS " + tn_msgs + " ("
+		          + colId + " integer primary key autoincrement," 
+		          + colRespondent + " text,"
+		          + colSendtime + " integer,"
+		          + colBody + " text,"
+		          + colFlags + " integer,"
+		          + colDlgkey + " integer" + ");");
+		
+		db.execSQL("create table IF NOT EXISTS " + tn_dlgs + " ("
+		          + colId + " integer primary key autoincrement," 
+		          + colParticipants + " text unique,"
+		          + colLastmsgtime + " integer,"
+		          + colSnippet + " text" + ");");
+		
+		db.execSQL("CREATE TRIGGER IF NOT EXISTS tg_dlg_" + tn_msgs
+				  + " Before INSERT ON " + tn_msgs
+				  + " FOR EACH ROW BEGIN"
+				  + " SELECT CASE WHEN ((SELECT " + colId + " FROM " + tn_dlgs + " WHERE " + colId + " =new." + colDlgkey + " ) IS NULL)"
+				  + " THEN RAISE (ABORT,'Foreign Key Violation') END;"
+				  + " END");
+	}
+	
+	public void createTables(MessageService ms){
+		SQLiteDatabase db = getWritableDatabase();
+		createTablesDb(ms, db);
+	}
+	
+	
+	public String getTableNameDlgs(MessageService ms){
+		return "dlgs_" + String.valueOf(ms.getServiceType()) + "_" + ms.getMyContact().address;
+	}
+	
+	public String getTableNameMsgs(MessageService ms){
+		return "msgs_" + String.valueOf(ms.getServiceType()) + "_" + ms.getMyContact().address;
+	}
 }

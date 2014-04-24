@@ -29,8 +29,6 @@ import com.example.mymessenger.services.Vk;
 import com.vk.sdk.VKUIHelper;
 
 public class MainActivity extends ActionBarActivity implements OnClickListener {
-	final int MENU_CON_MOVE = 101;
-	final int MENU_CON_DELETE = 102;
 	final int DIALOG_SMS = 1;
 	MyApplication app;
 	private SharedPreferences sPref;
@@ -47,6 +45,8 @@ public class MainActivity extends ActionBarActivity implements OnClickListener {
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setHomeButtonEnabled(true);
         app = (MyApplication) getApplicationContext();
+        
+        app.initServices();
         
         pagerAdapter = new MyPagerAdapter(getSupportFragmentManager(), this);
         mViewPager = (ViewPager) findViewById(R.id.pager);
@@ -88,7 +88,7 @@ public class MainActivity extends ActionBarActivity implements OnClickListener {
 	protected void onDestroy() { 
 		super.onDestroy();
 		Log.d("MainActivity", "onDestroy");
-		//VKUIHelper.onDestroy(this); 
+		VKUIHelper.onDestroy(this); 
 	} 
     
     
@@ -108,11 +108,10 @@ public class MainActivity extends ActionBarActivity implements OnClickListener {
     
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-    	Toast.makeText(this, String.valueOf(item.getItemId()), Toast.LENGTH_SHORT).show();
     	switch (item.getItemId()) {
     	case R.id.menuitem_addservice:
     		Intent intent = new Intent(this, SelectServiceActivity.class);
-			startActivity(intent);
+    		startActivityForResult(intent, SelectServiceActivity.REQUEST_CODE);
     	}
     	
     	return super.onOptionsItemSelected(item);
@@ -122,27 +121,7 @@ public class MainActivity extends ActionBarActivity implements OnClickListener {
     
     
     
-    @Override
-    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo) {
-    	switch (v.getId()) {
-        case 10:
-        	menu.add(0, MENU_CON_MOVE, 0, "Move");
-        	menu.add(0, MENU_CON_DELETE, 0, "Delete");
-        	break;
-        }
-    }
     
-    @Override
-    public boolean onContextItemSelected(MenuItem item) {
-    	switch (item.getItemId()) {
-    	case MENU_CON_MOVE:    		
-    		break;
-
-    	case MENU_CON_DELETE:
-    		break;
-    	}
-    	return super.onContextItemSelected(item);
-    }
 
     
     
@@ -209,5 +188,15 @@ public class MainActivity extends ActionBarActivity implements OnClickListener {
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		super.onActivityResult(requestCode, resultCode, data);
 		VKUIHelper.onActivityResult(requestCode, resultCode, data); 
+		
+		if(requestCode == SelectServiceActivity.REQUEST_CODE){
+			if(resultCode == SelectServiceActivity.RESULT_ADDED){
+				pagerAdapter.notifyDataSetChanged();
+				//getSupportFragmentManager().beginTransaction().remove(pagerAdapter.getRegisteredFragment(0)).commit();				
+			}
+			if(resultCode == SelectServiceActivity.RESULT_NOT_ADDED){
+				Toast.makeText(this, "Service not added", Toast.LENGTH_SHORT).show();
+			}
+		}
 	} 
 }

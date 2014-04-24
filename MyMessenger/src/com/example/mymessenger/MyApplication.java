@@ -10,8 +10,10 @@ import com.example.mymessenger.services.Vk;
 import android.app.Activity;
 import android.app.Application;
 import android.app.PendingIntent;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 import android.os.HandlerThread;
 
 public class MyApplication extends Application {
@@ -39,7 +41,7 @@ public class MyApplication extends Application {
 		sPref = getSharedPreferences("MyPref", MODE_PRIVATE); //загрузка конфигов
 		
 		//загрузка активных сервисов
-        String using_services[] = sPref.getString("usingservices", "10,11").split(",");
+        String using_services[] = sPref.getString("usingservices_", "10").split(",");
         for(String i : using_services){        	
         	if(i.equals( String.valueOf(MessageService.SMS) ))
         		addMsgService(new Sms(this));
@@ -136,6 +138,47 @@ public class MyApplication extends Application {
 		for(MessageService ms : myMsgServices){
 			ms.refresh();
 			ms.requestDialogs(0, 20, async_complete_listener_dlg);
+		}
+	}
+
+	public boolean newService(int service_type) {
+		boolean isExist = false;
+		
+		for(MessageService ms : myMsgServices){
+			if(ms.getServiceType() == service_type){
+				isExist = true;
+				break;
+			}
+		}
+		
+		if(!isExist){
+			MessageService ms = null;
+			switch(service_type){
+			case MessageService.SMS: ms = new Sms(this);
+			case MessageService.VK: ms = new Vk(this);
+			}
+			
+			ms.setup();
+			ms.init();
+			
+			String usingservices = "";
+			for(MessageService mst : myMsgServices){
+				usingservices += String.valueOf(mst.getServiceType()) + ",";
+			}
+			usingservices += String.valueOf(service_type);
+			
+			Editor ed = sPref.edit();
+	    	ed.putString("usingservices", usingservices);
+	    	ed.commit();
+	    	
+	    	addMsgService(ms);
+			return true;
+		} else return false;
+	}
+
+	public void initServices() {
+		for(MessageService ms : myMsgServices){
+			ms.init();
 		}
 	}
 	

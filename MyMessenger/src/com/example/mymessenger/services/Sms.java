@@ -61,10 +61,7 @@ public class Sms extends MessageService {
 	
 	@Override
 	public void setup() {    	
-    	SharedPreferences sPref = app.getSharedPreferences(service_name, Context.MODE_PRIVATE); //загрузка конфигов
-    	Editor ed = sPref.edit();
-    	ed.putString("current_account", "");
-    	ed.commit();
+    	
 	}
 
 	public List<mDialog> getDialogs(int offset, int count) {
@@ -455,6 +452,12 @@ public class Sms extends MessageService {
 		name_cursor.close();
 	    
 	    cb.onTaskComplete(cnts);
+		
+	}
+
+	@Override
+	public void init() {
+		// TODO Auto-generated method stub
 		
 	}
 

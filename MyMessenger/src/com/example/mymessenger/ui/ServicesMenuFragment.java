@@ -10,8 +10,11 @@ import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.util.Log;
+import android.view.ContextMenu;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
+import android.view.ContextMenu.ContextMenuInfo;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -19,6 +22,9 @@ import android.widget.LinearLayout;
 
 
 public class ServicesMenuFragment extends Fragment {
+	static final int MENU_CON_MOVE = 101;
+	static final int MENU_CON_DELETE = 102;
+	
 	Context context;
 	
 	@Override
@@ -62,5 +68,29 @@ public class ServicesMenuFragment extends Fragment {
 		}
 		return res;
 	}
+	
+	@Override
+    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo) {
+    	/*switch (v.getId()) {
+        case 10:
+        	menu.add(0, MENU_CON_MOVE, 0, "Move");
+        	menu.add(0, MENU_CON_DELETE, 0, "Delete");
+        	break;
+        }*/
+		menu.add(0, MENU_CON_MOVE, 0, "Move");
+    	menu.add(0, MENU_CON_DELETE, 0, "Delete");
+    }
+    
+    @Override
+    public boolean onContextItemSelected(MenuItem item) {
+    	switch (item.getItemId()) {
+    	case MENU_CON_MOVE:    		
+    		break;
+
+    	case MENU_CON_DELETE:
+    		break;
+    	}
+    	return super.onContextItemSelected(item);
+    }
 
 }

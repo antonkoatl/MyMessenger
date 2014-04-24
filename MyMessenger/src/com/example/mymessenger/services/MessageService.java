@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 
 import com.example.mymessenger.AsyncTaskCompleteListener;
 import com.example.mymessenger.MyApplication;
@@ -31,6 +32,7 @@ public abstract class MessageService {
 	protected boolean dl_all_new_msgs_downloaded = false;
 	protected int dlgs_thread_count = 0; //Количество потоков, загружающих диалоги в данных момент
 	protected Map<mDialog, Integer> msgs_thread_count; //Количество потоков, загружающих сообщения для определённого диалога в данных момент
+	protected SharedPreferences sPref;
 	
 	List<mDialog> return_dialogs;
 	List<mMessage> return_msgs;
@@ -58,6 +60,7 @@ public abstract class MessageService {
 	
 	public abstract void requestNewMessagesRunnable(AsyncTaskCompleteListener<Runnable> cb); //Запросить алгоритм для отслеживания новых сообщений	
 	public abstract void setup(); //Подготовить сервис для работы
+	public abstract void init(); //Инициализация, после авторизации
 	 
 	//Служебные функции
 	public final String getServiceName() {
@@ -115,7 +118,7 @@ public abstract class MessageService {
 	public final void setActiveDialog(mDialog dlg) {
 		active_dlg = dlg;
 	}
-	
+		
 	//отправка сообщения
 	public abstract boolean sendMessage(String address, String text);
 	

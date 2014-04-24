@@ -13,6 +13,7 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
+import android.util.Log;
 import android.util.SparseArray;
 import android.view.View;
 import android.view.ViewGroup;
@@ -29,11 +30,11 @@ public class MyPagerAdapter extends FragmentPagerAdapter {
 	@Override
     public Fragment getItem(int position) {
         switch (position) {
-        case 0: // Fragment # 0 - This will show image
+        case 0:
             return new ServicesMenuFragment();
-        case 1: // Fragment # 1 - This will show image
+        case 1:
             return ListViewSimpleFragment.newInstance("dialogs");
-        default:// Fragment # 2-9 - Will show list
+        default:
             return ListViewSimpleFragment.newInstance("messages");
         }
     }
@@ -70,6 +71,15 @@ public class MyPagerAdapter extends FragmentPagerAdapter {
     
     public Fragment getRegisteredFragment(int position) {
         return registeredFragments.get(position);
+    }
+    
+    @Override
+    public int getItemPosition(Object object)
+    {
+    	Log.d("MyPagerAdapter","getItemPosition");
+    	if (object instanceof ServicesMenuFragment)
+            return POSITION_NONE;
+        return POSITION_UNCHANGED;
     }
 	
 }

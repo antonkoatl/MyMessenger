@@ -26,9 +26,15 @@ public class UpdateService extends Service {
   
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
-		for(MessageService i : ( (MyApplication) getApplication() ).myMsgServices){
-			Log.d("UpdateService", "requested");
-			i.requestNewMessagesRunnable(async_complete_listener_runnable);
+		int ss = intent.getIntExtra("specific_service", -1);
+		
+		if(ss == -1){
+			for(MessageService i : ( (MyApplication) getApplication() ).myMsgServices){
+				Log.d("UpdateService", "requested");
+				i.requestNewMessagesRunnable(async_complete_listener_runnable);
+			}
+		} else {
+			( (MyApplication) getApplication() ).getService(ss).requestNewMessagesRunnable(async_complete_listener_runnable);
 		}
 		
 		return START_STICKY;
