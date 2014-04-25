@@ -436,6 +436,7 @@ public class Vk extends MessageService {
     
 
 	
+    
     @Override
 	public void requestMessages(mDialog dlg, int offset, int count, AsyncTaskCompleteListener<List<mMessage>> cb) {
     	Log.d("requestMessages", "requested :: " + String.valueOf(dlg.loading_msgs));
@@ -665,7 +666,7 @@ public class Vk extends MessageService {
 				    		
 				    		//db.close();
 				    		
-				    		if(!have_new){
+				    		if(have_new){
 				    			dl_all_dlgs_downloaded = false;
 				    			int count = Integer.valueOf( (String) response.request.getMethodParameters().get( VKApiConst.COUNT) );
 				    			int offset = Integer.valueOf( (String) response.request.getMethodParameters().get( VKApiConst.OFFSET) );
@@ -700,14 +701,25 @@ public class Vk extends MessageService {
 	public void HandleApiError(VKError error){
 		Log.d("HandleApiError", String.valueOf(error.apiError.errorCode) + " :: " + error.apiError.errorMessage);
 		if(error.apiError.errorCode == 5){ // User authorization failed.
-			if(authorization_finished && error.request.getPreparedParameters().get(VKApiConst.ACCESS_TOKEN).equals(VKSdk.getAccessToken().accessToken) ){
+			if(authorization_finished && check_access_toten(error) ){
 				Log.d("HandleApiError", "VKSdk.authorize: " + error.apiError.errorMessage);
 	        	if(app.getCurrentActivity() != null) authorize(app.getCurrentActivity());
 				//VKSdk.authorize(sMyScope, false, true);
 				authorization_finished = false;
 			}
 			Log.d("HandleApiError", "error.request.repeat: " + error.apiError.errorMessage);
-			error.request.repeat();
+			Runnable r = new RunnableWithParam<VKError>(){
+
+				@Override
+				public void run() {
+					VKRequest r = new VKRequest(param.request.methodName, param.request.getMethodParameters());
+					r.executeWithListener(param.request.requestListener);
+					//param.request.repeat();
+				}
+				
+			}.setParam(error);
+			
+			handler.postDelayed(r, 2000);
 		}
 		
 		if(error.apiError.errorCode == 6){ // Too many requests per second.
@@ -720,9 +732,19 @@ public class Vk extends MessageService {
 				
 			}.setParam(error);
 			
-			handler.postDelayed(r, 2000);
+			handler.postDelayed(r, 5000);
 			
 		}
+	}
+
+
+	private boolean check_access_toten(VKError error) {
+		for(Map<String, String> m : error.apiError.requestParams){
+			if(m.get("key").equals(VKApiConst.ACCESS_TOKEN)){
+				return m.get("value").equals(VKSdk.getAccessToken().accessToken);
+			}
+		}
+		return false;
 	}
 
 
@@ -972,11 +994,7 @@ public class Vk extends MessageService {
 	    	
 			app.dbHelper.createTables(this);
 			setup_stage++;
-			setupStages();
-			
-			Intent intent = new Intent(app.getApplicationContext(), UpdateService.class);
-			intent.putExtra("specific_service", getServiceType());
-			app.startService(intent);		
+			setupStages();	
 			break;
 		case 4:
 			isSetupFinished = true;
@@ -991,6 +1009,11 @@ public class Vk extends MessageService {
 			@Override
 			public void run() {
 				if(isSetupFinished){
+					//Обновления
+					Intent intent = new Intent(app.getApplicationContext(), UpdateService.class);
+					intent.putExtra("specific_service", getServiceType());
+					app.startService(intent);	
+					
 					//Подключение к базе данных, получение количества диалогов
 					SQLiteDatabase db = app.dbHelper.getReadableDatabase();		
 					String my_table_name = app.dbHelper.getTableNameDlgs(Vk.this);

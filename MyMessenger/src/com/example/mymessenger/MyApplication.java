@@ -41,7 +41,7 @@ public class MyApplication extends Application {
 		sPref = getSharedPreferences("MyPref", MODE_PRIVATE); //загрузка конфигов
 		
 		//загрузка активных сервисов
-        String using_services[] = sPref.getString("usingservices_", "10").split(",");
+        String using_services[] = sPref.getString("usingservices", "10").split(",");
         for(String i : using_services){        	
         	if(i.equals( String.valueOf(MessageService.SMS) ))
         		addMsgService(new Sms(this));
@@ -51,7 +51,7 @@ public class MyApplication extends Application {
         
         //«апуск сервиса обновлений        
         Intent intent1 = new Intent(this, UpdateService.class);
-		startService(intent1);		
+		startService(intent1);
 	}
 	
 	public void addMsgService(MessageService mServive){

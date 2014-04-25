@@ -37,7 +37,7 @@ public class UpdateService extends Service {
 			( (MyApplication) getApplication() ).getService(ss).requestNewMessagesRunnable(async_complete_listener_runnable);
 		}
 		
-		return START_STICKY;
+		return START_REDELIVER_INTENT;
 	}
 
 	AsyncTaskCompleteListener<Runnable> async_complete_listener_runnable = new AsyncTaskCompleteListener<Runnable>(){
