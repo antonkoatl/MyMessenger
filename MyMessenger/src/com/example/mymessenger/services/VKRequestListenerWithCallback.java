@@ -7,7 +7,6 @@ import android.util.Log;
 
 import com.example.mymessenger.AsyncTaskCompleteListener;
 import com.example.mymessenger.MyApplication;
-import com.example.mymessenger.RunnableWithParam;
 import com.vk.sdk.VKSdk;
 import com.vk.sdk.api.VKApiConst;
 import com.vk.sdk.api.VKError;

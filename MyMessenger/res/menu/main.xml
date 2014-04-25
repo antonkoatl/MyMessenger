@@ -2,7 +2,7 @@
     xmlns:sabd="http://schemas.android.com/apk/res-auto" >>
     
     <item android:id="@+id/menuitem_addservice" android:title="@string/menuitem_addservice" sabd:showAsAction="never"></item>
-    <item android:id="@+id/item3" android:title="@string/menu3" sabd:showAsAction="never"></item>
+    <item android:id="@+id/menuitem_removeservice" android:title="@string/menuitem_removeservice" sabd:showAsAction="never"></item>
     <item android:id="@+id/item4" android:title="@string/menu4" sabd:showAsAction="never"></item>
     <item android:id="@+id/item5" android:title="@string/menu5" sabd:showAsAction="never"></item>
     <item android:id="@+id/item6" android:title="@string/menu6" sabd:showAsAction="never"></item>

@@ -39,7 +39,7 @@ import com.example.mymessenger.DownloadService;
 import com.example.mymessenger.MainActivity;
 import com.example.mymessenger.MsgReceiver;
 import com.example.mymessenger.MyApplication;
-import com.example.mymessenger.RunnableWithParam;
+import com.example.mymessenger.RunnableAdvanced;
 import com.example.mymessenger.UpdateService;
 import com.example.mymessenger.mContact;
 import com.example.mymessenger.mDialog;
@@ -86,17 +86,13 @@ public class Vk extends MessageService {
 	
 	
 	List<mDialog> loading_msgs = new ArrayList<mDialog>();
-	
-
-	
-	
-	
-	public void requestNewMessagesRunnable(AsyncTaskCompleteListener<Runnable> cb){
+		
+	public void requestNewMessagesRunnable(AsyncTaskCompleteListener<RunnableAdvanced<?>> cb){
 		if(!authorised){
 			class Runnable_r implements Runnable {
-				AsyncTaskCompleteListener<Runnable> cb;
+				AsyncTaskCompleteListener<RunnableAdvanced<?>> cb;
 				
-				Runnable_r(AsyncTaskCompleteListener<Runnable> cb){
+				Runnable_r(AsyncTaskCompleteListener<RunnableAdvanced<?>> cb){
 					this.cb = cb;
 				}
 				
@@ -116,7 +112,7 @@ public class Vk extends MessageService {
 		VKRequest request = new VKRequest("messages.getLongPollServer", VKParameters.from(VKApiConst.COUNT, String.valueOf(1)));
 		request.secure = false;
 		VKParameters preparedParameters = request.getPreparedParameters();
-		VKRequestListener rl = 	new VKRequestListenerWithCallback<Runnable>(cb, Vk.this) {
+		VKRequestListener rl = 	new VKRequestListenerWithCallback<RunnableAdvanced<?>>(cb, Vk.this) {
 
 					@Override
 				    public void onComplete(VKResponse response) {
@@ -129,7 +125,7 @@ public class Vk extends MessageService {
 			    			String server = response_json.getString( "server" );
 			    			Integer ts = response_json.getInt( "ts" );
 			    			
-			    			Runnable r = new LongPollRunnable(server, key, ts);
+			    			RunnableAdvanced<?> r = new LongPollRunnable(server, key, ts);
 			    			callback.onTaskComplete(r);
 			    			
 					    } catch (JSONException e) {
@@ -708,7 +704,7 @@ public class Vk extends MessageService {
 				authorization_finished = false;
 			}
 			Log.d("HandleApiError", "error.request.repeat: " + error.apiError.errorMessage);
-			Runnable r = new RunnableWithParam<VKError>(){
+			Runnable r = new RunnableAdvanced<VKError>(){
 
 				@Override
 				public void run() {
@@ -723,7 +719,7 @@ public class Vk extends MessageService {
 		}
 		
 		if(error.apiError.errorCode == 6){ // Too many requests per second.
-			Runnable r = new RunnableWithParam<VKError>(){
+			Runnable r = new RunnableAdvanced<VKError>(){
 
 				@Override
 				public void run() {
@@ -748,7 +744,7 @@ public class Vk extends MessageService {
 	}
 
 
-	class LongPollRunnable implements Runnable {
+	class LongPollRunnable extends RunnableAdvanced<Void> {
 		String server;
 		String key;
 		Integer ts;
@@ -760,69 +756,68 @@ public class Vk extends MessageService {
         }
 
 		@Override
-		public void run() {
-			while(true){
-				Log.d("LongPollRunnable", "start");
-				try {
-				  URL url = new URL("http://"+server+"?act=a_check&key="+key+"&ts="+ts.toString()+"&wait=25&mode=2");
-				  HttpURLConnection con = (HttpURLConnection) url.openConnection();
-				  //new LongPoll_async().execute(con.getInputStream());
-				  BufferedReader reader = null;
-				  String line = "";
-				  String page = "";
-				  try {
-					  reader = new BufferedReader(new InputStreamReader(con.getInputStream()));
-					  while ((line = reader.readLine()) != null) {
-						  page += line;
-					  }
-				  } catch (IOException e) {
-					  e.printStackTrace();
-				  } finally {
-					  if (reader != null) {
-						  try {
-							  reader.close();
-						  } catch (IOException e) {
-							  e.printStackTrace();
-						  }
+		public void run_iteration() {
+			Log.d("LongPollRunnable", "start");
+			try {
+			  URL url = new URL("http://"+server+"?act=a_check&key="+key+"&ts="+ts.toString()+"&wait=25&mode=2");
+			  HttpURLConnection con = (HttpURLConnection) url.openConnection();
+			  //new LongPoll_async().execute(con.getInputStream());
+			  BufferedReader reader = null;
+			  String line = "";
+			  String page = "";
+			  try {
+				  reader = new BufferedReader(new InputStreamReader(con.getInputStream()));
+				  while ((line = reader.readLine()) != null) {
+					  page += line;
+				  }
+			  } catch (IOException e) {
+				  e.printStackTrace();
+			  } finally {
+				  if (reader != null) {
+					  try {
+						  reader.close();
+					  } catch (IOException e) {
+						  e.printStackTrace();
 					  }
 				  }
-	  
-				  Log.d("LongPollRunnable", page);
-				  
-				  JSONObject response_json = new JSONObject(page);
-				  ts = response_json.getInt( "ts" );
-				  
-				  JSONArray updates = response_json.getJSONArray("updates");
-				  for (int i = 0; i < updates.length(); i++) {
-					  JSONArray item = updates.getJSONArray(i);
+			  }
+  
+			  Log.d("LongPollRunnable", page);
+			  
+			  JSONObject response_json = new JSONObject(page);
+			  ts = response_json.getInt( "ts" );
+			  
+			  JSONArray updates = response_json.getJSONArray("updates");
+			  for (int i = 0; i < updates.length(); i++) {
+				  JSONArray item = updates.getJSONArray(i);
 
-					  if (item.getInt(0) == 4) {
-						  int flags = item.getInt(2);
-						  String from_id = item.getString(3);
-						  int timestamp = item.getInt(4);
-						  String subject = item.getString(5);
-						  String text = item.getString(6);
-						 
-						  mMessage msg = new mMessage();
-						  msg.respondent = getContact( from_id );
-						  msg.out = (flags & 2) == 2;
-			  		 	  msg.text = text;
-			 			  msg.sendTime.set(timestamp*1000);
-						 
-						  Intent intent = new Intent(MsgReceiver.ACTION_RECEIVE);
-				    	  intent.putExtra("service_type", getServiceType());
-				    	  intent.putExtra("msg", msg);
-				    	  app.sendBroadcast(intent);
+				  if (item.getInt(0) == 4) {
+					  int flags = item.getInt(2);
+					  String from_id = item.getString(3);
+					  int timestamp = item.getInt(4);
+					  String subject = item.getString(5);
+					  String text = item.getString(6);
+					 
+					  mMessage msg = new mMessage();
+					  msg.respondent = getContact( from_id );
+					  msg.out = (flags & 2) == 2;
+		  		 	  msg.text = text;
+		 			  msg.sendTime.set(timestamp*1000);
+					 
+					  Intent intent = new Intent(MsgReceiver.ACTION_RECEIVE);
+			    	  intent.putExtra("service_type", getServiceType());
+			    	  intent.putExtra("msg", msg);
+			    	  app.sendBroadcast(intent);
 
-						  //Log.d("LongPollRunnable", text);
-					  }
+					  //Log.d("LongPollRunnable", text);
 				  }
+			  }
 
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
-		}			    			
+		}
+		    			
 	}
 
 
@@ -993,6 +988,12 @@ public class Vk extends MessageService {
 	    	ed.commit();
 	    	
 			app.dbHelper.createTables(this);
+			
+			// Обновления
+			Intent intent = new Intent(app.getApplicationContext(), UpdateService.class);
+			intent.putExtra("specific_service", getServiceType());
+			app.startService(intent);
+			
 			setup_stage++;
 			setupStages();	
 			break;
@@ -1009,11 +1010,6 @@ public class Vk extends MessageService {
 			@Override
 			public void run() {
 				if(isSetupFinished){
-					//Обновления
-					Intent intent = new Intent(app.getApplicationContext(), UpdateService.class);
-					intent.putExtra("specific_service", getServiceType());
-					app.startService(intent);	
-					
 					//Подключение к базе данных, получение количества диалогов
 					SQLiteDatabase db = app.dbHelper.getReadableDatabase();		
 					String my_table_name = app.dbHelper.getTableNameDlgs(Vk.this);
@@ -1035,6 +1031,16 @@ public class Vk extends MessageService {
 		
 		handler.post(r);
 		
+	}
+
+	@Override
+	public void unsetup() {
+		VKSdk.logout();
+		
+		Intent intent = new Intent(app.getApplicationContext(), UpdateService.class);
+		intent.putExtra("specific_service", getServiceType());
+		intent.putExtra("remove", true);
+		app.startService(intent);	
 	}
 
 

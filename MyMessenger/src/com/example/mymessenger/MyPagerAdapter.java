@@ -79,7 +79,7 @@ public class MyPagerAdapter extends FragmentPagerAdapter {
     	Log.d("MyPagerAdapter","getItemPosition");
     	if (object instanceof ServicesMenuFragment)
             return POSITION_NONE;
-        return POSITION_UNCHANGED;
+        return POSITION_NONE;
     }
 	
 }

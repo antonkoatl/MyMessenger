@@ -40,7 +40,6 @@ import android.widget.AdapterView.OnItemClickListener;
 
 
 public class ListViewSimpleFragment extends Fragment implements OnClickListener {
-	Context context;
 	String mode;
 
 	private boolean dlg_isLoading = false; //Индикатор загрузки, для автоматической подгрузки диалогов при пролистывании
@@ -376,7 +375,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 			dlg_adapter.notifyDataSetChanged();			
 			dlg_isLoading = false;
 			
-			if(listview_refreshing_for_dlgs && app.isLoadingDlgs()){
+			if(listview_refreshing_for_dlgs && !app.isLoadingDlgs()){
 				listview.onRefreshComplete();
 				listview_refreshing_for_dlgs = false;
 			}

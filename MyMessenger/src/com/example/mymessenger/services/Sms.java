@@ -30,6 +30,7 @@ import com.example.mymessenger.AsyncTaskCompleteListener;
 import com.example.mymessenger.MainActivity;
 import com.example.mymessenger.MsgReceiver;
 import com.example.mymessenger.MyApplication;
+import com.example.mymessenger.RunnableAdvanced;
 import com.example.mymessenger.SmsReceiver;
 import com.example.mymessenger.mContact;
 import com.example.mymessenger.mDialog;
@@ -414,7 +415,7 @@ public class Sms extends MessageService {
 
 	@Override
 	public void requestNewMessagesRunnable(
-			AsyncTaskCompleteListener<Runnable> cb) {
+			AsyncTaskCompleteListener<RunnableAdvanced<?>> cb) {
 		BroadcastReceiver br = new SmsReceiver();	    
 	    IntentFilter intFilt = new IntentFilter();
 	    intFilt.addAction(SmsReceiver.SMS_SENT_ACTION);
@@ -457,6 +458,12 @@ public class Sms extends MessageService {
 
 	@Override
 	public void init() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void unsetup() {
 		// TODO Auto-generated method stub
 		
 	}

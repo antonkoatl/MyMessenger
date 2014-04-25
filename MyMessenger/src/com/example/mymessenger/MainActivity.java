@@ -26,9 +26,10 @@ import android.widget.Toast;
 import com.example.mymessenger.services.MessageService;
 import com.example.mymessenger.services.Sms;
 import com.example.mymessenger.services.Vk;
+import com.example.mymessenger.ui.ServicesMenuFragment;
 import com.vk.sdk.VKUIHelper;
 
-public class MainActivity extends ActionBarActivity implements OnClickListener {
+public class MainActivity extends ActionBarActivity {
 	final int DIALOG_SMS = 1;
 	MyApplication app;
 	private SharedPreferences sPref;
@@ -91,6 +92,16 @@ public class MainActivity extends ActionBarActivity implements OnClickListener {
 		VKUIHelper.onDestroy(this); 
 	} 
     
+    @Override
+    public void onBackPressed() {
+    	ServicesMenuFragment fr = (ServicesMenuFragment) pagerAdapter.getRegisteredFragment(0);
+        if(fr.isForDeleteService()){
+        	fr.setForNormal();
+        	return;
+        }
+        super.onBackPressed();
+    }
+    
     
 
 	@Override
@@ -112,6 +123,9 @@ public class MainActivity extends ActionBarActivity implements OnClickListener {
     	case R.id.menuitem_addservice:
     		Intent intent = new Intent(this, SelectServiceActivity.class);
     		startActivityForResult(intent, SelectServiceActivity.REQUEST_CODE);
+    	case R.id.menuitem_removeservice:
+    		ServicesMenuFragment fr = (ServicesMenuFragment) pagerAdapter.getRegisteredFragment(0);
+    		fr.setForDeleteService();
     	}
     	
     	return super.onOptionsItemSelected(item);
@@ -120,35 +134,19 @@ public class MainActivity extends ActionBarActivity implements OnClickListener {
     
     
     
-    
-    
-
-    
-    
-    
-
-	@Override
-	public void onClick(View view) {
-		//Toast.makeText(this, "Нажата кнопка " + ((Button) arg0).getText(), Toast.LENGTH_SHORT).show();
-		if( isServicesButton(view.getId()) ){
-			MessageService ser = getServiceFromButtonId(view.getId());
-			app.active_service = ser.getServiceType();
-			removeDialog(view.getId());
-			showDialog(view.getId());
+   	
+    private MessageService getServiceFromButtonId(int id) {
+		switch(id){
+			case 10+0 :
+				return app.getService( MessageService.SMS );
+			case 10+1 :
+				return app.getService( MessageService.VK );
+			default :
+				return null;
 		}
-		
 	}
 	
 	
-	
-	
-	
-	private boolean isServicesButton(int id) {
-		if (id >= 10 && id < 20)
-			return true;
-		else 
-			return false;
-	}
 
 
 	protected Dialog onCreateDialog(int id) {
@@ -164,16 +162,7 @@ public class MainActivity extends ActionBarActivity implements OnClickListener {
 		return adb.create();
 	}
 			
-	private MessageService getServiceFromButtonId(int id) {
-		switch(id){
-			case 10+0 :
-				return app.getService( MessageService.SMS );
-			case 10+1 :
-				return app.getService( MessageService.VK );
-			default :
-				return null;
-		}
-	}
+	
 
 	// обработчик нажатия на пункт списка диалога
 	android.content.DialogInterface.OnClickListener myClickListener = new android.content.DialogInterface.OnClickListener() {

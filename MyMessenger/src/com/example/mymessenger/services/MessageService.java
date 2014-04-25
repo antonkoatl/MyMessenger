@@ -9,6 +9,7 @@ import android.content.SharedPreferences;
 
 import com.example.mymessenger.AsyncTaskCompleteListener;
 import com.example.mymessenger.MyApplication;
+import com.example.mymessenger.RunnableAdvanced;
 import com.example.mymessenger.mContact;
 import com.example.mymessenger.mDialog;
 import com.example.mymessenger.mMessage;
@@ -58,9 +59,10 @@ public abstract class MessageService {
 	public abstract void requestContactData(mContact cnt);
 	public abstract void requestContacts(int offset, int count, AsyncTaskCompleteListener<List<mContact>> cb);
 	
-	public abstract void requestNewMessagesRunnable(AsyncTaskCompleteListener<Runnable> cb); //Запросить алгоритм для отслеживания новых сообщений	
+	public abstract void requestNewMessagesRunnable(AsyncTaskCompleteListener<RunnableAdvanced<?>> cb); //Запросить алгоритм для отслеживания новых сообщений	
 	public abstract void setup(); //Подготовить сервис для работы
 	public abstract void init(); //Инициализация, после авторизации
+	public abstract void unsetup(); //Удалить сервис
 	 
 	//Служебные функции
 	public final String getServiceName() {

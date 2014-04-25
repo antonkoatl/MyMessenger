@@ -5,7 +5,7 @@
     <string name="action_settings">Settings</string>
     <string name="answer_to">Answer to…</string>
     <string name="menuitem_addservice">Add service</string>
-    <string name="menu3">Remove service</string>
+    <string name="menuitem_removeservice">Remove service</string>
     <string name="menu4">Settings</string>
     <string name="menu5">Help</string>
     <string name="menu6">Developers</string>

@@ -175,6 +175,32 @@ public class MyApplication extends Application {
 			return true;
 		} else return false;
 	}
+	
+	public void deleteService(int service_type){
+		MessageService ms = null;
+		for(MessageService mst : myMsgServices){
+			if(mst.getServiceType() == service_type){
+				ms = mst;
+				break;
+			}
+		}
+		if(ms == null)return;
+		
+		ms.unsetup();	
+		
+		String usingservices = "";
+		for(MessageService mst : myMsgServices){
+			usingservices += String.valueOf(mst.getServiceType()) + ",";
+		}
+		usingservices = usingservices.replace(String.valueOf(service_type) + ",", "");
+		usingservices = usingservices.substring(0, usingservices.length() - 1);
+		
+		Editor ed = sPref.edit();
+    	ed.putString("usingservices", usingservices);
+    	ed.commit();
+    	
+    	myMsgServices.remove(ms);
+	}
 
 	public void initServices() {
 		for(MessageService ms : myMsgServices){
