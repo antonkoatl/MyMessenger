@@ -439,7 +439,7 @@ public class Vk extends MessageService {
     
     @Override
 	public void requestMessages(mDialog dlg, int offset, int count, AsyncTaskCompleteListener<List<mMessage>> cb) {
-    	Log.d("requestMessages", "requested :: " + String.valueOf(dlg.loading_msgs));
+    	Log.d("requestMessages", "requested :: " + String.valueOf(isLoadingMsgsForDlg(dlg)));
     	
     	if(dl_current_dlg != dlg){
     		dl_current_dlg = dlg;
@@ -454,7 +454,7 @@ public class Vk extends MessageService {
     	}
     	else lm_count += 2;
 
-    	Log.d("requestMessages", "onTaskComplete - bd :: " + String.valueOf(dlg.loading_msgs));
+    	Log.d("requestMessages", "onTaskComplete - bd :: " + String.valueOf(isLoadingMsgsForDlg(dlg)));
     	
     	List<mMessage> db_data = load_msgs_from_db(dlg, count, offset);
     	lm_count--;
@@ -555,7 +555,7 @@ public class Vk extends MessageService {
 				    		Integer lm_count = msgs_thread_count.get(dlg);
 				    		lm_count--;
 				    		
-				    		Log.d("requestMessages", "onTaskComplete - net :: " + String.valueOf(dlg.loading_msgs));
+				    		Log.d("requestMessages", "onTaskComplete - net :: " + String.valueOf(isLoadingMsgsForDlg(dlg)));
 				    		if(callback != null)callback.onTaskComplete(msgs);
 				        	
 						} catch (JSONException e) {

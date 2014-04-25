@@ -13,8 +13,6 @@ public class mDialog {
 	public Time last_msg_time;
 	public String snippet;
 	
-	public int loading_msgs = 0;
-	
 	public mDialog() {
 		messages = new ArrayList<mMessage>();
 		participants = new ArrayList<mContact>();
@@ -85,6 +83,39 @@ public class mDialog {
 		String res = "";
 		for(mContact cnt : participants)res += cnt.address;
 		return res;
+	}
+
+
+	public void update(mDialog dlg) {
+		if(last_msg_time.before(dlg.last_msg_time) && participants.equals(dlg.participants)){
+			last_msg_time.set(dlg.last_msg_time);
+			snippet = dlg.snippet;
+			
+			for(mMessage m : dlg.messages){
+				if(messages.contains(m))break;
+				else {
+					int pos = 0;
+					while(messages.get(pos).sendTime.after(m.sendTime))pos++;
+					messages.add(pos, m);
+				}
+			}
+		}		
+	}
+	
+	public boolean compareParticipants(mDialog dlg){ //??
+		if(participants.size() == dlg.participants.size()){
+			for(mContact cnt : participants){
+				boolean fl = false;
+				for(mContact cnt2 : dlg.participants){
+					if(cnt.equals(cnt2)){
+						fl = true;
+						break;
+					}
+				}
+				if(!fl)return false;
+			}
+			return true;
+		} else return false;
 	}
 
 }

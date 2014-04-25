@@ -101,7 +101,7 @@ public abstract class MessageService {
 		return dlgs_thread_count > 0;
 	}
 	
-	public final boolean isLoadingMsgsForDls(mDialog dlg) {
+	public final boolean isLoadingMsgsForDlg(mDialog dlg) {
 		Integer count = msgs_thread_count.get(dlg); 
 		if(count == null)return false;
 		if(count == 0){

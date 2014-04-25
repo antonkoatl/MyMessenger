@@ -289,7 +289,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 
 		@Override
 		public void onTaskComplete(List<mMessage> result) {
-			Log.d("async_complete_listener_msg", "completed :: " + String.valueOf(app.getActiveService().getActiveDialog().loading_msgs));
+			Log.d("async_complete_listener_msg", "completed :: " + String.valueOf( app.getActiveService().isLoadingMsgsForDlg(app.getActiveService().getActiveDialog()) ));
 			
 			for(mMessage msg : result){
 				boolean added = false;
@@ -312,7 +312,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 			
 			if(result.size() > 0)listview.scrollItems(result.size());
 			
-			if(app.getActiveService().getActiveDialog().loading_msgs == 0){
+			if(!app.getActiveService().isLoadingMsgsForDlg(app.getActiveService().getActiveDialog())){
 				listview.onRefreshCompleteNoAnimation();
 			}
 			
@@ -353,20 +353,23 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 				
 				int tind = showing_dialogs.indexOf(dlg);
 				if(tind != -1){
-					showing_dialogs.set(tind, dlg);
-					added = true;
-				} else {				
-					for(int i = 0; i < showing_dialogs.size(); i++){
-						if(showing_dialogs.get(i).getLastMessageTime() == null || dlg.getLastMessageTime() == null){
-							Log.d("smth", "wrong");
-						}
-						if( dlg.getLastMessageTime().after( showing_dialogs.get(i).getLastMessageTime() ) ){
-							showing_dialogs.add(i, dlg);
-							added = true;
-							break;
-						}	
-					}
+					//showing_dialogs.set(tind, dlg);
+					mDialog dlg2 = showing_dialogs.remove(tind);
+					dlg2.update(dlg);
+					dlg = dlg2;
 				}
+				
+				for(int i = 0; i < showing_dialogs.size(); i++){
+					if(showing_dialogs.get(i).getLastMessageTime() == null || dlg.getLastMessageTime() == null){
+						Log.d("smth", "wrong");
+					}
+					if( dlg.getLastMessageTime().after( showing_dialogs.get(i).getLastMessageTime() ) ){
+						showing_dialogs.add(i, dlg);
+						added = true;
+						break;
+					}	
+				}
+
 				if(!added)showing_dialogs.add(dlg);
 	        }
 			
