@@ -38,6 +38,8 @@ public class SelectServiceActivity extends Activity {
 	    
 	    gridview.setOnItemClickListener(new OnItemClickListener() {
 	        public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
+	        	Log.d("SelectServiceActivity::OnItemClickListener", "onItemClick");
+	        	finish();
 	            boolean added = false; 
 	            switch(position){
 	            case 0:	added = app.newService(MessageService.SMS);
@@ -45,7 +47,7 @@ public class SelectServiceActivity extends Activity {
 	            }
 	            if(added)setResult(RESULT_ADDED, new Intent());
 	            else setResult(RESULT_NOT_ADDED, new Intent());
-	            finish();
+	            
 	        }
 	    });
 	}

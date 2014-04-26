@@ -123,9 +123,11 @@ public class MainActivity extends ActionBarActivity {
     	case R.id.menuitem_addservice:
     		Intent intent = new Intent(this, SelectServiceActivity.class);
     		startActivityForResult(intent, SelectServiceActivity.REQUEST_CODE);
+    		break;
     	case R.id.menuitem_removeservice:
     		ServicesMenuFragment fr = (ServicesMenuFragment) pagerAdapter.getRegisteredFragment(0);
     		fr.setForDeleteService();
+    		break;
     	}
     	
     	return super.onOptionsItemSelected(item);

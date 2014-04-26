@@ -55,6 +55,8 @@ public class ServicesMenuFragment extends Fragment implements OnClickListener {
         	Button service_button = (Button) button_view.findViewById(R.id.service_button);
         	service_button.setText(ser.getServiceName());
         	service_button.setId( getButtonIdMainScreen(ser.getServiceType()) );
+        	service_button.setOnClickListener(this);
+        	registerForContextMenu(service_button);
         	
         	TextView service_delete = (TextView) button_view.findViewById(R.id.service_delete);
         	service_delete.setVisibility(View.INVISIBLE);
