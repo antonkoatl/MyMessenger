@@ -17,9 +17,11 @@ import android.util.Log;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.View.OnClickListener;
+import android.view.View.OnTouchListener;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
@@ -27,7 +29,7 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 
-public class ServicesMenuFragment extends Fragment implements OnClickListener {
+public class ServicesMenuFragment extends Fragment implements OnClickListener, OnTouchListener {
 	static final int MENU_CON_MOVE = 101;
 	static final int MENU_CON_DELETE = 102;
 	
@@ -37,10 +39,14 @@ public class ServicesMenuFragment extends Fragment implements OnClickListener {
     public View onCreateView(LayoutInflater inflater,
             ViewGroup container, Bundle savedInstanceState) {
 		isForDelete = false;
+		
         // The last two arguments ensure LayoutParams are inflated
         // properly.
         View rootView = inflater.inflate(
                 R.layout.activity_main, container, false);
+
+        rootView.setOnTouchListener(this);
+        
         Bundle args = getArguments();
         //((TextView) rootView.findViewById(android.R.id.text1)).setText(
         //        Integer.toString(args.getInt(ARG_OBJECT)));
@@ -236,7 +242,15 @@ public class ServicesMenuFragment extends Fragment implements OnClickListener {
 				getActivity().removeDialog(view.getId());
 				getActivity().showDialog(view.getId());
 			}
-		}		
+		}
+	}
+
+	@Override
+	public boolean onTouch(View v, MotionEvent event) {
+		if(isForDelete){
+			setForNormal();	
+		}
+		return false;
 	}
 
 }

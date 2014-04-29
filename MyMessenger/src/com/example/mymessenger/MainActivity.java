@@ -17,8 +17,10 @@ import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.View.OnTouchListener;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.Toast;
@@ -52,7 +54,8 @@ public class MainActivity extends ActionBarActivity {
         pagerAdapter = new MyPagerAdapter(getSupportFragmentManager(), this);
         mViewPager = (ViewPager) findViewById(R.id.pager);
         mViewPager.setAdapter(pagerAdapter);
-
+        
+        
         
         sPref = getSharedPreferences("MyPref", MODE_PRIVATE);
         
@@ -94,11 +97,18 @@ public class MainActivity extends ActionBarActivity {
     
     @Override
     public void onBackPressed() {
-    	ServicesMenuFragment fr = (ServicesMenuFragment) pagerAdapter.getRegisteredFragment(0);
-        if(fr.isForDeleteService()){
-        	fr.setForNormal();
-        	return;
-        }
+    	if(mViewPager.getCurrentItem() == 0){
+    		ServicesMenuFragment fr = (ServicesMenuFragment) pagerAdapter.getRegisteredFragment(0);
+            if(fr.isForDeleteService()){
+            	fr.setForNormal();
+            	return;
+            }
+    	}
+    	if(mViewPager.getCurrentItem() == 2){
+    		mViewPager.setCurrentItem(1);
+    		return;
+    	}
+    	
         super.onBackPressed();
     }
     

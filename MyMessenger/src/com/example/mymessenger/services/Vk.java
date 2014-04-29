@@ -460,15 +460,15 @@ public class Vk extends MessageService {
     	Log.d("requestMessages", "requested :: " + String.valueOf(isLoadingMsgsForDlg(dlg)));
     	
     	// Обновление информации о количестве потоков загрузки
-    	Integer lm_count = msgs_thread_count.get(dlg);
+    	IntegerMutable lm_count = msgs_thread_count.get(dlg);
     	if(lm_count == null){
-    		lm_count = 2;
+    		lm_count = new IntegerMutable(2);
     		msgs_thread_count.put(dlg, lm_count);
     	}
-    	else lm_count += 2;
+    	else lm_count.value += 2;
 
     	// Загрузка из БД
-    	lm_count--;
+    	lm_count.value--;
     	if(cb != null){
 	    	List<mMessage> db_data = load_msgs_from_db(dlg, count, offset);	    	
 	    	cb.onTaskComplete( db_data );    	    	
@@ -543,8 +543,8 @@ public class Vk extends MessageService {
 			    				}				    			
 				    		} 
 				    		
-				    		Integer lm_count = msgs_thread_count.get(dlg);
-				    		lm_count--;
+				    		IntegerMutable lm_count = msgs_thread_count.get(dlg);
+				    		lm_count.value--;
 				    		
 				    		Log.d("requestMessages", "onTaskComplete - net :: " + String.valueOf(isLoadingMsgsForDlg(dlg)));
 				    		if(callback == null)app.triggerMsgsUpdaters(msgs);

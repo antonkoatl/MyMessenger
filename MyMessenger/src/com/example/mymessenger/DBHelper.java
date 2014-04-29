@@ -273,14 +273,14 @@ public class DBHelper extends SQLiteOpenHelper {
 	}
 	
 	public void updateCnt(mContact cnt, MessageService ms) {
-		String table_name = getTableNameDlgs(ms);
+		String table_name = getTableNameCnts(ms);
 		
 		ContentValues cv = new ContentValues();
 		//cv.put(colParticipants, dlg.getParticipantsAddresses());
 		cv.put(colName, cnt.name);
 		cv.put(colIcon100url, cnt.icon_100_url);
 		
-		getWritableDatabase().update(table_name, cv, colAddress + cnt.address, null);
+		getWritableDatabase().update(table_name, cv, colAddress + " = " + cnt.address, null);
 		
 	}
 

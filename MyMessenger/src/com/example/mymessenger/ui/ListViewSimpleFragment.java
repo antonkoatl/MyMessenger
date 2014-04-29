@@ -501,7 +501,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 		
 		@Override
 		public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
-			if(supposedFVI != -1){
+			if(supposedFVI != -1){ // ??
 				if(supposedFVI != firstVisibleItem){
 					Log.d("MsgScrollListener", "Wrong firstVisibleItem!! :: " + String.valueOf(supposedFVI) + " :: " + String.valueOf(firstVisibleItem));
 					firstVisibleItem = supposedFVI;

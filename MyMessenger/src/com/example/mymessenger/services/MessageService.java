@@ -32,16 +32,33 @@ public abstract class MessageService {
 	protected boolean dl_all_msgs_downloaded = false;
 	protected boolean dl_all_new_msgs_downloaded = false;
 	protected int dlgs_thread_count = 0; //Количество потоков, загружающих диалоги в данных момент
-	protected Map<mDialog, Integer> msgs_thread_count; //Количество потоков, загружающих сообщения для определённого диалога в данных момент
+	protected Map<mDialog, IntegerMutable> msgs_thread_count; //Количество потоков, загружающих сообщения для определённого диалога в данных момент
 	protected SharedPreferences sPref;
 	
 	List<mDialog> return_dialogs;
 	List<mMessage> return_msgs;
 	
+	class IntegerMutable {
+	    public int value;
+	    
+	    public IntegerMutable(int i) {
+	    	this.value = i;
+		}
+
+		@Override
+	    public boolean equals(Object that){
+	    	if(that instanceof IntegerMutable){
+	    		IntegerMutable toCompare = (IntegerMutable) that;
+	    		return this.value == toCompare.value;
+			}
+			return false;
+	    }
+	}
+	
 	protected MessageService(MyApplication app){
 		this.app = app;
 		contacts = new HashMap<String, mContact>();
-		msgs_thread_count = new HashMap<mDialog, Integer>(); //индикаторы загрузки сообщений для диалогов
+		msgs_thread_count = new HashMap<mDialog, IntegerMutable>(); //индикаторы загрузки сообщений для диалогов
 	}
 	
 
@@ -104,9 +121,9 @@ public abstract class MessageService {
 	}
 	
 	public final boolean isLoadingMsgsForDlg(mDialog dlg) {
-		Integer count = msgs_thread_count.get(dlg); 
+		IntegerMutable count = msgs_thread_count.get(dlg); 
 		if(count == null)return false;
-		if(count == 0){
+		if(count.value == 0){
 			msgs_thread_count.remove(dlg);
 			return false;
 		}
