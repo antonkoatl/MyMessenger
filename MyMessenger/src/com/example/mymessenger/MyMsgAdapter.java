@@ -8,10 +8,12 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.graphics.Rect;
+import android.graphics.drawable.ColorDrawable;
 import android.text.Layout;
 import android.util.DisplayMetrics;
 import android.util.FloatMath;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -60,7 +62,11 @@ public class MyMsgAdapter extends BaseAdapter {
 	    
 	    mMessage msg = data.get(position);
 	    MessageService ser = ((MyApplication) context.getApplicationContext()).getActiveService();
-	    boolean left = msg.out;
+	    boolean left = msg.getFlag(mMessage.OUT);
+	    
+	    RelativeLayout rl = (RelativeLayout) view.findViewById(R.id.msg_container);
+	    
+	    if(!msg.getFlag(mMessage.READED))rl.setBackgroundColor(context.getResources().getColor(R.color.msg_notreaded));
 	    
     	//TextView textLabel = (TextView) view.findViewById(R.id.author_text);
     	//if(left)textLabel.setText( ser.getMyContact().getName() );

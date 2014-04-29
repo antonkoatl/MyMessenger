@@ -23,11 +23,16 @@ public class MyApplication extends Application {
 	private SharedPreferences sPref;
 	
 	public List<AsyncTaskCompleteListener<Void>> cnts_updaters;
+	public List<AsyncTaskCompleteListener<List<mDialog>>> dlgs_updaters;
+	public List<AsyncTaskCompleteListener<List<mMessage>>> msgs_updaters;
+	
 	public List<download_waiter> dl_waiters;
 	public DBHelper dbHelper;
 	
 	public boolean msgs_loading_maxed = false;
 	public boolean dlgs_loading_maxed = false;
+	
+	private Activity mCurrentActivity = null;
 	
 	@Override
 	public void onCreate() {
@@ -35,7 +40,10 @@ public class MyApplication extends Application {
 		
 		dbHelper = new DBHelper(this); //Класс для работы с бд
 		myMsgServices = new ArrayList<MessageService>(); //Активные сервисы сообщений
-		cnts_updaters = new ArrayList<AsyncTaskCompleteListener<Void>>(); //Обработчики обвновлений контактных данных //? 
+		cnts_updaters = new ArrayList<AsyncTaskCompleteListener<Void>>(); //Обработчики обвновлений контактных данных
+		dlgs_updaters = new ArrayList<AsyncTaskCompleteListener<List<mDialog>>>(); //Обработчики обвновлений диалогов
+		msgs_updaters = new ArrayList<AsyncTaskCompleteListener<List<mMessage>>>(); //Обработчики обвновлений сообщений
+		
 		dl_waiters = new ArrayList<download_waiter>(); //Обработчики завершения загрузок
 		
 		sPref = getSharedPreferences("MyPref", MODE_PRIVATE); //загрузка конфигов
@@ -73,7 +81,7 @@ public class MyApplication extends Application {
 		return myMsgServices.size() > 0;
 	}
 	
-	private Activity mCurrentActivity = null;
+	
 	
     public Activity getCurrentActivity(){
           return mCurrentActivity;
@@ -97,8 +105,24 @@ public class MyApplication extends Application {
 		if(!cnts_updaters.contains(updater))cnts_updaters.add(updater);
 	}
 	
+	public void registerDlgsUpdater(AsyncTaskCompleteListener<List<mDialog>> updater){
+		if(!dlgs_updaters.contains(updater))dlgs_updaters.add(updater);
+	}
+	
+	public void registerMsgsUpdater(AsyncTaskCompleteListener<List<mMessage>> updater){
+		if(!msgs_updaters.contains(updater))msgs_updaters.add(updater);
+	}
+	
 	public void unregisterCntsUpdater(AsyncTaskCompleteListener<Void> updater){
 		cnts_updaters.remove(updater);
+	}
+	
+	public void unregisterDlgsUpdater(AsyncTaskCompleteListener<List<mDialog>> updater){
+		dlgs_updaters.remove(updater);
+	}
+	
+	public void unregisterMsgsUpdater(AsyncTaskCompleteListener<List<mMessage>> updater){
+		msgs_updaters.remove(updater);
 	}
 	
 	public void triggerCntsUpdaters(){
@@ -110,8 +134,31 @@ public class MyApplication extends Application {
 			 			updater.onTaskComplete(null);
 			    }
 			});
-		}
-		
+		}		
+	}
+	
+	public void triggerDlgsUpdaters(final List<mDialog> dlgs){
+		if(getCurrentActivity() != null){
+			getCurrentActivity().runOnUiThread(new Runnable() {
+			     @Override
+			     public void run() {
+			    	 for(AsyncTaskCompleteListener<List<mDialog>> updater : dlgs_updaters)
+			 			updater.onTaskComplete(dlgs);
+			    }
+			});
+		}		
+	}
+	
+	public void triggerMsgsUpdaters(final List<mMessage> msgs){
+		if(getCurrentActivity() != null){
+			getCurrentActivity().runOnUiThread(new Runnable() {
+			     @Override
+			     public void run() {
+			    	 for(AsyncTaskCompleteListener<List<mMessage>> updater : msgs_updaters)
+			 			updater.onTaskComplete(msgs);
+			    }
+			});
+		}		
 	}
 
 	public List<download_waiter> getDownloadWaiters(String url_path) {
@@ -207,6 +254,7 @@ public class MyApplication extends Application {
 			ms.init();
 		}
 	}
+
 	
 	
 }

@@ -69,7 +69,7 @@ public class SmsReceiver extends BroadcastReceiver {
 		    MessageService sms_service = app.getService(MessageService.SMS);
 		    msg.respondent = sms_service.getContact( sms.getDisplayOriginatingAddress() );
 		    
-		    msg.out = false;			
+		    msg.setFlag(mMessage.OUT, false);			
 			msg.text = sms.getDisplayMessageBody();
 			msg.sendTime = new Time();
 			msg.sendTime.set(sms.getTimestampMillis());

@@ -145,6 +145,8 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 	            	//app.requestLastDialogs(20, 0, async_complete_listener_dlg);	            	               
 	            }
 	        });
+	        
+	        app.registerDlgsUpdater(async_complete_listener_dlg_update);
 	    }
 	  
         return rootView;
@@ -383,6 +385,44 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 		
 	};
 	
+	AsyncTaskCompleteListener<List<mDialog>> async_complete_listener_dlg_update = new AsyncTaskCompleteListener<List<mDialog>>(){
+
+		@Override
+		public void onTaskComplete(List<mDialog> result) {
+			for(mDialog dlg : result){
+				if(dlg.last_msg_time.before( showing_dialogs.get(showing_dialogs.size() - 1).last_msg_time ) ){ // Поступивший диалог был позже, чем последний отображаемый
+					continue;
+				}
+				
+				boolean updated = false;
+				
+				int tind = showing_dialogs.indexOf(dlg);
+				if(tind != -1){
+					mDialog dlg2 = showing_dialogs.remove(tind);
+					dlg2.update(dlg);
+					dlg = dlg2;
+					updated = true;
+				}
+				
+				for(int i = 0; i < showing_dialogs.size(); i++){
+					if(showing_dialogs.get(i).getLastMessageTime() == null || dlg.getLastMessageTime() == null){
+						Log.d("smth", "wrong");
+					}
+					if( dlg.getLastMessageTime().after( showing_dialogs.get(i).getLastMessageTime() ) ){
+						showing_dialogs.add(i, dlg);
+						if(!updated){
+							showing_dialogs.remove(showing_dialogs.size() - 1);
+						}
+						break;
+					}	
+				}
+	        }
+			
+			dlg_adapter.notifyDataSetChanged();			
+		}
+		
+	};
+	
 	AsyncTaskCompleteListener<List<mMessage>> async_complete_listener_msg_update = new AsyncTaskCompleteListener<List<mMessage>>(){
 		@Override
 		public void onTaskComplete(List<mMessage> result) {
@@ -496,6 +536,10 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 		}
 		
 	};
+
+	public void update_dlgs(List<mDialog> dlgs) {
+		
+	}
 
 	
 

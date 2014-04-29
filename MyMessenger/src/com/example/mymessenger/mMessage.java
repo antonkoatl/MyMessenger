@@ -7,14 +7,16 @@ import android.text.format.Time;
 public class mMessage implements Parcelable {
 	public static final int OUT = 1;
 	public static final int READED = 2;
+	public static final int DELIVERED = 4;
+	public static final int DELIVER_ERROR = 8;
 	
 	public mContact respondent; //Собеседник
 	
 	public String text;
 	public Time sendTime;
+	public String id;
 	
-	public boolean out;
-	public boolean readed;
+	public int flags;
 		
 	public mMessage() {
 		sendTime = new Time();
@@ -31,7 +33,8 @@ public class mMessage implements Parcelable {
 		dest.writeParcelable(respondent, flags);
 		dest.writeString(text);
 		dest.writeLong(sendTime.toMillis(true));
-		dest.writeBooleanArray(new boolean[]{out, readed});
+		dest.writeInt(flags);
+		dest.writeString(id);
 	}
 
 	public mMessage(Parcel sour) {
@@ -40,9 +43,8 @@ public class mMessage implements Parcelable {
 		respondent = (mContact) sour.readParcelable(mContact.class.getClassLoader());
 		text = sour.readString();
 		sendTime.set(sour.readLong());
-		boolean ta[] = sour.createBooleanArray(); 
-		out = ta[0];
-		readed = ta[1];
+		flags = sour.readInt();
+		id = sour.readString();
 	}
 	
 	public static final Parcelable.Creator<mMessage> CREATOR = new Parcelable.Creator<mMessage>() { 
@@ -62,5 +64,13 @@ public class mMessage implements Parcelable {
 		    return this.text.equals(toCompare.text) && Time.compare(this.sendTime, toCompare.sendTime) == 0;
 		}
         return false;
+	}
+
+	public boolean getFlag(int FLAG) {
+		return (flags & FLAG) == FLAG;
+	}
+	
+	public void setFlag(int FLAG, boolean val){
+		flags = val ? flags | FLAG : flags & ~FLAG;
 	}
 }

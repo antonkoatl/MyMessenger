@@ -139,9 +139,9 @@ public class MainActivity extends ActionBarActivity {
    	
     private MessageService getServiceFromButtonId(int id) {
 		switch(id){
-			case 10+0 :
+			case 1000+0 :
 				return app.getService( MessageService.SMS );
-			case 10+1 :
+			case 1000+1 :
 				return app.getService( MessageService.VK );
 			default :
 				return null;
@@ -189,5 +189,6 @@ public class MainActivity extends ActionBarActivity {
 				Toast.makeText(this, "Service not added", Toast.LENGTH_SHORT).show();
 			}
 		}
-	} 
+	}
+	
 }

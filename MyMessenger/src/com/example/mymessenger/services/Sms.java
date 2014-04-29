@@ -170,12 +170,12 @@ public class Sms extends MessageService {
 				msg.text = cursor.getString( cursor.getColumnIndex("body") );
 				msg.sendTime = new Time();
 				msg.sendTime.set(cursor.getLong( cursor.getColumnIndex("date") ) );
-				msg.readed = cursor.getInt( cursor.getColumnIndex("read") ) == 1 ? true : false;
+				msg.setFlag(mMessage.READED, cursor.getInt( cursor.getColumnIndex("read") ) == 1 ? true : false);
 				msg.respondent = getContact(address);
 				if (cursor.getString(cursor.getColumnIndex("type")).contains("1")) { //Inbox
-					msg.out = false;
+					msg.setFlag(mMessage.OUT, false);
 	            } else if (cursor.getString(cursor.getColumnIndex("type")).contains("2")) { //Sent
-	            	msg.out = true;
+	            	msg.setFlag(mMessage.OUT, true);
 	            } else {
 	            	cursor.moveToNext();
 	            	continue;
@@ -257,7 +257,7 @@ public class Sms extends MessageService {
 	            	break;
             }
         	
-        	msg.out = true;
+        	msg.setFlag(mMessage.OUT, true);
         	
         	Intent intent2 = new Intent(MsgReceiver.ACTION_RECEIVE);
 			intent2.putExtra("service_type", getServiceType());
@@ -468,8 +468,5 @@ public class Sms extends MessageService {
 		
 	}
 
-
-
-	
 
 }

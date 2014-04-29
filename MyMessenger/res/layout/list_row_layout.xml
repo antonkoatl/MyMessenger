@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/even_container"
+    android:id="@+id/msg_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent" >
 
@@ -9,6 +9,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignBottom="@+id/msg_text"
+        android:layout_toLeftOf="@id/msg_text"
         android:gravity="right"
         android:text="10:47 \n 01.01.2014"
         android:textSize="10sp" />
@@ -17,12 +18,13 @@
 	    android:id="@+id/msg_text"
 	    android:layout_width="wrap_content"
 	    android:layout_height="wrap_content"
+	    android:layout_alignParentEnd="true"
 	    android:layout_alignParentTop="true"
 	    android:layout_margin="5dip"
 	    android:background="@drawable/bubble_yellow"
 	    android:gravity="right"
 	    android:paddingLeft="10dp"
-	    android:text="Ну очень длинный текст в несколько строк"
+	    android:text="Ну очень длинный текст в несколькоооо строк"
 	    android:textColor="#000000"
 	    android:textSize="16sp" />
 
