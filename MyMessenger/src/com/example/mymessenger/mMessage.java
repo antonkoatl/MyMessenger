@@ -9,12 +9,14 @@ public class mMessage implements Parcelable {
 	public static final int READED = 2;
 	public static final int DELIVERED = 4;
 	public static final int DELIVER_ERROR = 8;
+	public static final int LOADING = 16;
 	
 	public mContact respondent; //Собеседник
 	
 	public String text;
 	public Time sendTime;
 	public String id;
+	public int msg_service;
 	
 	public int flags;
 		
@@ -35,6 +37,7 @@ public class mMessage implements Parcelable {
 		dest.writeLong(sendTime.toMillis(true));
 		dest.writeInt(flags);
 		dest.writeString(id);
+		dest.writeInt(msg_service);
 	}
 
 	public mMessage(Parcel sour) {
@@ -45,6 +48,7 @@ public class mMessage implements Parcelable {
 		sendTime.set(sour.readLong());
 		flags = sour.readInt();
 		id = sour.readString();
+		msg_service = sour.readInt();
 	}
 	
 	public static final Parcelable.Creator<mMessage> CREATOR = new Parcelable.Creator<mMessage>() { 
@@ -72,5 +76,9 @@ public class mMessage implements Parcelable {
 	
 	public void setFlag(int FLAG, boolean val){
 		flags = val ? flags | FLAG : flags & ~FLAG;
+	}
+
+	public void update(mMessage msg) {
+		this.flags = msg.flags;
 	}
 }

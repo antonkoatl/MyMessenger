@@ -185,6 +185,7 @@ public class DBHelper extends SQLiteOpenHelper {
 	        	msg.text = cursor.getString(cursor.getColumnIndex(colBody));
 	        	msg.flags = cursor.getInt(cursor.getColumnIndex(colFlags));
 	        	msg.id = cursor.getString(cursor.getColumnIndex(colMsgId));
+	        	msg.msg_service = ms.getServiceType();
 	        	
 	        	result.add(msg);
 	        	cursor_chk = cursor.moveToNext();
@@ -295,5 +296,15 @@ public class DBHelper extends SQLiteOpenHelper {
 			cnt.icon_100_url = cursor.getString( cursor.getColumnIndex(colIcon100url) );
 		}
 		cursor.close();
+	}
+
+	public void updateMsg(int id, mMessage msg, MessageService ms) {
+		String table_name = getTableNameMsgs(ms);
+		
+		ContentValues cv = new ContentValues();
+		//cv.put(colParticipants, dlg.getParticipantsAddresses());
+		cv.put(colFlags, msg.flags);
+		
+		getWritableDatabase().update(table_name, cv, "_id=" + id, null);
 	}
 }

@@ -75,6 +75,7 @@ public abstract class MessageService {
 	public abstract void requestDialogs(int offset, int count, AsyncTaskCompleteListener<List<mDialog>> cb);
 	public abstract void requestContactData(mContact cnt);
 	public abstract void requestContacts(int offset, int count, AsyncTaskCompleteListener<List<mContact>> cb);
+	public abstract void requestMarkAsReaded(mMessage msg);
 	
 	public abstract void requestNewMessagesRunnable(AsyncTaskCompleteListener<RunnableAdvanced<?>> cb); //Запросить алгоритм для отслеживания новых сообщений	
 	public abstract void setup(); //Подготовить сервис для работы

@@ -1,5 +1,8 @@
 package com.example.mymessenger;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -15,20 +18,12 @@ public class MsgReceiver extends BroadcastReceiver {
 		MyApplication app = (MyApplication) context.getApplicationContext();
 		Toast.makeText(context, "New MSG! " + app.getService(service_type).getServiceName() + " " + msg.text, Toast.LENGTH_LONG).show();
 
-		if(app.getCurrentActivity() != null && app.getCurrentActivity().getClass() == ActivityTwo.class){
-			ActivityTwo ac = (ActivityTwo) app.getCurrentActivity(); 
-			
-			if(ac.mode.equals("dialogs")){
-				
-			}
-			
-			if(ac.mode.equals("messages")){
-				
-				if(app.getActiveService().getActiveDialog().participants.contains(msg.respondent)){
-					ac.NewMessage(msg);
-				}
-			}
-		}
+		List<mMessage> msgs = new ArrayList<mMessage>();
+		msgs.add(msg);
+		app.triggerMsgsUpdaters(msgs);
+		
+		//if(app.getCurrentActivity() != null && app.getCurrentActivity().getClass() == ActivityTwo.class){
+		
 	}
 
 }

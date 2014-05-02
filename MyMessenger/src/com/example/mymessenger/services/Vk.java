@@ -509,13 +509,29 @@ public class Vk extends MessageService {
 								msg.sendTime.set(item.getLong( "date" )*1000);
 								msg.setFlag(mMessage.READED, item.getInt( "read_state" ) == 1 ? true : false);
 								msg.id = item.getString("id");
-								
+								msg.msg_service = getServiceType();
 				    				
 								String selection = DBHelper.colDlgkey + " = ? AND " + DBHelper.colSendtime + " = ? AND " + DBHelper.colBody + " = ?";
 				    			String[] selectionArgs = { String.valueOf(dlg_key), String.valueOf(msg.sendTime.toMillis(false)), msg.text };
 				    			Cursor c = db.query(my_table_name, null, selection, selectionArgs, null, null, null);
 		
 				    			if(c.moveToFirst()){
+				    				int  flags_in_db = c.getInt( c.getColumnIndex(DBHelper.colFlags) );
+				    				
+				    				if(msg.flags != flags_in_db){
+				    					//update
+				    					int id = c.getInt(c.getColumnIndex(DBHelper.colId));
+				    					c.close();
+					    				
+				    					app.dbHelper.updateMsg(id, msg, Vk.this);			    					
+					    							    				
+					    				msgs.add(msg);
+				    				} else {
+				    					//not update
+				    					c.close();
+				    					all_new = false;
+				    					continue;
+				    				}
 				    				c.close();
 				    				all_new = false;
 				    				//break;
@@ -778,6 +794,7 @@ public class Vk extends MessageService {
 				  JSONArray item = updates.getJSONArray(i);
 
 				  if (item.getInt(0) == 4) {
+					  String msg_id = item.getString(1);
 					  int flags = item.getInt(2);
 					  String from_id = item.getString(3);
 					  int timestamp = item.getInt(4);
@@ -789,6 +806,8 @@ public class Vk extends MessageService {
 					  msg.setFlag(mMessage.OUT, (flags & 2) == 2);
 		  		 	  msg.text = text;
 		 			  msg.sendTime.set(timestamp*1000);
+		 			  msg.id = msg_id;
+		 			  msg.msg_service = getServiceType();
 					 
 					  Intent intent = new Intent(MsgReceiver.ACTION_RECEIVE);
 			    	  intent.putExtra("service_type", getServiceType());
@@ -962,6 +981,8 @@ public class Vk extends MessageService {
 	public void requestMarkAsReaded(mMessage msg){
 		VKRequest request = new VKRequest("messages.markAsRead", VKParameters.from("message_ids", msg.id, VKApiConst.USER_ID, msg.respondent.address));
 		
+		msg.setFlag(mMessage.LOADING, true);
+		
 		request.secure = false;
 		VKParameters preparedParameters = request.getPreparedParameters();
 		
@@ -971,11 +992,13 @@ public class Vk extends MessageService {
 				    @Override				    
 				    public void onComplete(VKResponse response) {				    	
 				    	Log.d("requestContacts", "onComplete" );
-				    	List<mContact> cnts = new ArrayList<mContact>();
+				    	List<mMessage> msgs = new ArrayList<mMessage>();
 				        try {
 				        	int resp = response.json.getInt("response");
 				        	if(resp == 1)tmsg.setFlag(mMessage.READED, true);
-				        	
+				        	tmsg.setFlag(mMessage.LOADING, false);
+				        	msgs.add(tmsg);
+				        	app.triggerMsgsUpdaters(msgs);
 						} catch (JSONException e) {
 							e.printStackTrace();
 						}

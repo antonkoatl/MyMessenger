@@ -26,8 +26,10 @@ import android.support.v4.app.Fragment;
 import android.support.v4.view.PagerAdapter;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.View.OnTouchListener;
 import android.view.inputmethod.InputMethodManager;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
@@ -39,7 +41,7 @@ import android.widget.AbsListView.OnScrollListener;
 import android.widget.AdapterView.OnItemClickListener;
 
 
-public class ListViewSimpleFragment extends Fragment implements OnClickListener {
+public class ListViewSimpleFragment extends Fragment implements OnClickListener, OnTouchListener {
 	String mode;
 
 	private boolean dlg_isLoading = false; //Индикатор загрузки, для автоматической подгрузки диалогов при пролистывании
@@ -118,6 +120,13 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 	                listView.onRefreshComplete();
 	            }
 	        });
+	    
+	        listview.setOnTouchListener(this);
+	        View myLayout = rootView.findViewById( R.id.msg_footer );
+	        EditText et = (EditText) myLayout.findViewById(R.id.msg_entertext);
+	        et.setOnTouchListener(this);
+	        
+	        app.registerMsgsUpdater(async_complete_listener_msg_update);
 	    }
 	    
 	    if (mode.equals("dialogs")) {
@@ -148,7 +157,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 	        
 	        app.registerDlgsUpdater(async_complete_listener_dlg_update);
 	    }
-	  
+	    rootView.setOnTouchListener(this);
         return rootView;
     }
 	
@@ -426,22 +435,37 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 	AsyncTaskCompleteListener<List<mMessage>> async_complete_listener_msg_update = new AsyncTaskCompleteListener<List<mMessage>>(){
 		@Override
 		public void onTaskComplete(List<mMessage> result) {
-			boolean update = true;
-
 			for(mMessage msg : result){
-				if( msg.sendTime.after( showing_messages.get(showing_messages.size()-1).sendTime ) ){
-	        		showing_messages.add(msg);
-	        		async_complete_listener_msg_update_total_offset++;
-	        		msg_adapter.notifyDataSetChanged();
-	        	} else {
-	        		update = false;
-	        		break;
-	        	}
+				if(msg.msg_service != app.getActiveService().getServiceType()){ // Не тот сервис - источник
+					continue;
+				}
+				
+				if(msg.sendTime.before( showing_messages.get(0).sendTime ) ){ // Поступившее сообщение было позже, чем последнее отображаемое
+					continue;
+				}
+				
+				boolean updated = false;
+				
+				int tind = showing_messages.indexOf(msg);
+				if(tind != -1){
+					mMessage msg2 = showing_messages.remove(tind);
+					msg2.update(msg);
+					msg = msg2;
+					updated = true;
+				}
+				
+				for(int i = showing_messages.size() - 1; i >= 0; i--){
+					if( msg.sendTime.after( showing_messages.get(i).sendTime) ){
+						showing_messages.add(i+1, msg);
+						if(!updated){
+							showing_messages.remove(0);
+						}
+						break;
+					}	
+				}
 	        }
 			
-			if(update){
-				app.getActiveService().requestMessages(app.getActiveService().getActiveDialog(), async_complete_listener_msg_update_total_offset, 20, async_complete_listener_msg_update);
-			}
+			msg_adapter.notifyDataSetChanged();		
 		}
 	};
 
@@ -541,6 +565,22 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener 
 		
 	}
 
-	
+	@Override
+	public boolean onTouch(View v, MotionEvent event) {
+		if(mode.equals("messages")){
+			int firstVisibleRow = listview.getFirstVisiblePosition();
+		    int lastVisibleRow = listview.getLastVisiblePosition();
+		    
+		    for(int i=firstVisibleRow;i<=lastVisibleRow;i++){
+		    	mMessage msg = (mMessage) listview.getItemAtPosition(i);
+		    	if(msg == null)continue;
+		    	if(!msg.getFlag(mMessage.LOADING) && !msg.getFlag(mMessage.OUT) && !msg.getFlag(mMessage.READED)){
+		    		app.getActiveService().requestMarkAsReaded(msg);
+		    	}
+		    }
+		}
+		return false;
+	}
+
 
 }

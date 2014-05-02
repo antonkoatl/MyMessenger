@@ -468,5 +468,11 @@ public class Sms extends MessageService {
 		
 	}
 
+	@Override
+	public void requestMarkAsReaded(mMessage msg) {
+		// TODO Auto-generated method stub
+		
+	}
+
 
 }
