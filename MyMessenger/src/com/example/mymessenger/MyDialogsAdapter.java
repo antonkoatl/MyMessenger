@@ -8,6 +8,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.BitmapFactory;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -78,11 +79,29 @@ public class MyDialogsAdapter extends BaseAdapter {
     	if(dlg.participants.get(0).icon_100 != null){	    	
 	    	iv.setImageBitmap( dlg.participants.get(0).icon_100 );
     	} else if(dlg.participants.get(0).icon_100_url != null){
-    		download_waiter tw = new download_waiter(dlg.participants.get(0).icon_100_url, "iv_cnt_icon_100", iv);
+    		download_waiter tw = new download_waiter(dlg.participants.get(0).icon_100_url){
+    			ImageView iv;
+    			mContact cnt;
+    			
+				@Override
+				public void onDownloadComplete() {
+					BitmapFactory.Options options = new BitmapFactory.Options();
+					//options.inPreferredConfig = Bitmap.Config.ARGB_8888;
+					cnt.icon_100 = BitmapFactory.decodeFile(filepath);
+					iv.setImageBitmap( cnt.icon_100 );			
+				}
+				
+				public download_waiter setParams(ImageView iv, mContact cnt){
+					this.iv = iv;
+					this.cnt = cnt;
+					return this;
+				}
+				
+    			
+    		}.setParams(iv, dlg.participants.get(0));
+    		
             app.dl_waiters.add(tw);
             
-            tw = new download_waiter(dlg.participants.get(0).icon_100_url, "cnt_icon_100", dlg.participants.get(0));
-            app.dl_waiters.add(tw);
             
             Intent intent = new Intent(context, DownloadService.class);
             intent.putExtra("url", dlg.participants.get(0).icon_100_url);

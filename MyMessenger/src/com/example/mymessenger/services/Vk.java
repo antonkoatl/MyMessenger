@@ -24,6 +24,7 @@ import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Handler;
@@ -34,6 +35,7 @@ import android.widget.Toast;
 
 import com.example.mymessenger.ActivityTwo;
 import com.example.mymessenger.AsyncTaskCompleteListener;
+import com.example.mymessenger.ChatMessageFormatter;
 import com.example.mymessenger.DBHelper;
 import com.example.mymessenger.DownloadService;
 import com.example.mymessenger.MainActivity;
@@ -166,6 +168,10 @@ public class Vk extends MessageService {
 		VKSdk.initialize(sdkListener, "4161005", VKAccessToken.tokenFromSharedPreferences(this.app.getApplicationContext(), sTokenKey));
 		//VKSdk.authorize(sMyScope, false, true);		
 		//VKUIHelper.onDestroy((Activity) this.context);
+		
+		for(String code : emoji){
+			ChatMessageFormatter.addPatternVk(code);
+		}
 		
 	}
 	
@@ -790,10 +796,52 @@ public class Vk extends MessageService {
 			  ts = response_json.getInt( "ts" );
 			  
 			  JSONArray updates = response_json.getJSONArray("updates");
-			  for (int i = 0; i < updates.length(); i++) {
+			  for (int i = 0; i < updates.length(); i++) {				  
 				  JSONArray item = updates.getJSONArray(i);
+				  
+				  if(item.getInt(0) == 1) { // 1,$message_id,$flags -- замена флагов сообщения (FLAGS:=$flags)
+					  int message_id = item.getInt(1);
+					  mMessage msg = app.dbHelper.getMsgByMsgId(message_id, Vk.this);
+					  int flags = item.getInt(2);
+					  
+					  msg.setFlag(mMessage.READED, (flags & 1) != 1);
+					  msg.setFlag(mMessage.OUT, (flags & 2) == 2);
+					  
+					  Intent intent = new Intent(MsgReceiver.ACTION_UPDATE);
+			    	  intent.putExtra("service_type", getServiceType());
+			    	  intent.putExtra("msg", msg);
+			    	  app.sendBroadcast(intent);
+				  }
 
-				  if (item.getInt(0) == 4) {
+				  if(item.getInt(0) == 2) { // 2,$message_id,$mask[,$user_id] -- установка флагов сообщения (FLAGS|=$mask)
+					  int message_id = item.getInt(1);
+					  mMessage msg = app.dbHelper.getMsgByMsgId(message_id, Vk.this);
+					  int flags = item.getInt(2);
+					  
+					  msg.setFlag(mMessage.READED, (flags & 1) != 1);
+					  msg.setFlag(mMessage.OUT, (flags & 2) == 2);
+					  
+					  Intent intent = new Intent(MsgReceiver.ACTION_UPDATE);
+			    	  intent.putExtra("service_type", getServiceType());
+			    	  intent.putExtra("msg", msg);
+			    	  app.sendBroadcast(intent);
+				  }
+
+				  if(item.getInt(0) == 3) { // 3,$message_id,$mask[,$user_id] -- сброс флагов сообщения (FLAGS&=~$mask)
+					  int message_id = item.getInt(1);
+					  mMessage msg = app.dbHelper.getMsgByMsgId(message_id, Vk.this);
+					  int flags = item.getInt(2);
+					  
+					  msg.setFlag(mMessage.READED, (flags & 1) == 1);
+					  msg.setFlag(mMessage.OUT, (flags & 2) != 2);
+					  
+					  Intent intent = new Intent(MsgReceiver.ACTION_UPDATE);
+			    	  intent.putExtra("service_type", getServiceType());
+			    	  intent.putExtra("msg", msg);
+			    	  app.sendBroadcast(intent);
+				  }
+
+				  if (item.getInt(0) == 4) { // 4,$message_id,$flags,$from_id,$timestamp,$subject,$text,$attachments -- добавление нового сообщения
 					  String msg_id = item.getString(1);
 					  int flags = item.getInt(2);
 					  String from_id = item.getString(3);
@@ -863,7 +911,20 @@ public class Vk extends MessageService {
 						            intent.putExtra("url", photo_100_url);
 						            app.getApplicationContext().startService(intent);
 						        	
-						            download_waiter tw = new download_waiter(photo_100_url, "cnt_icon_100", cnt);
+						            download_waiter tw = new download_waiter(photo_100_url){
+						            	mContact cnt;
+						            	
+										@Override
+										public void onDownloadComplete() {
+											cnt.icon_100 = BitmapFactory.decodeFile(filepath);
+										}
+										
+										public download_waiter setParams(mContact cnt){
+											this.cnt = cnt;
+											return this;
+										}
+						            	
+						            }.setParams(cnt);
 						            app.dl_waiters.add(tw);
 						        	
 						        	contacts.put(item.getString("id"), cnt);
@@ -1011,4 +1072,24 @@ public class Vk extends MessageService {
 
 
 
+	public static final String[] emoji = ("D83DDE04, " +
+			"D83DDE0A, D83DDE03, D83DDE09, D83DDE06, D83DDE1C, D83DDE0B, D83DDE0D, D83DDE0E, D83DDE12, D83DDE0F, D83DDE14, D83DDE22, D83DDE2D, D83DDE29, D83DDE28, D83DDE10, D83DDE0C, D83DDE20, D83DDE21, D83DDE07, D83DDE30, D83DDE32, D83DDE33, D83DDE37, D83DDE1A, D83DDE08, 2764, D83DDC4D, D83DDC4E, 261D, 270C, D83DDC4C, 26BD, 26C5, D83CDF1F, D83CDF4C, D83CDF7A, D83CDF7B, D83CDF39, D83CDF45, D83CDF52, D83CDF81, D83CDF82, D83CDF84, D83CDFC1, D83CDFC6, D83DDC0E, D83DDC0F, D83DDC1C, D83DDC2B, D83DDC2E, D83DDC03, D83DDC3B, D83DDC3C, D83DDC05, D83DDC13, D83DDC18, D83DDC94, D83DDCAD, D83DDC36, D83DDC31, D83DDC37, D83DDC11, 23F3, 26BE, 26C4, 2600, D83CDF3A, D83CDF3B, D83CDF3C, D83CDF3D, D83CDF4A, D83CDF4B, D83CDF4D, D83CDF4E, D83CDF4F, D83CDF6D, D83CDF37, D83CDF38, D83CDF46, D83CDF49, D83CDF50, D83CDF51, D83CDF53, D83CDF54, D83CDF55, D83CDF56, D83CDF57, D83CDF69, D83CDF83, D83CDFAA, D83CDFB1, D83CDFB2, D83CDFB7, D83CDFB8, D83CDFBE, D83CDFC0, D83CDFE6, D83DDC00, D83DDC0C, D83DDC1B, D83DDC1D, D83DDC1F, D83DDC2A, D83DDC2C, D83DDC2D, D83DDC3A, D83DDC3D, D83DDC2F, D83DDC5C, D83DDC7B, D83DDC14, D83DDC23, D83DDC24, D83DDC40, D83DDC42, D83DDC43, D83DDC46, D83DDC47, D83DDC48, D83DDC51, D83DDC60, D83DDCA1, D83DDCA3, D83DDCAA, D83DDCAC, D83DDD14, D83DDD25").split(", ");
+
+	@Override
+	public String[] getEmojiCodes() {
+		return emoji;
+	}
+			
+			/*{
+		"D83DDE0A", "D83DDE03", "D83DDE09", "D83DDE06", "D83DDE1C", "D83DDE0B", "D83DDE0D", "D83DDE0E", "D83DDE12", "D83DDE0F", 
+		"D83DDE14", "D83DDE22", "D83DDE2D", "D83DDE29", "D83DDE28", "D83DDE10", "D83DDE0C", "D83DDE20", "D83DDE21", "D83DDE07", 
+		"D83DDE30", "D83DDE32", "D83DDE33", "D83DDE37", "D83DDE1A", "D83DDE08", 	"2764",	"D83DDC4D", "D83DDC4E", 	"261D", 
+			"270C", "D83DDC4C", 	"26BD", 	"26C5", "D83CDF1F", "D83CDF4C", "D83CDF7A", "D83CDF7B", "D83CDF39", "D83CDF45", 
+		"D83CDF52", "D83CDF81", "D83CDF82", "D83CDF84", "D83CDFC1", "D83CDFC6", "D83DDC0E", "D83DDC0F", "D83DDC1C", "D83DDC2B", 
+		"D83DDC2E", "D83DDC03", "D83DDC3B", "D83DDC3C", "D83DDC05", "D83DDC13", "D83DDC18", "D83DDC94", "D83DDCAD", "D83DDC36", 
+		"D83DDC31", "D83DDC37", "D83DDC11", 	"23F3", 	"26BE", 	"26C4", 	"2600", "D83CDF3A", "D83CDF3B", "D83CDF3C", 
+		"D83CDF3D", "D83CDF4A", "D83CDF4B", "D83CDF4D", "D83CDF4E", "D83CDF4F", "D83CDF6D", "D83CDF37", "D83CDF38", "D83CDF46", 
+		"D83CDF49", "D83CDF50", "D83CDF51, D83CDF53, D83CDF54, D83CDF55, D83CDF56, D83CDF57, D83CDF69, D83CDF83, D83CDFAA, D83CDFB1, D83CDFB2, D83CDFB7, D83CDFB8, D83CDFBE, D83CDFC0, D83CDFE6, D83DDC00, D83DDC0C, D83DDC1B, D83DDC1D, D83DDC1F, D83DDC2A, D83DDC2C, D83DDC2D, D83DDC3A, D83DDC3D, D83DDC2F, D83DDC5C, D83DDC7B, D83DDC14, D83DDC23, D83DDC24, D83DDC40, D83DDC42, D83DDC43, D83DDC46, D83DDC47, D83DDC48, D83DDC51, D83DDC60, D83DDCA1, D83DDCA3, D83DDCAA, D83DDCAC, D83DDD14, D83DDD25
+		
+	};*/
 }

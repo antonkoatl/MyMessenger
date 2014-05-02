@@ -14,7 +14,7 @@ import android.util.Log;
 
 public class DownloadService extends IntentService {
 	public static final String NOTIFICATION_FINISHED = "com.mymessenger.downloader.finished";
-	final String DIR_SD = "MyMessangerDownloadedFiles";
+	final static String DIR_SD = "MyMessangerDownloadedFiles";
 	
 	public DownloadService() {
 		super("Downloader");
@@ -96,4 +96,48 @@ public class DownloadService extends IntentService {
 	    sendBroadcast(intent);
 	}
 
+	public String getCachedFile(String url_path){
+		String fileName = url_path.substring( url_path.lastIndexOf('/')+1, url_path.length() );
+		File output = new File(getCacheDir() + File.separator + DIR_SD, fileName);
+		File output_dir = new File(getCacheDir() + File.separator + DIR_SD);
+	    if(!output_dir.exists()) output_dir.mkdirs();
+	    
+	    if (output.exists()) {
+	    	return output.getPath();	    	
+	    }
+	    
+	    InputStream stream = null;
+	    FileOutputStream fos = null;
+	    try {
+	    	URL url = new URL(url_path);
+	    	stream = url.openConnection().getInputStream();
+	    	//InputStreamReader reader = new InputStreamReader(stream);
+	    	fos = new FileOutputStream(output.getPath());
+	    	final byte[] buffer = new byte[1024];
+	    	int next = -1;
+	    	while ((next = stream.read(buffer)) != -1) {
+	    		fos.write(buffer, 0, next);
+	    	}
+	    	// successfully finished
+	    } catch (Exception e) {
+	    	e.printStackTrace();
+	    } finally {
+	    	if (stream != null) {
+	    		try {
+	    			stream.close();
+	    		} catch (IOException e) {
+	    			e.printStackTrace();
+	    		}
+	    	}
+	    	if (fos != null) {
+	    		try {
+	    			fos.close();
+	    		} catch (IOException e) {
+	    			e.printStackTrace();
+	    		}
+	    	}
+		}
+		    
+		return output.getPath();
+	}
 }

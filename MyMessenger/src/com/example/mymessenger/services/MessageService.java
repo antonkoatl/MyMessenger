@@ -81,6 +81,7 @@ public abstract class MessageService {
 	public abstract void setup(); //Подготовить сервис для работы
 	public abstract void init(); //Инициализация, после авторизации
 	public abstract void unsetup(); //Удалить сервис
+	public abstract String[] getEmojiCodes();
 	 
 	//Служебные функции
 	public final String getServiceName() {

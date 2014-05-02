@@ -1,13 +1,16 @@
 package com.example.mymessenger;
 
-public class download_waiter{
+public abstract class download_waiter{
 	String url;
-	String type;
-	Object obj;
+	protected String filepath;
 	
-	public download_waiter(String url, String type, Object obj){
+	public download_waiter(String url){
 		this.url = url;
-		this.type = type;
-		this.obj = obj;
+	}
+	
+	public abstract void onDownloadComplete();
+
+	public void setFilePath(String filepath) {
+		this.filepath = filepath;
 	}
 }

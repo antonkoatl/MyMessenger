@@ -307,4 +307,27 @@ public class DBHelper extends SQLiteOpenHelper {
 		
 		getWritableDatabase().update(table_name, cv, "_id=" + id, null);
 	}
+	
+	public mMessage getMsgByMsgId(int message_id, MessageService ms){
+		mMessage msg = null;
+		SQLiteDatabase db = getReadableDatabase();
+		
+		String table_name = getTableNameMsgs(ms);
+		String selection = colMsgId + " = " + String.valueOf(message_id);
+		
+		Cursor cursor = db.query(table_name, null, selection, null, null, null, null);
+		
+		if(cursor.moveToFirst()){
+			msg = new mMessage();
+			msg.respondent = ms.getContact( cursor.getString( cursor.getColumnIndex(colRespondent) ) );
+			msg.sendTime.set( cursor.getLong( cursor.getColumnIndex(colSendtime) ) );
+			msg.text = cursor.getString(cursor.getColumnIndex(colBody));
+        	msg.flags = cursor.getInt(cursor.getColumnIndex(colFlags));
+        	msg.id = cursor.getString(cursor.getColumnIndex(colMsgId));
+        	msg.msg_service = ms.getServiceType();
+		}
+		cursor.close();
+		
+		return msg;
+	}
 }

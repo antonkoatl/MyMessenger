@@ -84,7 +84,7 @@ public class MyMsgAdapter extends BaseAdapter {
 	    textLabel_date.setLayoutParams(lp_date);
 	    
 	    
-	    textLabel_text.setText( msg.text );
+	    textLabel_text.setText( ChatMessageFormatter.getSmiledText(context, msg.text, textLabel_text.getLineHeight()) );
     	
 	    textLabel_text.setBackgroundResource(left ? R.drawable.bubble_green : R.drawable.bubble_yellow);
 	    textLabel_text.setGravity(left ? Gravity.RIGHT : Gravity.LEFT);

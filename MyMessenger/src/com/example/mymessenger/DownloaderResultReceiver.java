@@ -18,19 +18,10 @@ public class DownloaderResultReceiver extends BroadcastReceiver {
 		
 		boolean cnt_updated = false;
 		
+		
 		for(download_waiter dw : app.getDownloadWaiters(url_path)){
-			if(dw.type.equals("cnt_icon_100")){
-				mContact cnt = (mContact) dw.obj;
-				BitmapFactory.Options options = new BitmapFactory.Options();
-				//options.inPreferredConfig = Bitmap.Config.ARGB_8888;
-				cnt.icon_100 = BitmapFactory.decodeFile(file_path);
-				//cnt_updated = true;
-			}
-			
-			if(dw.type.equals("iv_cnt_icon_100")){
-				ImageView iv = (ImageView) dw.obj;
-				iv.setImageBitmap( BitmapFactory.decodeFile(file_path) );
-			}
+			dw.setFilePath(file_path);
+			dw.onDownloadComplete();
 		}
 		
 		if(cnt_updated)app.triggerCntsUpdaters();

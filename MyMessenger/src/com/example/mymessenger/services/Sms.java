@@ -474,5 +474,11 @@ public class Sms extends MessageService {
 		
 	}
 
+	@Override
+	public String[] getEmojiCodes() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 
 }
