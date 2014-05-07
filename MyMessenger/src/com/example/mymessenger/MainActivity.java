@@ -9,6 +9,7 @@ import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 import android.os.Bundle;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBarActivity;
@@ -85,7 +86,14 @@ public class MainActivity extends ActionBarActivity {
     @Override
     protected void onStop() {
     	super.onStop();
-    	Log.d("MainActivity", "onPause");
+    	Log.d("MainActivity", "onStop");
+    	
+    	Editor ed = app.sPref.edit();
+    	if(app.getActiveService() != null){
+    		ed.putInt("active_service", app.getActiveService().getServiceType());
+    		ed.putString("active_dialog", app.getActiveService().getActiveDialog().getParticipantsAddresses());
+    	}
+    	ed.commit();
     }
     
     @Override 

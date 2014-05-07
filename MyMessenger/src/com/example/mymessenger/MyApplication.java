@@ -20,7 +20,7 @@ public class MyApplication extends Application {
 	public List<MessageService> myMsgServices;
 	public int active_service;
 	PendingIntent pi;
-	private SharedPreferences sPref;
+	SharedPreferences sPref;
 	
 	public List<AsyncTaskCompleteListener<Void>> cnts_updaters;
 	public List<AsyncTaskCompleteListener<List<mDialog>>> dlgs_updaters;
@@ -48,13 +48,24 @@ public class MyApplication extends Application {
 		
 		sPref = getSharedPreferences("MyPref", MODE_PRIVATE); //загрузка конфигов
 		
-		//загрузка активных сервисов
+		//загрузка сервисов
         String using_services[] = sPref.getString("usingservices", "10").split(",");
         for(String i : using_services){        	
         	if(i.equals( String.valueOf(MessageService.SMS) ))
         		addMsgService(new Sms(this));
         	if(i.equals( String.valueOf(MessageService.VK) ))
         		addMsgService(new Vk(this));
+        }
+        
+        active_service = sPref.getInt("active_service", 0);
+        if(active_service != 0 && getService(active_service) != null){
+        	MessageService ms = getService(active_service);
+        	String dialog_addr = sPref.getString("active_dialog", "");
+        	if(dialog_addr.length() > 0){
+        		mDialog dlg = new mDialog();
+        		dlg.participants.add(ms.getContact(dialog_addr));
+        		ms.setActiveDialog(dlg);
+        	}
         }
         
         //«апуск сервиса обновлений        
@@ -98,6 +109,8 @@ public class MyApplication extends Application {
 
 	public void setActiveService(int msgService) {
 		active_service = msgService;
+		
+		
 	}
 
 	

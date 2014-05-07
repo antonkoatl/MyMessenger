@@ -295,6 +295,8 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 		}
 	}
 
+	
+	// TODO: Merge them:
 	AsyncTaskCompleteListener<List<mMessage>> async_complete_listener_msg = new AsyncTaskCompleteListener<List<mMessage>>(){
 
 		@Override

@@ -27,6 +27,7 @@ public class DBHelper extends SQLiteOpenHelper {
 	public static final String colParticipants = "participants";
 	public static final String colLastmsgtime = "last_msg_time";
 	public static final String colSnippet = "snippet";
+	public static final String colSnippetOut = "snippet_out";
 	
 	public static final String colAddress = "address";
 	public static final String colName = "name";
@@ -89,7 +90,9 @@ public class DBHelper extends SQLiteOpenHelper {
 		          + colId + " integer primary key autoincrement," 
 		          + colParticipants + " text unique,"
 		          + colLastmsgtime + " integer,"
-		          + colSnippet + " text" + ");");
+		          + colSnippet + " text,"
+		          + colSnippetOut + " integer" 
+		          + ");");
 		
 		db.execSQL("create table IF NOT EXISTS " + tn_cnts + " ("
 		          + colId + " integer primary key autoincrement," 
@@ -143,6 +146,7 @@ public class DBHelper extends SQLiteOpenHelper {
 		cv.put(colParticipants, dlg.getParticipantsAddresses());
 		cv.put(colLastmsgtime, dlg.last_msg_time.toMillis(false));
 		cv.put(colSnippet, dlg.snippet);
+		cv.put(colSnippetOut, dlg.snippet_out);
 		
 		SQLiteDatabase db = getWritableDatabase();
 		db.insert(table_name, null, cv);	
@@ -241,6 +245,7 @@ public class DBHelper extends SQLiteOpenHelper {
         int partColIndex = cursor.getColumnIndex( colParticipants );
         int lastMTColIndex = cursor.getColumnIndex( colLastmsgtime );
         int snipColIndex = cursor.getColumnIndex( colSnippet );
+        int snipOutColIndex = cursor.getColumnIndex( colSnippetOut );
 		
 		for (int i = 0; i < count; i++) {
 			if(cursor_chk){
@@ -248,6 +253,7 @@ public class DBHelper extends SQLiteOpenHelper {
 	        	dlg.participants.add( ms.getContact( cursor.getString(partColIndex) ) );
 	        	dlg.last_msg_time.set( cursor.getLong(lastMTColIndex) );
 	        	dlg.snippet = cursor.getString(snipColIndex);
+	        	dlg.snippet_out = cursor.getInt(snipOutColIndex);
 	        	dlg.msg_service = ms.getServiceType();
 	        	
 	        	result.add(dlg);

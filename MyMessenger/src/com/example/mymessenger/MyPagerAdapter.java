@@ -53,7 +53,9 @@ public class MyPagerAdapter extends FragmentPagerAdapter {
     		if (!(app.getActiveService() == null) && !(app.getActiveService().getActiveDialog() == null))
     			return app.getActiveService().getActiveDialog().getParticipantsNames();
     		else return "---";
-    	} else return "Page " + position;
+    	} else if(position == 1)return "Dialogs";
+    	else if(position == 0)return "Services";
+    	else return "";
     }
     
     @Override

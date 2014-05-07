@@ -20,7 +20,7 @@ public abstract class MessageService {
 	
 	protected MyApplication app;
 	protected mContact self_contact;
-	protected mDialog active_dlg;
+	private mDialog active_dlg;
 	protected Map<String, mContact> contacts;
 	protected boolean authorised = false;
 	protected String service_name = "service_name";

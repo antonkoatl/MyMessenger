@@ -73,7 +73,7 @@ public class MyDialogsAdapter extends BaseAdapter {
     	textLabel.setText( dlg.getLastMessageTime().format("%H:%M %d.%m.%Y") );
         
     	textLabel = (TextView) view.findViewById(R.id.dlgview_dlgtext);
-    	textLabel.setText( dlg.snippet );
+    	textLabel.setText( ChatMessageFormatter.getSmiledText(context, dlg.snippet, textLabel.getLineHeight()) );
     	
     	ImageView iv = (ImageView) view.findViewById(R.id.dlgview_iconmain);
     	if(dlg.participants.get(0).icon_100 != null){	    	
@@ -101,12 +101,50 @@ public class MyDialogsAdapter extends BaseAdapter {
     		}.setParams(iv, dlg.participants.get(0));
     		
             app.dl_waiters.add(tw);
-            
-            
+                       
             Intent intent = new Intent(context, DownloadService.class);
             intent.putExtra("url", dlg.participants.get(0).icon_100_url);
             context.getApplicationContext().startService(intent);
     	}
+	
+		iv = (ImageView) view.findViewById(R.id.dlgview_dlgtexticon);
+	    if(dlg.snippet_out == 1){
+	    	mContact my_contact = app.getService(dlg.msg_service).getMyContact();
+	    	if(my_contact.icon_100 != null){	    	
+	    		iv.setImageBitmap( my_contact.icon_100 );
+	     	} else if(my_contact.icon_100_url != null){
+	     		download_waiter tw = new download_waiter(my_contact.icon_100_url){
+	     			ImageView iv;
+	     			mContact cnt;
+	     			
+	 				@Override
+	 				public void onDownloadComplete() {
+	 					BitmapFactory.Options options = new BitmapFactory.Options();
+	 					//options.inPreferredConfig = Bitmap.Config.ARGB_8888;
+	 					cnt.icon_100 = BitmapFactory.decodeFile(filepath);
+	 					iv.setImageBitmap( cnt.icon_100 );			
+	 				}
+	 				
+	 				public download_waiter setParams(ImageView iv, mContact cnt){
+	 					this.iv = iv;
+	 					this.cnt = cnt;
+	 					return this;
+	 				}
+	 				
+	     			
+	     		}.setParams(iv, my_contact);
+	     		
+	             app.dl_waiters.add(tw);
+	             
+	             Intent intent = new Intent(context, DownloadService.class);
+	             intent.putExtra("url", my_contact.icon_100_url);
+	             context.getApplicationContext().startService(intent);
+	     	} 
+	    } else {
+     		iv.setVisibility(View.INVISIBLE);
+     		iv.getLayoutParams().width = 0;
+     		iv.requestLayout();
+        }
     	
     	//Log.d("MyDialogsAdapter", data.size() + " : " + position + " : " + dlg.getParticipantsNames());
 		return view;

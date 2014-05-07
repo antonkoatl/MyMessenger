@@ -12,6 +12,7 @@ public class mDialog {
 	
 	public Time last_msg_time;
 	public String snippet;
+	public int snippet_out;
 	
 	public mDialog() {
 		messages = new ArrayList<mMessage>();
