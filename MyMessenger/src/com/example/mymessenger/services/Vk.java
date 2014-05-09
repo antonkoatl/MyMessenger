@@ -708,8 +708,8 @@ public class Vk extends MessageService {
 		Log.d("HandleApiError", String.valueOf(error.apiError.errorCode) + " :: " + error.apiError.errorMessage);
 		if(error.apiError.errorCode == 5){ // User authorization failed.
 			if(authorization_finished && check_access_toten(error) ){
-				Log.d("HandleApiError", "VKSdk.authorize: " + error.apiError.errorMessage);
-	        	//if(app.getCurrentActivity() != null) authorize(app.getCurrentActivity());
+				//Log.d("HandleApiError", "VKSdk.authorize: " + error.apiError.errorMessage);
+	        	if(app.getCurrentActivity() != null) authorize(app.getCurrentActivity());
 				//VKSdk.authorize(sMyScope, false, true);
 				authorization_finished = false;
 			}
@@ -747,6 +747,7 @@ public class Vk extends MessageService {
 	private boolean check_access_toten(VKError error) {
 		for(Map<String, String> m : error.apiError.requestParams){
 			if(m.get("key").equals(VKApiConst.ACCESS_TOKEN)){
+				Log.d("check_access_toten", m.get("value") + " :: " + VKSdk.getAccessToken().accessToken);
 				return m.get("value").equals(VKSdk.getAccessToken().accessToken);
 			}
 		}

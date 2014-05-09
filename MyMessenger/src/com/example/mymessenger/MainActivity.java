@@ -30,6 +30,7 @@ import android.widget.Toast;
 import com.example.mymessenger.services.MessageService;
 import com.example.mymessenger.services.Sms;
 import com.example.mymessenger.services.Vk;
+import com.example.mymessenger.ui.ListViewSimpleFragment;
 import com.example.mymessenger.ui.ServicesMenuFragment;
 import com.vk.sdk.VKUIHelper;
 
@@ -114,6 +115,11 @@ public class MainActivity extends ActionBarActivity {
             }
     	}
     	if(mViewPager.getCurrentItem() == 2){
+    		ListViewSimpleFragment fr = (ListViewSimpleFragment) pagerAdapter.getRegisteredFragment(2);
+    		if (fr.emojiPopup.isShowing()) {
+    			fr.emojiPopup.hide();
+                return;
+            }
     		mViewPager.setCurrentItem(1);
     		return;
     	}

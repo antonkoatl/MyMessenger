@@ -69,7 +69,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 	boolean lv_update_pos_running = false;
 	private View rootView;
 
-	protected EmojiPopup emojiPopup;
+	public EmojiPopup emojiPopup;
 
 	protected boolean keyboardVisible = false;
 	
@@ -274,7 +274,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 		Log.d("ListViewSimpleFragment", "onStop");
 		// Apply any required UI change now that the Fragment is visible.
 	}
-	
+		
 	public int getItemPosition(Object object) {
 	    return PagerAdapter.POSITION_NONE;
 	}
