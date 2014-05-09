@@ -12,6 +12,8 @@ import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.example.mymessenger.services.Vk;
+
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -30,9 +32,10 @@ public class ChatMessageFormatter {
 	private static final Map<Pattern, String> emoticons = new HashMap<Pattern, String>();
 
 	public static void addPatternVk(String code){
-		if(code.length() == 4)addPattern(emoticons, String.valueOf( Character.toChars( Integer.parseInt(code, 16) ) ), "http://vk.com/images/emoji/" + code + ".png");
-		if(code.length() == 8)addPattern(emoticons, String.valueOf( Character.toChars( Integer.parseInt(code.substring(0, 4), 16) ) ) + String.valueOf( Character.toChars( Integer.parseInt(code.substring(4, 8), 16) ) ), "http://vk.com/images/emoji/" + code + ".png");
+		if(code.length() == 4)addPattern(emoticons, String.valueOf( Character.toChars( Integer.parseInt(code, 16) ) ), Vk.getEmojiUrl(code));
+		if(code.length() == 8)addPattern(emoticons, String.valueOf( Character.toChars( Integer.parseInt(code.substring(0, 4), 16) ) ) + String.valueOf( Character.toChars( Integer.parseInt(code.substring(4, 8), 16) ) ), Vk.getEmojiUrl(code));
 	}
+	
 	
 	private static void addPattern(Map<Pattern, String> map, String smile,
 	        String resource) {
@@ -85,6 +88,30 @@ public class ChatMessageFormatter {
 			e.printStackTrace();
 		}
 	    return spannable;
+	}
+	
+	public static Drawable getEmojiDrawableVk(String code, int size){
+		String t = getCachedFile(Vk.getEmojiUrl(code), MyApplication.context);
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        
+        options.inDensity = DisplayMetrics.DENSITY_MEDIUM;
+        options.inTargetDensity = MyApplication.context.getResources().getDisplayMetrics().densityDpi;
+        options.inScaled = true;
+        
+        Bitmap b = BitmapFactory.decodeFile( t, options );
+        if(size > 0){        	
+        	b = Bitmap.createScaledBitmap(b, size, size, true);
+        }
+        
+        Drawable d = new BitmapDrawable(MyApplication.context.getResources(), b);
+        
+        d.setBounds(0, 0, d.getIntrinsicWidth(), d.getIntrinsicHeight());
+        
+        if(size > 0){        	
+        	b = Bitmap.createScaledBitmap(b, size, size, true);
+        }
+        
+        return d;
 	}
 	
 	public static String getCachedFile(String url_path, Context context){

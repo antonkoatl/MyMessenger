@@ -23,7 +23,9 @@
 	    <item name="android:background">#000080</item>
 	</style>
 	
+	<style name="PagerSlidingTabStrip">
 
+	</style>
 	
 	
 

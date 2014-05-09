@@ -17,6 +17,7 @@ import android.content.SharedPreferences.Editor;
 import android.os.HandlerThread;
 
 public class MyApplication extends Application {
+	public static Context context;
 	public List<MessageService> myMsgServices;
 	public int active_service;
 	PendingIntent pi;
@@ -32,11 +33,15 @@ public class MyApplication extends Application {
 	public boolean msgs_loading_maxed = false;
 	public boolean dlgs_loading_maxed = false;
 	
-	private Activity mCurrentActivity = null;
+	private static Activity mCurrentActivity = null;
 	
 	@Override
 	public void onCreate() {
 		super.onCreate();
+		
+		if (context == null) {
+            context = getApplicationContext();
+		}
 		
 		dbHelper = new DBHelper(this); //Класс для работы с бд
 		myMsgServices = new ArrayList<MessageService>(); //Активные сервисы сообщений
@@ -71,6 +76,8 @@ public class MyApplication extends Application {
         //Запуск сервиса обновлений        
         Intent intent1 = new Intent(this, UpdateService.class);
 		startService(intent1);
+		
+		
 	}
 	
 	public void addMsgService(MessageService mServive){
@@ -94,11 +101,12 @@ public class MyApplication extends Application {
 	
 	
 	
-    public Activity getCurrentActivity(){
+    public static Activity getCurrentActivity(){
           return mCurrentActivity;
     }
-    public void setCurrentActivity(Activity mCurrentActivity){
-          this.mCurrentActivity = mCurrentActivity;
+    
+    public static void setCurrentActivity(Activity mActivity){
+          mCurrentActivity = mActivity;
     }
 
 	public void requestLastDialogs(int count, int offset, AsyncTaskCompleteListener<List<mDialog>> cb) {

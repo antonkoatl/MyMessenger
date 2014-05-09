@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.example.mymessenger.AsyncTaskCompleteListener;
+import com.example.mymessenger.EmojiPopup;
 import com.example.mymessenger.MainActivity;
 import com.example.mymessenger.MyApplication;
 import com.example.mymessenger.MyDialogsAdapter;
@@ -21,14 +22,18 @@ import com.example.mymessenger.ui.PullToRefreshListView.OnRefreshListener;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Configuration;
+import android.inputmethodservice.Keyboard;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.PagerAdapter;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.View.OnKeyListener;
 import android.view.View.OnTouchListener;
 import android.view.inputmethod.InputMethodManager;
 import android.view.ViewGroup;
@@ -36,6 +41,7 @@ import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.AbsListView.OnScrollListener;
 import android.widget.AdapterView.OnItemClickListener;
@@ -62,6 +68,10 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 	List<Integer> lv_dpos = new ArrayList<Integer>();
 	boolean lv_update_pos_running = false;
 	private View rootView;
+
+	protected EmojiPopup emojiPopup;
+
+	protected boolean keyboardVisible = false;
 	
 	// newInstance constructor for creating fragment with arguments
     public static ListViewSimpleFragment newInstance(String mode) {
@@ -126,7 +136,45 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 	        EditText et = (EditText) myLayout.findViewById(R.id.msg_entertext);
 	        et.setOnTouchListener(this);
 	        
+	        et.setOnKeyListener(new OnKeyListener(){
+
+				@Override
+				public boolean onKey(View v, int keyCode, KeyEvent event) {
+	                if (keyCode != 4 || ListViewSimpleFragment.this.keyboardVisible  || ListViewSimpleFragment.this.emojiPopup == null || (!ListViewSimpleFragment.this.emojiPopup.isShowing())) {
+	                    return false;
+	                }
+	                if (event.getAction() != 1) {
+	                    return true;
+	                }
+	                ListViewSimpleFragment.this.emojiPopup.showEmojiPopup(false);
+	                return true;
+	            }
+
+	        	
+	        });
+	        
 	        app.registerMsgsUpdater(async_complete_listener_msg_update);
+	        
+	        ImageView b = (ImageView) myLayout.findViewById(R.id.msg_keyboard);
+	        b.setOnClickListener(new OnClickListener(){
+				@Override
+				public void onClick(View view) {
+					boolean shown;
+	                boolean r2z = false;
+	                shown = ListViewSimpleFragment.this.emojiPopup != null && ListViewSimpleFragment.this.emojiPopup.isShowing();
+	                EmojiPopup r3_EmojiPopup = ListViewSimpleFragment.this.emojiPopup;
+	                if (shown) {
+	                    r3_EmojiPopup.showEmojiPopup(r2z);
+	                } else {
+	                    r2z = true;
+	                    r3_EmojiPopup.showEmojiPopup(r2z);
+	                }
+
+				}
+	        	
+	        });
+	    
+	        this.emojiPopup = new EmojiPopup(getActivity(), rootView, R.drawable.ic_msg_panel_smiles, true);
 	    }
 	    
 	    if (mode.equals("dialogs")) {
@@ -158,6 +206,9 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 	        app.registerDlgsUpdater(async_complete_listener_dlg_update);
 	    }
 	    rootView.setOnTouchListener(this);
+	    
+	    
+	    
         return rootView;
     }
 	
@@ -400,6 +451,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 
 		@Override
 		public void onTaskComplete(List<mDialog> result) {
+			if(showing_dialogs.size() == 0)return;
 			for(mDialog dlg : result){
 				if(dlg.last_msg_time.before( showing_dialogs.get(showing_dialogs.size() - 1).last_msg_time ) ){ // Поступивший диалог был позже, чем последний отображаемый
 					continue;
@@ -437,6 +489,8 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 	AsyncTaskCompleteListener<List<mMessage>> async_complete_listener_msg_update = new AsyncTaskCompleteListener<List<mMessage>>(){
 		@Override
 		public void onTaskComplete(List<mMessage> result) {
+			if(showing_messages.size() == 0)return;
+			
 			for(mMessage msg : result){
 				if(msg.msg_service != app.getActiveService().getServiceType()){ // Не тот сервис - источник
 					continue;
@@ -584,5 +638,14 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 		return false;
 	}
 
+	@Override
+	public void onConfigurationChanged(Configuration cfg) {
+        super.onConfigurationChanged(cfg);
+        if (this.emojiPopup == null || (!this.emojiPopup.isShowing())) {
+        } else {
+            this.emojiPopup.showEmojiPopup(false);
+            this.emojiPopup.onKeyboardStateChanged(false, -1);
+        }
+    }
 
 }

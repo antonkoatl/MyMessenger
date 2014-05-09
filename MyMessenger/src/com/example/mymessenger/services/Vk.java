@@ -709,7 +709,7 @@ public class Vk extends MessageService {
 		if(error.apiError.errorCode == 5){ // User authorization failed.
 			if(authorization_finished && check_access_toten(error) ){
 				Log.d("HandleApiError", "VKSdk.authorize: " + error.apiError.errorMessage);
-	        	if(app.getCurrentActivity() != null) authorize(app.getCurrentActivity());
+	        	//if(app.getCurrentActivity() != null) authorize(app.getCurrentActivity());
 				//VKSdk.authorize(sMyScope, false, true);
 				authorization_finished = false;
 			}
@@ -725,7 +725,7 @@ public class Vk extends MessageService {
 				
 			}.setParam(error);
 			
-			handler.postDelayed(r, 2000);
+			handler.postDelayed(r, 20000);
 		}
 		
 		if(error.apiError.errorCode == 6){ // Too many requests per second.
@@ -795,6 +795,11 @@ public class Vk extends MessageService {
 			  Log.d("LongPollRunnable", page);
 			  
 			  JSONObject response_json = new JSONObject(page);
+			  
+			  if(response_json.has("failed")){
+				  kill();
+			  }
+			  
 			  ts = response_json.getInt( "ts" );
 			  
 			  JSONArray updates = response_json.getJSONArray("updates");
@@ -804,43 +809,49 @@ public class Vk extends MessageService {
 				  if(item.getInt(0) == 1) { // 1,$message_id,$flags -- замена флагов сообщения (FLAGS:=$flags)
 					  int message_id = item.getInt(1);
 					  mMessage msg = app.dbHelper.getMsgByMsgId(message_id, Vk.this);
-					  int flags = item.getInt(2);
-					  
-					  msg.setFlag(mMessage.READED, (flags & 1) != 1);
-					  msg.setFlag(mMessage.OUT, (flags & 2) == 2);
-					  
-					  Intent intent = new Intent(MsgReceiver.ACTION_UPDATE);
-			    	  intent.putExtra("service_type", getServiceType());
-			    	  intent.putExtra("msg", msg);
-			    	  app.sendBroadcast(intent);
+					  if(msg != null){
+						  int flags = item.getInt(2);
+						  
+						  msg.setFlag(mMessage.READED, (flags & 1) != 1);
+						  msg.setFlag(mMessage.OUT, (flags & 2) == 2);
+						  
+						  Intent intent = new Intent(MsgReceiver.ACTION_UPDATE);
+				    	  intent.putExtra("service_type", getServiceType());
+				    	  intent.putExtra("msg", msg);
+				    	  app.sendBroadcast(intent);
+					  }
 				  }
 
 				  if(item.getInt(0) == 2) { // 2,$message_id,$mask[,$user_id] -- установка флагов сообщения (FLAGS|=$mask)
 					  int message_id = item.getInt(1);
 					  mMessage msg = app.dbHelper.getMsgByMsgId(message_id, Vk.this);
-					  int flags = item.getInt(2);
-					  
-					  msg.setFlag(mMessage.READED, (flags & 1) != 1);
-					  msg.setFlag(mMessage.OUT, (flags & 2) == 2);
-					  
-					  Intent intent = new Intent(MsgReceiver.ACTION_UPDATE);
-			    	  intent.putExtra("service_type", getServiceType());
-			    	  intent.putExtra("msg", msg);
-			    	  app.sendBroadcast(intent);
+					  if(msg != null){
+						  int flags = item.getInt(2);
+						  
+						  msg.setFlag(mMessage.READED, (flags & 1) != 1);
+						  msg.setFlag(mMessage.OUT, (flags & 2) == 2);
+						  
+						  Intent intent = new Intent(MsgReceiver.ACTION_UPDATE);
+				    	  intent.putExtra("service_type", getServiceType());
+				    	  intent.putExtra("msg", msg);
+				    	  app.sendBroadcast(intent);
+					  }
 				  }
 
 				  if(item.getInt(0) == 3) { // 3,$message_id,$mask[,$user_id] -- сброс флагов сообщения (FLAGS&=~$mask)
 					  int message_id = item.getInt(1);
 					  mMessage msg = app.dbHelper.getMsgByMsgId(message_id, Vk.this);
-					  int flags = item.getInt(2);
-					  
-					  msg.setFlag(mMessage.READED, (flags & 1) == 1);
-					  msg.setFlag(mMessage.OUT, (flags & 2) != 2);
-					  
-					  Intent intent = new Intent(MsgReceiver.ACTION_UPDATE);
-			    	  intent.putExtra("service_type", getServiceType());
-			    	  intent.putExtra("msg", msg);
-			    	  app.sendBroadcast(intent);
+					  if(msg != null){
+						  int flags = item.getInt(2);
+						  
+						  msg.setFlag(mMessage.READED, (flags & 1) == 1);
+						  msg.setFlag(mMessage.OUT, (flags & 2) != 2);
+						  
+						  Intent intent = new Intent(MsgReceiver.ACTION_UPDATE);
+				    	  intent.putExtra("service_type", getServiceType());
+				    	  intent.putExtra("msg", msg);
+				    	  app.sendBroadcast(intent);
+					  }
 				  }
 
 				  if (item.getInt(0) == 4) { // 4,$message_id,$flags,$from_id,$timestamp,$subject,$text,$attachments -- добавление нового сообщения
@@ -1082,5 +1093,8 @@ public class Vk extends MessageService {
 		return emoji;
 	}
 			
+	public static String getEmojiUrl(String code){
+		return "http://vk.com/images/emoji/" + code + ".png";
+	}
 
 }
