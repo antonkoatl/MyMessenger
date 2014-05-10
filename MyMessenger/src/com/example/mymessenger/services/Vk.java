@@ -46,6 +46,7 @@ import com.example.mymessenger.UpdateService;
 import com.example.mymessenger.mContact;
 import com.example.mymessenger.mDialog;
 import com.example.mymessenger.mMessage;
+import com.example.mymessenger.services.Sms.load_dlgs_async;
 import com.example.mymessenger.services.Sms.load_msgs_async;
 import com.example.mymessenger.download_waiter;
 import com.vk.sdk.VKAccessToken;
@@ -65,8 +66,6 @@ import com.vk.sdk.api.VKResponse;
 public class Vk extends MessageService {
 	private static String sTokenKey = "VK_ACCESS_TOKEN";
 	private static String[] sMyScope = new String[]{VKScope.FRIENDS, VKScope.WALL, VKScope.PHOTOS, VKScope.NOHTTPS, VKScope.MESSAGES};
-	public static final int MSGS_DOWNLOAD_COUNT = 20;
-	public static final int DLGS_DOWNLOAD_COUNT = 20;
 	
 	boolean accum_cnt_handler_isRunning = false; //??
 	
@@ -89,6 +88,9 @@ public class Vk extends MessageService {
 	mDialog dl_current_dlg;
 		
 	List<mDialog> loading_msgs = new ArrayList<mDialog>();
+	
+	List<VKRequest> requests_waiting_for_auth = new ArrayList<VKRequest>();
+	boolean requests_waiting_for_auth_runnable_active = false;
 		
 	public void requestNewMessagesRunnable(AsyncTaskCompleteListener<RunnableAdvanced<?>> cb){
 		if(!authorised){
@@ -165,7 +167,7 @@ public class Vk extends MessageService {
 		
 		//Инициализация VkSdk		
 		//VKUIHelper.onResume((Activity) this.context);
-		VKSdk.initialize(sdkListener, "4161005", VKAccessToken.tokenFromSharedPreferences(this.app.getApplicationContext(), sTokenKey));
+		VKSdk.initialize(sdkListener, "4161005", VKAccessToken.tokenFromSharedPreferences(this.msApp.getApplicationContext(), sTokenKey));
 		//VKSdk.authorize(sMyScope, false, true);		
 		//VKUIHelper.onDestroy((Activity) this.context);
 		
@@ -199,7 +201,7 @@ public class Vk extends MessageService {
 			        	self_contact.icon_100_url = photo_100_url;
 			        	self_contact.name = name;
 			        	
-			        	SharedPreferences sPref = app.getSharedPreferences(service_name, Context.MODE_PRIVATE); //загрузка конфигов
+			        	SharedPreferences sPref = msApp.getSharedPreferences(service_name, Context.MODE_PRIVATE); //загрузка конфигов
 			        	Editor ed = sPref.edit();
 			        	ed.putString("current_account", self_contact.address);
 			        	ed.commit();
@@ -234,7 +236,7 @@ public class Vk extends MessageService {
 			
 		};
 		
-		requestDialogs(0, 1, acb);		
+		requestDialogs(1, 0, acb);		
 	}
 
 
@@ -242,7 +244,7 @@ public class Vk extends MessageService {
 	@Override
 	public void requestContactData(mContact cnt) {
 		
-		app.dbHelper.loadContact(cnt, this);
+		msApp.dbHelper.loadContact(cnt, this);
 		
 		accum_cnt.add(cnt);
 		//Log.d("requestContactData", "Requested new contact: " + cnt.address);
@@ -287,8 +289,8 @@ public class Vk extends MessageService {
 			    	Log.d("VKRequestListener", response.request.methodName +  " :: onComplete");
 			        try {
 			        	JSONArray response_json = response.json.getJSONArray("response");
-			        	SQLiteDatabase db = app.dbHelper.getWritableDatabase();
-			    		String my_table_name = app.dbHelper.getTableNameCnts(Vk.this);
+			        	SQLiteDatabase db = msApp.dbHelper.getWritableDatabase();
+			    		String my_table_name = msApp.dbHelper.getTableNameCnts(Vk.this);
 			    		boolean updated = false;
 			    		
 			        	for(int i = 0; i < response_json.length(); i++){
@@ -314,17 +316,17 @@ public class Vk extends MessageService {
 			    			if(c.moveToFirst()){
 			    				//update
 			    				if(!cnt.name.equals(c.getString(c.getColumnIndex(DBHelper.colName)))){
-			    					app.dbHelper.updateCnt(cnt, Vk.this);
+			    					msApp.dbHelper.updateCnt(cnt, Vk.this);
 			    					updated = true;
 			    				}
 			    				if(!cnt.icon_100_url.equals(c.getString(c.getColumnIndex(DBHelper.colIcon100url)))){
-			    					app.dbHelper.updateCnt(cnt, Vk.this);
+			    					msApp.dbHelper.updateCnt(cnt, Vk.this);
 			    					updated = true;
 			    				}
 			    				
 			    			} else {
 			    				// add
-			    				app.dbHelper.insertCnt(cnt, Vk.this);
+			    				msApp.dbHelper.insertCnt(cnt, Vk.this);
 			    				updated = true;
 			    			}
 			    			
@@ -334,7 +336,7 @@ public class Vk extends MessageService {
 			        	if(accum_cnt.size() > 0)handler.postDelayed(cnts_request_runnable, 500);
 			        	else accum_cnt_handler_isRunning = false; 
 			        	
-			        	if(updated)app.triggerCntsUpdaters(); 
+			        	if(updated)msApp.triggerCntsUpdaters(); 
 			        	
 					} catch (JSONException e) {
 						e.printStackTrace();
@@ -426,7 +428,7 @@ public class Vk extends MessageService {
         @Override
         public void onTokenExpired(VKAccessToken expiredToken) {
         	Log.d("VKSdkListener", "onTokenExpired" );
-        	if(app.getCurrentActivity() != null) authorize(app.getCurrentActivity());
+        	if(msApp.getCurrentActivity() != null) authorize(msApp.getCurrentActivity());
             //VKSdk.authorize(sMyScope, false, false);
         }
 
@@ -434,16 +436,16 @@ public class Vk extends MessageService {
         public void onAccessDenied(VKError authorizationError) {
         	authorization_finished = true;
         	Log.d("VKSdkListener", "onAccessDenied" );
-            new AlertDialog.Builder(app.getApplicationContext())
+            new AlertDialog.Builder(msApp.getApplicationContext())
                     .setMessage(authorizationError.errorMessage)
                     .show();
         }
 
         @Override
         public void onReceiveNewToken(VKAccessToken newToken) {
-            newToken.saveTokenToSharedPreferences(app.getApplicationContext(), sTokenKey);
+        	Log.d("VKSdkListener", "onReceiveNewToken " + newToken.accessToken + " :: " + sTokenKey + " :: " + VKSdk.getAccessToken().accessToken);
+            newToken.saveTokenToSharedPreferences(msApp.getApplicationContext(), sTokenKey);
             authorization_finished = true;
-            Log.d("VKSdkListener", "onReceiveNewToken" );
             authorised = true;
             if(!isSetupFinished){
             	setup_stage++;
@@ -458,249 +460,8 @@ public class Vk extends MessageService {
         }
     };
 	
-    
-
+        
 	
-    
-    @Override
-	public void requestMessages(mDialog dlg, int offset, int count, AsyncTaskCompleteListener<List<mMessage>> cb) {
-    	Log.d("requestMessages", "requested :: " + String.valueOf(isLoadingMsgsForDlg(dlg)));
-    	
-    	// Обновление информации о количестве потоков загрузки
-    	IntegerMutable lm_count = msgs_thread_count.get(dlg);
-    	if(lm_count == null){
-    		lm_count = new IntegerMutable(2);
-    		msgs_thread_count.put(dlg, lm_count);
-    	}
-    	else lm_count.value += 2;
-
-    	// Загрузка из БД
-    	lm_count.value--;
-    	if(cb != null){
-	    	List<mMessage> db_data = load_msgs_from_db(dlg, count, offset);	    	
-	    	cb.onTaskComplete( db_data );    	    	
-    	}
-    	
-    	// Скачивание из интернета
-		VKRequest request = new VKRequest("messages.getHistory", VKParameters.from(VKApiConst.COUNT, String.valueOf(count),
-				VKApiConst.OFFSET, String.valueOf(offset), VKApiConst.USER_ID, dlg.getParticipants()));
-		request.secure = false;
-		VKParameters preparedParameters = request.getPreparedParameters();
-
-		VKRequestListener rl = new VKRequestListenerWithCallback<List<mMessage>>(cb, Vk.this) {
-				    @Override				    
-				    public void onComplete(VKResponse response) {				    	
-				    	Log.d("VKRequestListener", response.request.methodName +  " :: onComplete");
-				    	List<mMessage> msgs = new ArrayList<mMessage>();
-				    	boolean all_new = true;
-				        try {
-				        	JSONObject response_json = response.json.getJSONObject("response");
-				        	JSONArray items = response_json.getJSONArray("items");
-				        	
-				        	SQLiteDatabase db = app.dbHelper.getWritableDatabase();
-				    		String my_table_name = app.dbHelper.getTableNameMsgs(Vk.this);
-				    		
-				    		mDialog dlg = (mDialog) params.get(0);
-				    		int dlg_key = app.dbHelper.getDlgId(dlg, Vk.this);
-				    		
-				    		if(items.length() == 0)dl_all_msgs_downloaded = true;
-				    		
-				    		for (int i = 0; i < items.length(); i++) {
-				    			JSONObject item = items.getJSONObject(i);
-				    			
-				    			mMessage msg = new mMessage();
-				    			msg.setFlag(mMessage.OUT, item.getInt("out") == 1 ?	true : false);
-				    			
-				    			msg.respondent = getContact( item.getString( "user_id" ) );
-								msg.text = item.getString( "body" );
-								msg.sendTime.set(item.getLong( "date" )*1000);
-								msg.setFlag(mMessage.READED, item.getInt( "read_state" ) == 1 ? true : false);
-								msg.id = item.getString("id");
-								msg.msg_service = getServiceType();
-				    				
-								String selection = DBHelper.colDlgkey + " = ? AND " + DBHelper.colSendtime + " = ? AND " + DBHelper.colBody + " = ?";
-				    			String[] selectionArgs = { String.valueOf(dlg_key), String.valueOf(msg.sendTime.toMillis(false)), msg.text };
-				    			Cursor c = db.query(my_table_name, null, selection, selectionArgs, null, null, null);
-		
-				    			if(c.moveToFirst()){
-				    				int  flags_in_db = c.getInt( c.getColumnIndex(DBHelper.colFlags) );
-				    				
-				    				if(msg.flags != flags_in_db){
-				    					//update
-				    					int id = c.getInt(c.getColumnIndex(DBHelper.colId));
-				    					c.close();
-					    				
-				    					app.dbHelper.updateMsg(id, msg, Vk.this);			    					
-					    							    				
-					    				msgs.add(msg);
-				    				} else {
-				    					//not update
-				    					c.close();
-				    					all_new = false;
-				    					continue;
-				    				}
-				    				c.close();
-				    				all_new = false;
-				    				//break;
-				    			} else {
-				    				//add
-				    				c.close();
-				    				
-				    				app.dbHelper.insertMsg(msg, my_table_name, dlg_key);
-				    				    				
-				    				msgs.add(msg);
-				    			}
-				    		}
-
-				    		if(all_new){
-				    			int count = Integer.valueOf( (String) response.request.getMethodParameters().get( VKApiConst.COUNT) );
-				    			int offset = Integer.valueOf( (String) response.request.getMethodParameters().get( VKApiConst.OFFSET) );
-
-			    				int msgs_to_update = app.dbHelper.getMsgsCount(dlg_key, Vk.this) - (offset + count); 
-			    				if( msgs_to_update > 0 ){
-			    					if(msgs_to_update > MSGS_DOWNLOAD_COUNT){				    					
-			    						requestMessages(dlg, offset + count, MSGS_DOWNLOAD_COUNT, null);
-			    					} else {
-			    						requestMessages(dlg, offset + count, msgs_to_update, null);
-			    					}
-			    				}				    			
-				    		} 
-				    		
-				    		IntegerMutable lm_count = msgs_thread_count.get(dlg);
-				    		lm_count.value--;
-				    		
-				    		Log.d("requestMessages", "onTaskComplete - net :: " + String.valueOf(isLoadingMsgsForDlg(dlg)));
-				    		if(callback == null)app.triggerMsgsUpdaters(msgs);
-				    		else callback.onTaskComplete(msgs);
-				        	
-						} catch (JSONException e) {
-							e.printStackTrace();
-						}
-				    }
-				    
-				};
-
-		((VKRequestListenerWithCallback<List<mMessage>>) rl).setParams(dlg);
-		request.executeWithListener(rl);
-
-	}
-
-	@Override
-	public void requestDialogs(int offset, int count, AsyncTaskCompleteListener<List<mDialog>> cb) {
-		
-		// Обновление информации о количестве потоков загрузки
-		dlgs_thread_count += 2;
-		
-		// Загрузка из БД
-		dlgs_thread_count--;
-		if(cb != null)cb.onTaskComplete( load_dialogs_from_db(count, offset) );
-		
-		// Скачивание из интернета
-		VKRequest request = new VKRequest("messages.getDialogs", VKParameters.from(VKApiConst.COUNT, String.valueOf(count),
-				VKApiConst.OFFSET, String.valueOf(offset),
-				VKApiConst.FIELDS, "first_name,last_name,photo_50"));
-		request.secure = false;
-		VKParameters preparedParameters = request.getPreparedParameters();
-		
-		VKRequestListener rl = new VKRequestListenerWithCallback<List<mDialog>>(cb, Vk.this) {
-			
-				@Override
-			    public void onComplete(VKResponse response) {
-					Log.d("VKRequestListener", response.request.methodName +  " :: onComplete");
-					int count = Integer.valueOf( (String) response.request.getMethodParameters().get( VKApiConst.COUNT) );
-	    			int offset = Integer.valueOf( (String) response.request.getMethodParameters().get( VKApiConst.OFFSET) );
-					List<mDialog> dlgs = new ArrayList<mDialog>();
-					boolean all_new = true;
-			        try {
-			        	JSONObject response_json = response.json.getJSONObject("response");
-			        	JSONArray items = response_json.getJSONArray("items");
-			        	
-			        	SQLiteDatabase db = app.dbHelper.getReadableDatabase();
-			    		String my_table_name = app.dbHelper.getTableNameDlgs(Vk.this);	
-			    		
-			    		if(items.length() < count)dl_all_dlgs_downloaded = true;
-			    		
-			    		for (int i = 0; i < items.length(); i++) {
-			    			JSONObject item = items.getJSONObject(i);
-			    			
-		    				mDialog mdl = new mDialog();			    				
-		    				String[] recipient_ids = item.getString( "user_id" ).split(",");
-	
-		    				for(String rid : recipient_ids){
-	    						mdl.participants.add( getContact( rid ) );
-		    				}
-		    				
-			    			mdl.snippet = item.getString( "body" );
-			    			mdl.snippet_out = item.getInt( "out" );
-			    			mdl.last_msg_time.set(item.getLong("date")*1000);
-			    			mdl.msg_service = MessageService.VK;
-			    			
-			    			
-			    			String selection = DBHelper.colParticipants + " = ?";
-			    			String[] selectionArgs = {mdl.getParticipantsAddresses()};
-			    			Cursor c = db.query(my_table_name, null, selection, selectionArgs, null, null, null);
-	
-			    			if(c.moveToFirst()){
-			    				Time last_time_in_db = new Time();
-			    				last_time_in_db.set( c.getLong( c.getColumnIndex(DBHelper.colLastmsgtime)) );
-			    				
-			    				if(mdl.last_msg_time.after(last_time_in_db)){
-			    					//update
-			    					int id = c.getInt(c.getColumnIndex(DBHelper.colId));
-			    					c.close();
-				    				
-			    					app.dbHelper.updateDlg(id, mdl, Vk.this);			    					
-				    							    				
-				    				dlgs.add(mdl);
-			    				} else {
-			    					//not update
-			    					c.close();
-			    					all_new = false;
-			    					continue;
-			    				}		    				
-			    			} else {
-			    				//add
-			    				c.close();
-			    				
-			    				app.dbHelper.insertDlg(mdl, Vk.this);
-			    					    				
-			    				dlgs.add(mdl);
-			    				dlgs_count++;
-			    			}
-			    				
-			    			
-			    		}
-
-			    		if(all_new){
-		    				int dlgs_to_update = app.dbHelper.getDlgsCount(Vk.this) - (offset + count);
-		    				
-		    				if( dlgs_to_update > 0 ){
-		    					if(dlgs_to_update > DLGS_DOWNLOAD_COUNT){				    					
-		    						requestDialogs(offset + count, DLGS_DOWNLOAD_COUNT, null);
-		    					} else {
-		    						requestDialogs(offset + count, dlgs_to_update, null);
-		    					}
-		    				}
-			    		}
-			    					    		
-			    		dlgs_thread_count--;
-			    		if(callback == null) { // Обновление
-			    			app.triggerDlgsUpdaters(dlgs);
-			    		} else { // Запрос
-			    			callback.onTaskComplete(dlgs);
-			    		}
-		        	
-				} catch (JSONException e) {
-					e.printStackTrace();
-				}
-		    }
-
-		};
-		
-		request.executeWithListener(rl);
-
-		
-	}
 
 	
     
@@ -709,23 +470,45 @@ public class Vk extends MessageService {
 		if(error.apiError.errorCode == 5){ // User authorization failed.
 			if(authorization_finished && check_access_toten(error) ){
 				//Log.d("HandleApiError", "VKSdk.authorize: " + error.apiError.errorMessage);
-	        	if(app.getCurrentActivity() != null) authorize(app.getCurrentActivity());
-				//VKSdk.authorize(sMyScope, false, true);
-				authorization_finished = false;
+	        	if(msApp.getCurrentActivity() != null) authorize(msApp.getCurrentActivity());
 			}
-			Log.d("HandleApiError", "error.request.repeat: " + error.apiError.errorMessage);
-			Runnable r = new RunnableAdvanced<VKError>(){
-
-				@Override
-				public void run() {
-					VKRequest r = new VKRequest(param.request.methodName, param.request.getMethodParameters());
-					r.executeWithListener(param.request.requestListener);
-					//param.request.repeat();
-				}
-				
-			}.setParam(error);
 			
-			handler.postDelayed(r, 20000);
+			if(requests_waiting_for_auth.size() < 10){
+				requests_waiting_for_auth.add(error.request);
+				Log.d("HandleApiError", "request added to requests_waiting_for_auth");
+			}
+        				
+			
+			if(!requests_waiting_for_auth_runnable_active){
+				requests_waiting_for_auth_runnable_active = true;
+				
+				Runnable r = new RunnableAdvanced<Void>(){
+
+					@Override
+					public void run() {
+						if(authorization_finished){
+							Log.d("+++", VKSdk.getAccessToken().accessToken);
+							for(VKRequest r : requests_waiting_for_auth){
+								Log.d("HandleApiError", "Executing request from requests_waiting_for_auth: " + r.methodName);
+								Log.d("HandleApiError", "Executing request from requests_waiting_for_auth: " + r.methodName);
+								VKRequest r_new = new VKRequest(r.methodName, r.getMethodParameters());
+								r_new.executeWithListener(r.requestListener);
+							}
+							requests_waiting_for_auth.clear();
+							requests_waiting_for_auth_runnable_active = false;
+						} else {
+							Log.d("HandleApiError", "Auth not finished, waiting: " + String.valueOf(requests_waiting_for_auth.size()));
+							handler.postDelayed(this, 10000);
+						}
+					}
+					
+				};
+				
+				handler.postDelayed(r, 20000);
+			}
+			
+			
+			
 		}
 		
 		if(error.apiError.errorCode == 6){ // Too many requests per second.
@@ -809,7 +592,7 @@ public class Vk extends MessageService {
 				  
 				  if(item.getInt(0) == 1) { // 1,$message_id,$flags -- замена флагов сообщения (FLAGS:=$flags)
 					  int message_id = item.getInt(1);
-					  mMessage msg = app.dbHelper.getMsgByMsgId(message_id, Vk.this);
+					  mMessage msg = msApp.dbHelper.getMsgByMsgId(message_id, Vk.this);
 					  if(msg != null){
 						  int flags = item.getInt(2);
 						  
@@ -819,13 +602,13 @@ public class Vk extends MessageService {
 						  Intent intent = new Intent(MsgReceiver.ACTION_UPDATE);
 				    	  intent.putExtra("service_type", getServiceType());
 				    	  intent.putExtra("msg", msg);
-				    	  app.sendBroadcast(intent);
+				    	  msApp.sendBroadcast(intent);
 					  }
 				  }
 
 				  if(item.getInt(0) == 2) { // 2,$message_id,$mask[,$user_id] -- установка флагов сообщения (FLAGS|=$mask)
 					  int message_id = item.getInt(1);
-					  mMessage msg = app.dbHelper.getMsgByMsgId(message_id, Vk.this);
+					  mMessage msg = msApp.dbHelper.getMsgByMsgId(message_id, Vk.this);
 					  if(msg != null){
 						  int flags = item.getInt(2);
 						  
@@ -835,13 +618,13 @@ public class Vk extends MessageService {
 						  Intent intent = new Intent(MsgReceiver.ACTION_UPDATE);
 				    	  intent.putExtra("service_type", getServiceType());
 				    	  intent.putExtra("msg", msg);
-				    	  app.sendBroadcast(intent);
+				    	  msApp.sendBroadcast(intent);
 					  }
 				  }
 
 				  if(item.getInt(0) == 3) { // 3,$message_id,$mask[,$user_id] -- сброс флагов сообщения (FLAGS&=~$mask)
 					  int message_id = item.getInt(1);
-					  mMessage msg = app.dbHelper.getMsgByMsgId(message_id, Vk.this);
+					  mMessage msg = msApp.dbHelper.getMsgByMsgId(message_id, Vk.this);
 					  if(msg != null){
 						  int flags = item.getInt(2);
 						  
@@ -851,7 +634,7 @@ public class Vk extends MessageService {
 						  Intent intent = new Intent(MsgReceiver.ACTION_UPDATE);
 				    	  intent.putExtra("service_type", getServiceType());
 				    	  intent.putExtra("msg", msg);
-				    	  app.sendBroadcast(intent);
+				    	  msApp.sendBroadcast(intent);
 					  }
 				  }
 
@@ -874,7 +657,7 @@ public class Vk extends MessageService {
 					  Intent intent = new Intent(MsgReceiver.ACTION_RECEIVE);
 			    	  intent.putExtra("service_type", getServiceType());
 			    	  intent.putExtra("msg", msg);
-			    	  app.sendBroadcast(intent);
+			    	  msApp.sendBroadcast(intent);
 
 					  //Log.d("LongPollRunnable", text);
 				  }
@@ -921,9 +704,9 @@ public class Vk extends MessageService {
 						        	
 						        	String photo_100_url = item.getString("photo_100");
 						        	
-						        	Intent intent = new Intent(app.getApplicationContext(), DownloadService.class);
+						        	Intent intent = new Intent(msApp.getApplicationContext(), DownloadService.class);
 						            intent.putExtra("url", photo_100_url);
-						            app.getApplicationContext().startService(intent);
+						            msApp.getApplicationContext().startService(intent);
 						        	
 						            download_waiter tw = new download_waiter(photo_100_url){
 						            	mContact cnt;
@@ -939,7 +722,7 @@ public class Vk extends MessageService {
 										}
 						            	
 						            }.setParams(cnt);
-						            app.dl_waiters.add(tw);
+						            msApp.dl_waiters.add(tw);
 						        	
 						        	contacts.put(item.getString("id"), cnt);
 				    			}
@@ -965,11 +748,11 @@ public class Vk extends MessageService {
 
 
 	private List<mDialog> load_dialogs_from_db(int count, int offset){
-		return app.dbHelper.loadDlgs(this, count, offset);
+		return msApp.dbHelper.loadDlgs(this, count, offset);
 	}
 	
 	private List<mMessage> load_msgs_from_db(mDialog dlg, int count, int offset){		
-		List<mMessage> result = app.dbHelper.loadMsgs(this, dlg, count, offset);	
+		List<mMessage> result = msApp.dbHelper.loadMsgs(this, dlg, count, offset);	
 		
 		return result;
 	}
@@ -997,12 +780,12 @@ public class Vk extends MessageService {
 	    	ed.putString("active_account", self_contact.address);
 	    	ed.commit();
 	    	
-			app.dbHelper.createTables(this);
+			msApp.dbHelper.createTables(this);
 			
 			// Обновления
-			Intent intent = new Intent(app.getApplicationContext(), UpdateService.class);
+			Intent intent = new Intent(msApp.getApplicationContext(), UpdateService.class);
 			intent.putExtra("specific_service", getServiceType());
-			app.startService(intent);
+			msApp.startService(intent);
 			
 			setup_stage++;
 			setupStages();	
@@ -1021,8 +804,8 @@ public class Vk extends MessageService {
 			public void run() {
 				if(isSetupFinished){
 					//Подключение к базе данных, получение количества диалогов
-					SQLiteDatabase db = app.dbHelper.getReadableDatabase();		
-					String my_table_name = app.dbHelper.getTableNameDlgs(Vk.this);
+					SQLiteDatabase db = msApp.dbHelper.getReadableDatabase();		
+					String my_table_name = msApp.dbHelper.getTableNameDlgs(Vk.this);
 					Cursor c = db.query(my_table_name, null, null, null, null, null, null);
 					dlgs_count = c.getCount();
 					c.close();
@@ -1047,10 +830,10 @@ public class Vk extends MessageService {
 	public void unsetup() {
 		VKSdk.logout();
 		
-		Intent intent = new Intent(app.getApplicationContext(), UpdateService.class);
+		Intent intent = new Intent(msApp.getApplicationContext(), UpdateService.class);
 		intent.putExtra("specific_service", getServiceType());
 		intent.putExtra("remove", true);
-		app.startService(intent);	
+		msApp.startService(intent);	
 	}
 	
 	public void requestMarkAsReaded(mMessage msg){
@@ -1073,7 +856,7 @@ public class Vk extends MessageService {
 				        	if(resp == 1)tmsg.setFlag(mMessage.READED, true);
 				        	tmsg.setFlag(mMessage.LOADING, false);
 				        	msgs.add(tmsg);
-				        	app.triggerMsgsUpdaters(msgs);
+				        	msApp.triggerMsgsUpdaters(msgs);
 						} catch (JSONException e) {
 							e.printStackTrace();
 						}
@@ -1084,7 +867,43 @@ public class Vk extends MessageService {
 		request.executeWithListener(rl);
 	}
 
+	class load_dlgs_async extends AsyncTask<Integer, Void, List<mDialog>> {
+	    private AsyncTaskCompleteListener<List<mDialog>> callback;
 
+	    public load_dlgs_async(AsyncTaskCompleteListener<List<mDialog>> cb) {
+	        this.callback = cb;
+	    }
+
+	    protected void onPostExecute(List<mDialog> result) {
+	    	dlgs_thread_count--;
+	        if(callback != null)callback.onTaskComplete(result);
+	    }
+
+		@Override
+		protected List<mDialog> doInBackground(Integer... params) {
+			return load_dialogs_from_db(params[0], params[1]);
+		}  
+	}
+	
+	class load_msgs_async extends AsyncTask<Integer, Void, List<mMessage>> {
+	    private AsyncTaskCompleteListener<List<mMessage>> callback;
+		private mDialog dlg;
+
+	    public load_msgs_async(AsyncTaskCompleteListener<List<mMessage>> cb, mDialog dialog) {
+	        this.callback = cb;
+	        this.dlg = dialog;
+	    }
+
+	    protected void onPostExecute(List<mMessage> result) {
+	    	updateMsgsThreadCount(dlg, -1);
+	    	if(callback != null)callback.onTaskComplete(result);
+	   }
+
+		@Override
+		protected List<mMessage> doInBackground(Integer... params) {
+			return load_msgs_from_db(dlg, params[0], params[1]);
+		}  
+	}
 
 	public static final String[] emoji = ("D83DDE04, " +
 			"D83DDE0A, D83DDE03, D83DDE09, D83DDE06, D83DDE1C, D83DDE0B, D83DDE0D, D83DDE0E, D83DDE12, D83DDE0F, D83DDE14, D83DDE22, D83DDE2D, D83DDE29, D83DDE28, D83DDE10, D83DDE0C, D83DDE20, D83DDE21, D83DDE07, D83DDE30, D83DDE32, D83DDE33, D83DDE37, D83DDE1A, D83DDE08, 2764, D83DDC4D, D83DDC4E, 261D, 270C, D83DDC4C, 26BD, 26C5, D83CDF1F, D83CDF4C, D83CDF7A, D83CDF7B, D83CDF39, D83CDF45, D83CDF52, D83CDF81, D83CDF82, D83CDF84, D83CDFC1, D83CDFC6, D83DDC0E, D83DDC0F, D83DDC1C, D83DDC2B, D83DDC2E, D83DDC03, D83DDC3B, D83DDC3C, D83DDC05, D83DDC13, D83DDC18, D83DDC94, D83DDCAD, D83DDC36, D83DDC31, D83DDC37, D83DDC11, 23F3, 26BE, 26C4, 2600, D83CDF3A, D83CDF3B, D83CDF3C, D83CDF3D, D83CDF4A, D83CDF4B, D83CDF4D, D83CDF4E, D83CDF4F, D83CDF6D, D83CDF37, D83CDF38, D83CDF46, D83CDF49, D83CDF50, D83CDF51, D83CDF53, D83CDF54, D83CDF55, D83CDF56, D83CDF57, D83CDF69, D83CDF83, D83CDFAA, D83CDFB1, D83CDFB2, D83CDFB7, D83CDFB8, D83CDFBE, D83CDFC0, D83CDFE6, D83DDC00, D83DDC0C, D83DDC1B, D83DDC1D, D83DDC1F, D83DDC2A, D83DDC2C, D83DDC2D, D83DDC3A, D83DDC3D, D83DDC2F, D83DDC5C, D83DDC7B, D83DDC14, D83DDC23, D83DDC24, D83DDC40, D83DDC42, D83DDC43, D83DDC46, D83DDC47, D83DDC48, D83DDC51, D83DDC60, D83DDCA1, D83DDCA3, D83DDCAA, D83DDCAC, D83DDD14, D83DDD25").split(", ");
@@ -1097,5 +916,141 @@ public class Vk extends MessageService {
 	public static String getEmojiUrl(String code){
 		return "http://vk.com/images/emoji/" + code + ".png";
 	}
+
+	@Override
+	protected void getDialogsFromDB(int count, int offset, AsyncTaskCompleteListener<List<mDialog>> cb) {
+		// Обновление информации о количестве потоков загрузки
+		dlgs_thread_count += 1;
+		
+		new load_dlgs_async(cb).execute(count, offset);		
+	}
+
+	@Override
+	protected void getDialogsFromNet(int count, int offset, AsyncTaskCompleteListener<List<mDialog>> cb) {
+		// Обновление информации о количестве потоков загрузки
+		dlgs_thread_count += 1;
+		
+		// Скачивание из интернета
+		VKRequest request = new VKRequest("messages.getDialogs", VKParameters.from(VKApiConst.COUNT, String.valueOf(count),
+				VKApiConst.OFFSET, String.valueOf(offset),
+				VKApiConst.FIELDS, "first_name,last_name,photo_50"));
+		request.secure = false;
+		VKParameters preparedParameters = request.getPreparedParameters();
+		
+		VKRequestListener rl = new VKRequestListenerWithCallback<List<mDialog>>(cb, Vk.this) {
+			
+				@Override
+			    public void onComplete(VKResponse response) {
+					Log.d("VKRequestListener", response.request.methodName +  " :: onComplete");
+					int count = Integer.valueOf( (String) response.request.getMethodParameters().get( VKApiConst.COUNT) );
+	    			int offset = Integer.valueOf( (String) response.request.getMethodParameters().get( VKApiConst.OFFSET) );
+					List<mDialog> dlgs = new ArrayList<mDialog>();
+					
+			        try {
+			        	JSONObject response_json = response.json.getJSONObject("response");
+			        	JSONArray items = response_json.getJSONArray("items");
+			        	
+			        	for (int i = 0; i < items.length(); i++) {
+			    			JSONObject item = items.getJSONObject(i);
+			    			mDialog mdl = new mDialog();			    				
+		    				String[] recipient_ids = item.getString( "user_id" ).split(",");
+		    				
+		    				for(String rid : recipient_ids){
+	    						mdl.participants.add( getContact( rid ) );
+		    				}
+		    				
+			    			mdl.snippet = item.getString( "body" );
+			    			mdl.snippet_out = item.getInt( "out" );
+			    			mdl.last_msg_time.set(item.getLong("date")*1000);
+			    			mdl.msg_service = MessageService.VK;
+			    			
+			    			dlgs.add(mdl);
+			        	}
+			        	
+			        	dlgs_thread_count--;
+			        	if(callback != null) { 
+			        		callback.onTaskComplete(dlgs);
+			    		}
+			    			
+		        	
+				} catch (JSONException e) {
+					e.printStackTrace();
+				}
+		    }
+
+		};
+		
+		request.executeWithListener(rl);
+	}
+
+	@Override
+	protected void getMessagesFromDB(mDialog dlg, int count, int offset, AsyncTaskCompleteListener<List<mMessage>> cb) {
+		// Обновление информации о количестве потоков загрузки
+		updateMsgsThreadCount(dlg, 1);
+
+    	new load_msgs_async(cb, dlg).execute(count, offset);   
+	}
+
+	@Override
+	protected void getMessagesFromNet(mDialog dlg, int count, int offset, AsyncTaskCompleteListener<List<mMessage>> cb) {
+		// Обновление информации о количестве потоков загрузки
+		updateMsgsThreadCount(dlg, 1);
+		
+		VKRequest request = new VKRequest("messages.getHistory", VKParameters.from(VKApiConst.COUNT, String.valueOf(count),
+				VKApiConst.OFFSET, String.valueOf(offset), VKApiConst.USER_ID, dlg.getParticipants()));
+		request.secure = false;
+		VKParameters preparedParameters = request.getPreparedParameters();
+
+		VKRequestListener rl = new VKRequestListenerWithCallback<List<mMessage>>(cb, Vk.this) {
+				    @Override				    
+				    public void onComplete(VKResponse response) {				    	
+				    	Log.d("VKRequestListener", response.request.methodName +  " :: onComplete");
+				    	List<mMessage> msgs = new ArrayList<mMessage>();
+				    	boolean all_new = true;
+				        try {
+				        	JSONObject response_json = response.json.getJSONObject("response");
+				        	JSONArray items = response_json.getJSONArray("items");
+				    		
+				    		mDialog dlg = (mDialog) params.get(0);
+				    						    		
+				    		for (int i = 0; i < items.length(); i++) {
+				    			JSONObject item = items.getJSONObject(i);
+				    			
+				    			mMessage msg = new mMessage();
+				    			msg.setFlag(mMessage.OUT, item.getInt("out") == 1 ?	true : false);
+				    			
+				    			msg.respondent = getContact( item.getString( "user_id" ) );
+								msg.text = item.getString( "body" );
+								msg.sendTime.set(item.getLong( "date" )*1000);
+								msg.setFlag(mMessage.READED, item.getInt( "read_state" ) == 1 ? true : false);
+								msg.id = item.getString("id");
+								msg.msg_service = getServiceType();
+				    		
+				    
+				    			msgs.add(msg);
+				    		}
+
+				    		
+				    		updateMsgsThreadCount(dlg, -1);
+				    		
+				    		Log.d("requestMessages", "onTaskComplete - net :: " + String.valueOf(isLoadingMsgsForDlg(dlg)));
+				    		if(callback != null){
+				    			callback.onTaskComplete(msgs);
+				    		}
+				        	
+						} catch (JSONException e) {
+							e.printStackTrace();
+						}
+				    }
+				    
+				};
+
+		((VKRequestListenerWithCallback<List<mMessage>>) rl).setParams(dlg);
+		request.executeWithListener(rl);
+		
+	}
+
+	
+	
 
 }

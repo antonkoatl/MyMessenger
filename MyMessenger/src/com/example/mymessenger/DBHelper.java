@@ -13,6 +13,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteDatabase.CursorFactory;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.net.Uri;
 
 public class DBHelper extends SQLiteOpenHelper {
 	public static final String dbName = "myDB";
@@ -163,6 +164,10 @@ public class DBHelper extends SQLiteOpenHelper {
 		return count;
 	}
 	
+	public int getMsgsCount(mDialog dlg, MessageService ms) {
+		return getMsgsCount(getDlgId(dlg, ms), ms);
+	}
+	
 	public List<mMessage> loadMsgs(MessageService ms, mDialog dlg, int count, int offset){
 		List<mMessage> result = new ArrayList<mMessage>();
 		
@@ -203,12 +208,19 @@ public class DBHelper extends SQLiteOpenHelper {
 	}
 
 	public int getDlgsCount(MessageService ms) {
-		String table_name = getTableNameDlgs(ms);
-		SQLiteDatabase db = getReadableDatabase();
-		
-		Cursor c = db.query(table_name, null, null, null, null, null, null);
-		int count = c.getCount();
-		c.close();
+		int count = 0;
+		if(ms.getServiceType() == MessageService.SMS){
+			Cursor cursor = app.getApplicationContext().getContentResolver().query(Uri.parse("content://mms-sms/conversations?simple=true"), null, null, null, null);
+			count = cursor.getCount();
+			cursor.close();
+		} else {
+			String table_name = getTableNameDlgs(ms);
+			SQLiteDatabase db = getReadableDatabase();
+			
+			Cursor c = db.query(table_name, null, null, null, null, null, null);
+			count = c.getCount();
+			c.close();
+		}
 		
 		return count;
 	}

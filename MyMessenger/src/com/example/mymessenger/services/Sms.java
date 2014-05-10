@@ -99,7 +99,7 @@ public class Sms extends MessageService {
 		String selection = null; // A filter declaring which rows to return, formatted as an SQL WHERE clause (excluding the WHERE itself). Passing null will return all rows for the given URI
 		String[] selectionArgs = null; // You may include ?s in selection, which will be replaced by the values from selectionArgs, in the order that they appear in the selection. The values will be bound as Strings
 		String sortOrder = null; // How to order the rows, formatted as an SQL ORDER BY clause (excluding the ORDER BY itself). Passing null will use the default sort order, which may be unordered
-		Cursor cursor = app.getApplicationContext().getContentResolver().query(Uri.parse("content://mms-sms/conversations?simple=true"), projection, selection, selectionArgs, sortOrder);
+		Cursor cursor = msApp.getApplicationContext().getContentResolver().query(Uri.parse("content://mms-sms/conversations?simple=true"), projection, selection, selectionArgs, sortOrder);
 		
 		int total = cursor.getCount();
 		List<mDialog> return_dialogs = new ArrayList<mDialog>();
@@ -114,7 +114,7 @@ public class Sms extends MessageService {
 				String[] recipient_ids = cursor.getString( cursor.getColumnIndex("recipient_ids") ).split(" ");
 
 				for(String rid : recipient_ids){
-					Cursor c = app.getApplicationContext().getContentResolver().query(Uri.parse("content://mms-sms/canonical-addresses"), null, "_id = ?", new String[]{rid}, null);
+					Cursor c = msApp.getApplicationContext().getContentResolver().query(Uri.parse("content://mms-sms/canonical-addresses"), null, "_id = ?", new String[]{rid}, null);
 					if(c.moveToNext()){
 						mdl.participants.add( getContact( c.getString( c.getColumnIndex("address") ) ) );
 					} else {
@@ -155,7 +155,7 @@ public class Sms extends MessageService {
 		String selection = "address=?"; // A filter declaring which rows to return, formatted as an SQL WHERE clause (excluding the WHERE itself). Passing null will return all rows for the given URI
 		String[] selectionArgs = {dlg.participants.get(0).address}; // You may include ?s in selection, which will be replaced by the values from selectionArgs, in the order that they appear in the selection. The values will be bound as Strings
 		String sortOrder = null; // How to order the rows, formatted as an SQL ORDER BY clause (excluding the ORDER BY itself). Passing null will use the default sort order, which may be unordered
-		Cursor cursor = app.getApplicationContext().getContentResolver().query(Uri.parse("content://sms"), projection, selection, selectionArgs, sortOrder);
+		Cursor cursor = msApp.getApplicationContext().getContentResolver().query(Uri.parse("content://sms"), projection, selection, selectionArgs, sortOrder);
 		
 		int total = cursor.getCount();
 		
@@ -204,7 +204,7 @@ public class Sms extends MessageService {
 	    Uri contactUri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(cnt.address));
 
 	    // query time
-	    Cursor name_cursor = app.getApplicationContext().getContentResolver().query(contactUri, name_projection, null, null, null);
+	    Cursor name_cursor = msApp.getApplicationContext().getContentResolver().query(contactUri, name_projection, null, null, null);
 
 	    if(name_cursor != null) {
 	        if (name_cursor.moveToFirst()) {
@@ -303,13 +303,13 @@ public class Sms extends MessageService {
 		SmsManager smsManager = SmsManager.getDefault();
 		smsManager.sendTextMessage(address, null, text, mSentIntent, mDeliveredIntent);
 		
-		app.getApplicationContext().registerReceiver(new mSendReceiver(msg), new IntentFilter("CTS_SMS_SEND_ACTION"));
-		app.getApplicationContext().registerReceiver(new mDeliveryReceiver(msg), new IntentFilter("CTS_SMS_DELIVERY_ACTION"));
+		msApp.getApplicationContext().registerReceiver(new mSendReceiver(msg), new IntentFilter("CTS_SMS_SEND_ACTION"));
+		msApp.getApplicationContext().registerReceiver(new mDeliveryReceiver(msg), new IntentFilter("CTS_SMS_DELIVERY_ACTION"));
 		
 		ContentValues values = new ContentValues();   
 	    values.put("address", address);	              
 	    values.put("body", text);
-	    app.getApplicationContext().getContentResolver().insert(Uri.parse("content://sms/sent"), values);
+	    msApp.getApplicationContext().getContentResolver().insert(Uri.parse("content://sms/sent"), values);
 		
 		return false;
 		
@@ -356,24 +356,8 @@ public class Sms extends MessageService {
 		}
 	}
 
-	@Override
-	public void requestMessages(mDialog dlg, int offset, int count,
-			AsyncTaskCompleteListener<List<mMessage>> cb) {
-		if(dl_current_dlg != dlg){
-    		dl_current_dlg = dlg;
-    		dl_all_msgs_downloaded = false;
-    	}
 
-		new load_msgs_async(cb, dlg).execute(offset, count);
-		
-	}
 	
-	@Override
-	public void requestDialogs(int offset, int count,
-			AsyncTaskCompleteListener<List<mDialog>> cb) {
-		dlgs_thread_count++;
-		new load_dlgs_async(cb).execute(offset, count);		
-	}
 	
 	class load_msgs_async extends AsyncTask<Integer, Void, List<mMessage>> {
 	    private AsyncTaskCompleteListener<List<mMessage>> callback;
@@ -420,7 +404,7 @@ public class Sms extends MessageService {
 	    IntentFilter intFilt = new IntentFilter();
 	    intFilt.addAction(SmsReceiver.SMS_SENT_ACTION);
 	    intFilt.addAction(SmsReceiver.SMS_RECEIVED_ACTION);
-	    app.getApplicationContext().registerReceiver(br, intFilt);
+	    msApp.getApplicationContext().registerReceiver(br, intFilt);
 	}
 
 	@Override
@@ -434,7 +418,7 @@ public class Sms extends MessageService {
 	            ContactsContract.PhoneLookup._ID};
 
 	    // query time
-	    Cursor name_cursor = app.getApplicationContext().getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null, null, null, ContactsContract.PhoneLookup.DISPLAY_NAME + " ASC");
+	    Cursor name_cursor = msApp.getApplicationContext().getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null, null, null, ContactsContract.PhoneLookup.DISPLAY_NAME + " ASC");
 
 	    if(name_cursor.moveToFirst()){
 	    	for (int i = 0; i < offset; i++) name_cursor.moveToNext();
@@ -478,6 +462,27 @@ public class Sms extends MessageService {
 	public String[] getEmojiCodes() {
 		// TODO Auto-generated method stub
 		return null;
+	}
+
+	@Override
+	protected void getDialogsFromDB(int count, int offset, AsyncTaskCompleteListener<List<mDialog>> cb) {
+		dlgs_thread_count++;
+		new load_dlgs_async(cb).execute(offset, count);
+	}
+
+	@Override
+	protected void getDialogsFromNet(int count, int offset,	AsyncTaskCompleteListener<List<mDialog>> cb) {
+		
+	}
+
+	@Override
+	protected void getMessagesFromDB(mDialog dlg, int count, int offset, AsyncTaskCompleteListener<List<mMessage>> cb) {
+		new load_msgs_async(cb, dlg).execute(offset, count);		
+	}
+
+	@Override
+	protected void getMessagesFromNet(mDialog dlg, int count, int offset, AsyncTaskCompleteListener<List<mMessage>> cb) {
+
 	}
 
 

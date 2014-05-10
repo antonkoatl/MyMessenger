@@ -111,7 +111,7 @@ public class MyApplication extends Application {
 
 	public void requestLastDialogs(int count, int offset, AsyncTaskCompleteListener<List<mDialog>> cb) {
 		for(MessageService msg : myMsgServices){
-			msg.requestDialogs(offset, count, cb);
+			msg.requestDialogs(count, offset, cb);
 		}
 	}
 
@@ -205,7 +205,7 @@ public class MyApplication extends Application {
 	public void refreshServices(AsyncTaskCompleteListener<List<mDialog>> async_complete_listener_dlg) {
 		for(MessageService ms : myMsgServices){
 			ms.refresh();
-			ms.requestDialogs(0, 20, async_complete_listener_dlg);
+			ms.requestDialogs(20, 0, async_complete_listener_dlg);
 		}
 	}
 
@@ -273,6 +273,12 @@ public class MyApplication extends Application {
 	public void initServices() {
 		for(MessageService ms : myMsgServices){
 			ms.init();
+		}
+	}
+
+	public void refreshtDialogsFromNet(AsyncTaskCompleteListener<List<mDialog>> cb, int count) {
+		for(MessageService msg : myMsgServices){
+			msg.refreshDialogsFromNet(cb, count);
 		}
 	}
 

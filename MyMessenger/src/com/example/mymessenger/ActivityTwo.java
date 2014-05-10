@@ -78,7 +78,7 @@ public class ActivityTwo extends ActionBarActivity implements OnClickListener {
 			msg_adapter = new MyMsgAdapter(this, showing_messages);
 			listview.setAdapter(msg_adapter);
 
-			ms.requestMessages(ms.getActiveDialog(), 0, 20, async_complete_listener_msg);
+			ms.requestMessages(ms.getActiveDialog(), 20, 0, async_complete_listener_msg);
 			listview.setRefreshing();
 			
 	        listview.setOnItemClickListener(MsgClickListener);
@@ -99,7 +99,7 @@ public class ActivityTwo extends ActionBarActivity implements OnClickListener {
 			dlg_adapter = new MyDialogsAdapter(this, showing_dialogs);
 			listview.setAdapter(dlg_adapter);
 
-			ms.requestDialogs(0, 20, async_complete_listener_dlg);
+			ms.requestDialogs(20, 0, async_complete_listener_dlg);
 			
 	        listview.setOnItemClickListener(DlgClickListener);
 	        listview.setOnScrollListener(DlgScrollListener);
@@ -145,7 +145,7 @@ public class ActivityTwo extends ActionBarActivity implements OnClickListener {
 		public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
 			if ( !dlg_maxed && ( (totalItemCount - (firstVisibleItem + visibleItemCount)) < 5 ) && !dlg_isLoading) {
 				MessageService ms = app.getService( app.active_service );
-				ms.requestDialogs(showing_dialogs.size(), 20, async_complete_listener_dlg);
+				ms.requestDialogs(20, showing_dialogs.size(), async_complete_listener_dlg);
 				dlg_isLoading = true;
 			}
 		}
@@ -187,7 +187,7 @@ public class ActivityTwo extends ActionBarActivity implements OnClickListener {
 				msg_isLoading = true;
 
 				MessageService ms = app.getActiveService();
-				ms.requestMessages(ms.getActiveDialog(), showing_messages.size(), 20, async_complete_listener_msg);
+				ms.requestMessages(ms.getActiveDialog(), 20, showing_messages.size(), async_complete_listener_msg);
 				listview.setRefreshing();
 				listview.setSelectionFromTop(firstVisibleItem  + 1, listview.getChildAt(firstVisibleItem).getTop());
 				//Log.d("MsgScrollListener", String.valueOf(firstVisibleItem + lmsgs.size()) + ", " + String.valueOf(listview.getChildAt(firstVisibleItem).getTop()));
@@ -326,7 +326,7 @@ public class ActivityTwo extends ActionBarActivity implements OnClickListener {
 	        }
 			
 			if(update){
-				app.getActiveService().requestMessages(app.getActiveService().getActiveDialog(), async_complete_listener_msg_update_total_offset, 20, async_complete_listener_msg_update);
+				app.getActiveService().requestMessages(app.getActiveService().getActiveDialog(), 20, async_complete_listener_msg_update_total_offset, async_complete_listener_msg_update);
 			}
 		}
 	};
@@ -386,7 +386,7 @@ public class ActivityTwo extends ActionBarActivity implements OnClickListener {
 		
 		if(service_type == app.getActiveService().getServiceType()){
 			async_complete_listener_msg_update_total_offset = 0;
-			ms.requestMessages(ms.getActiveDialog(), 0, 20, async_complete_listener_msg_update);
+			ms.requestMessages(ms.getActiveDialog(), 20, 0, async_complete_listener_msg_update);
 		}
 
 	}
