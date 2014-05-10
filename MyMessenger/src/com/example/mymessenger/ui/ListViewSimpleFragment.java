@@ -28,6 +28,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.PagerAdapter;
+import android.text.format.Time;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -353,7 +354,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 		@Override
 		public void onTaskComplete(List<mMessage> result) {
 			Log.d("async_complete_listener_msg", "completed :: " + String.valueOf( app.getActiveService().isLoadingMsgsForDlg(app.getActiveService().getActiveDialog()) ));
-			
+			//Log.d("async_complete_listener_msg", "start size = " + String.valueOf(showing_messages.size()) + " :: " + String.valueOf(result.size()));
 			boolean changed = false;
 			int append_count = 0;
 
@@ -365,7 +366,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 					added = true;
 				} else {				
 					for(int i = 0; i < showing_messages.size(); i++){
-						if( msg.sendTime.before( showing_messages.get(i).sendTime ) ){
+						if( Time.compare(msg.sendTime, showing_messages.get(i).sendTime ) <= 0 ){
 							showing_messages.add(i, msg);
 							if(i == 0)append_count++;
 							added = true;
@@ -378,16 +379,21 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 					append_count++;
 				}
 	        }
+			//Log.d("async_complete_listener_msg", "scroll for = " + String.valueOf(append_count));
 			
 			if(result.size() > 0){
-				listview.scrollItems(append_count);
 				msg_adapter.notifyDataSetChanged();
 			}
 			
+			if(append_count > 0){
+				listview.scrollItems(append_count);
+			}			
+			
 			if(!app.getActiveService().isLoadingMsgsForDlg(app.getActiveService().getActiveDialog())){
 				listview.onRefreshCompleteNoAnimation();
+				//Log.d("async_complete_listener_msg", "finishing refresh");
 			}
-						
+			
 			//change_lv_pos(result.size());		
 			
 			/*
