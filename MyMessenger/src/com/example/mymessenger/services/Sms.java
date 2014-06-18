@@ -459,7 +459,7 @@ public class Sms extends MessageService {
 	}
 
 	@Override
-	public String[] getEmojiCodes() {
+	public long[][] getEmojiCodes() {
 		// TODO Auto-generated method stub
 		return null;
 	}
@@ -483,6 +483,12 @@ public class Sms extends MessageService {
 	@Override
 	protected void getMessagesFromNet(mDialog dlg, int count, int offset, AsyncTaskCompleteListener<List<mMessage>> cb) {
 
+	}
+
+	@Override
+	public int[] getEmojiGroupsIcons() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 

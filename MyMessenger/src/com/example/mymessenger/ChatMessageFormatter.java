@@ -31,11 +31,41 @@ public class ChatMessageFormatter {
 
 	private static final Map<Pattern, String> emoticons = new HashMap<Pattern, String>();
 
-	public static void addPatternVk(String code){
-		if(code.length() == 4)addPattern(emoticons, String.valueOf( Character.toChars( Integer.parseInt(code, 16) ) ), Vk.getEmojiUrl(code));
-		if(code.length() == 8)addPattern(emoticons, String.valueOf( Character.toChars( Integer.parseInt(code.substring(0, 4), 16) ) ) + String.valueOf( Character.toChars( Integer.parseInt(code.substring(4, 8), 16) ) ), Vk.getEmojiUrl(code));
+	public static void addPatternVk(long code){
+		String scode = long_to_hex_string(code);
+		addPattern(emoticons, string_from_hex_string(scode), Vk.getEmojiUrl(scode));
 	}
 	
+	public int substring_hex_to_int(String code, int start, int end){
+		return Integer.parseInt(code.substring(start, end), 16);
+	}
+	
+	public static String long_to_hex_string(long code) {
+        int i = 0; 
+        while (i < 4) {
+            int cc = (int) ((code >> ((i) * 16)) & 65535);
+            if (cc == 0) {
+                break;
+            }
+            i++;
+        }
+
+        if(i == 1)return String.format("%04X", code);
+        if(i == 2)return String.format("%08X", code);
+        //if(i == 3)return String.format("%12X", code);
+        if(i == 4)return String.format("%16X", code);
+        return "";
+    }
+	
+	public static String string_from_hex_string(String val){		
+		if(val.length() == 4)return String.valueOf( Character.toChars( Integer.parseInt(val, 16) ) );
+		if(val.length() == 8)return String.valueOf( Character.toChars( Integer.parseInt(val.substring(0, 4), 16) ) ) + String.valueOf( Character.toChars( Integer.parseInt(val.substring(4, 8), 16) ) );
+		if(val.length() == 16)return String.valueOf( Character.toChars( Integer.parseInt(val.substring(0, 4), 16) ) ) 
+										+ String.valueOf( Character.toChars( Integer.parseInt(val.substring(4, 8), 16) ) )
+										+ String.valueOf( Character.toChars( Integer.parseInt(val.substring(8, 12), 16) ) )
+										+ String.valueOf( Character.toChars( Integer.parseInt(val.substring(12, 16), 16) ) );
+		return "";
+	}
 	
 	private static void addPattern(Map<Pattern, String> map, String smile,
 	        String resource) {

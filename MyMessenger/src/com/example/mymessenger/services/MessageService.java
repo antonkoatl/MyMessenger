@@ -47,7 +47,7 @@ public abstract class MessageService {
 	
 	List<mDialog> return_dialogs;
 	List<mMessage> return_msgs;
-	
+		
 	class IntegerMutable {
 	    public int value;
 	    
@@ -95,8 +95,9 @@ public abstract class MessageService {
 	public abstract void setup(); //Подготовить сервис для работы
 	public abstract void init(); //Инициализация, после авторизации
 	public abstract void unsetup(); //Удалить сервис
-	public abstract String[] getEmojiCodes();
-	 
+	public abstract long[][] getEmojiCodes();
+	public abstract int[] getEmojiGroupsIcons();
+	
 	//Служебные функции
 	public final void requestDialogs(int count, int offset, AsyncTaskCompleteListener<List<mDialog>> cb) {
 		int dlgs_in_db = msApp.dbHelper.getDlgsCount(MessageService.this);

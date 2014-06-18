@@ -176,7 +176,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 	        	
 	        });
 	    
-	        this.emojiPopup = new EmojiPopup(getActivity(), rootView, R.drawable.ic_msg_panel_smiles, true);
+	        this.emojiPopup = new EmojiPopup(getActivity(), rootView, R.drawable.ic_msg_panel_smiles, true, app.getActiveService());
 	    }
 	    
 	    if (mode.equals("dialogs")) {
