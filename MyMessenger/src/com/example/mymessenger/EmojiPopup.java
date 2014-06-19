@@ -60,7 +60,7 @@ public class EmojiPopup {
 	};
 	 
 
-    public EmojiPopup(Context c, View content, int icon, boolean stickers, MessageService ms) {
+    public EmojiPopup(Context c, View content, int icon, MessageService ms) {
         /*this.receiver = new BroadcastReceiver() {
             public void onReceive(Context context, Intent intent) {
                 if (ACTION_HIDE_POPUP.equals(intent.getAction())) {
@@ -88,7 +88,7 @@ public class EmojiPopup {
             public void onEmojiSelected(String s) {
                 EditText edit = (EditText) EmojiPopup.this.contentView.findViewById(R.id.msg_entertext);
                 int pos = edit.getSelectionEnd();
-                CharSequence em = ChatMessageFormatter.getSmiledText(context, s, 0);
+                CharSequence em = ChatMessageFormatter.getSmiledText(context, s, ms.getServiceType(), 0);
                 edit.setText(edit.getText().insert(pos, em));
                 pos += em.length();
                 edit.setSelection(pos, pos);

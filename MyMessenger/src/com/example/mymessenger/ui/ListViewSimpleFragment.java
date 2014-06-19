@@ -27,6 +27,9 @@ import android.inputmethodservice.Keyboard;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentPagerAdapter;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.PagerAdapter;
 import android.text.format.Time;
 import android.util.Log;
@@ -75,6 +78,8 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 
 	protected boolean keyboardVisible = false;
 	
+	public int POSITION = FragmentPagerAdapter.POSITION_UNCHANGED;
+	
 	// newInstance constructor for creating fragment with arguments
     public static ListViewSimpleFragment newInstance(String mode) {
     	ListViewSimpleFragment fragmentFirst = new ListViewSimpleFragment();
@@ -86,9 +91,6 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 
 		rootView = null;
-
-	    //app.active_service = MessageService.VK;
-	    
 	    
 	    if (mode.equals("messages")) {
 	    	rootView = inflater.inflate(R.layout.msg_list, container, false);
@@ -102,8 +104,8 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 			
 			MessageService ms = app.getActiveService();
 			if(ms != null)ms.requestMessages(ms.getActiveDialog(), 20, 0, async_complete_listener_msg);
+			listview.setRefreshing();
 			
-	
 			//msg_adapter.isLoading = true;
 			//msg_adapter.notifyDataSetChanged();
 			
@@ -176,7 +178,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 	        	
 	        });
 	    
-	        this.emojiPopup = new EmojiPopup(getActivity(), rootView, R.drawable.ic_msg_panel_smiles, true, app.getActiveService());
+	        this.emojiPopup = new EmojiPopup(getActivity(), rootView, R.drawable.ic_msg_panel_smiles, app.getActiveService());
 	    }
 	    
 	    if (mode.equals("dialogs")) {
@@ -280,31 +282,6 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 	    return PagerAdapter.POSITION_NONE;
 	}
 	
-	protected void refresh_data() {
-		if (mode.equals("messages")) {
-			showing_messages.clear();
-			last_requested_msgs_size = 0;
-
-			msg_adapter.notifyDataSetChanged();
-			
-			MessageService ms = app.getActiveService();
-			if(ms != null){
-				ms.requestMessages(ms.getActiveDialog(), 20, 0, async_complete_listener_msg);
-				listview.setRefreshing();
-			}
-			
-		}
-		
-		if (mode.equals("dialogs")) {
-			showing_dialogs.clear();		
-
-			dlg_adapter.notifyDataSetChanged();
-			
-			app.requestLastDialogs(0, 20, async_complete_listener_dlg);
-			loaded_dlgs_from_each = 20;
-		}
-			
-	}
 	
 	
 	AsyncTaskCompleteListener<Void> updater = new AsyncTaskCompleteListener<Void>(){
@@ -551,10 +528,14 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 		@Override
 		public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 			mDialog dlg = showing_dialogs.get(position);
-			app.setActiveService( dlg.getMsgService() );
-			app.getService( dlg.getMsgService() ).setActiveDialog(dlg);
+			app.setActiveService( dlg.getMsgServiceType() );
+			app.getService( dlg.getMsgServiceType() ).setActiveDialog(dlg);
 			ListViewSimpleFragment fr = (ListViewSimpleFragment) ((MainActivity) getActivity()).pagerAdapter.getRegisteredFragment(2);
-			fr.refresh_data();
+			
+			fr.POSITION = FragmentPagerAdapter.POSITION_NONE;
+			
+			//fr.refresh_data();
+            ((MainActivity) getActivity()).pagerAdapter.notifyDataSetChanged();
 			((MainActivity) getActivity()).mViewPager.setCurrentItem(2);			
 			//Intent intent = new Intent(getActivity(), ActivityTwo.class);
 			//intent.putExtra("mode", "messages");

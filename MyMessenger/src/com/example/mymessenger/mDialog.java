@@ -8,7 +8,7 @@ import android.text.format.Time;
 public class mDialog {
 	public List<mMessage> messages;
 	public List<mContact> participants;
-	public int msg_service;
+	public int msg_service_type;
 	
 	public Time last_msg_time;
 	public String snippet;
@@ -66,8 +66,8 @@ public class mDialog {
 	}
 
 
-	public int getMsgService() {
-		return msg_service;
+	public int getMsgServiceType() {
+		return msg_service_type;
 	}
 		
 	@Override

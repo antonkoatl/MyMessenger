@@ -266,7 +266,7 @@ public class DBHelper extends SQLiteOpenHelper {
 	        	dlg.last_msg_time.set( cursor.getLong(lastMTColIndex) );
 	        	dlg.snippet = cursor.getString(snipColIndex);
 	        	dlg.snippet_out = cursor.getInt(snipOutColIndex);
-	        	dlg.msg_service = ms.getServiceType();
+	        	dlg.msg_service_type = ms.getServiceType();
 	        	
 	        	result.add(dlg);
 	        	cursor_chk = cursor.moveToNext();

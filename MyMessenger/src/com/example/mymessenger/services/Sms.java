@@ -30,6 +30,7 @@ import com.example.mymessenger.AsyncTaskCompleteListener;
 import com.example.mymessenger.MainActivity;
 import com.example.mymessenger.MsgReceiver;
 import com.example.mymessenger.MyApplication;
+import com.example.mymessenger.R;
 import com.example.mymessenger.RunnableAdvanced;
 import com.example.mymessenger.SmsReceiver;
 import com.example.mymessenger.mContact;
@@ -128,7 +129,7 @@ public class Sms extends MessageService {
 				
 				mdl.snippet = cursor.getString( cursor.getColumnIndex("snippet") );
 				mdl.last_msg_time.set(cursor.getLong( cursor.getColumnIndex("date") ));
-				mdl.msg_service = MessageService.SMS;
+				mdl.msg_service_type = MessageService.SMS;
 				
 				return_dialogs.add(mdl);
 			} else break;
@@ -457,11 +458,18 @@ public class Sms extends MessageService {
 		// TODO Auto-generated method stub
 		
 	}
+	
+	
+	public static long[][] emoji;
+	public static int[] emoji_group_icons = new int[]{};
+	static {
+        emoji = new long[0][];
+    }
+	
 
 	@Override
 	public long[][] getEmojiCodes() {
-		// TODO Auto-generated method stub
-		return null;
+		return emoji;
 	}
 
 	@Override
@@ -487,8 +495,7 @@ public class Sms extends MessageService {
 
 	@Override
 	public int[] getEmojiGroupsIcons() {
-		// TODO Auto-generated method stub
-		return null;
+		return emoji_group_icons;
 	}
 
 

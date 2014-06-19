@@ -77,6 +77,7 @@ public class EmojiView extends LinearLayout {
     public ArrayList<Integer> tempFailedPacks;
     private HashMap<Long, Float> useCounts;
     private ArrayList<GridView> views;
+	private MessageService ms;
 
 
     private class EmojiGridAdapter extends BaseAdapter {
@@ -181,6 +182,8 @@ public class EmojiView extends LinearLayout {
         super(context);
         this.views = new ArrayList();
         this.adapters = new ArrayList();
+        this.ms = ms;
+
         this.icons = new int[ms.getEmojiGroupsIcons().length + 1];
         icons[0] = R.drawable.ic_emoji_recent;
         System.arraycopy(ms.getEmojiGroupsIcons(), 0, icons, 1, ms.getEmojiGroupsIcons().length);
@@ -379,7 +382,7 @@ public class EmojiView extends LinearLayout {
                 break;
             }
         }
-        getContext().getSharedPreferences("emoji", 0).edit().putString("recents", TextUtils.join(",", sdata)).commit();
+        getContext().getSharedPreferences("emoji", 0).edit().putString("recents" + String.valueOf(ms.getServiceType()), TextUtils.join(",", sdata)).commit();
     }
 
 
@@ -438,7 +441,7 @@ public class EmojiView extends LinearLayout {
 
 
     public void loadRecents() {
-        String r = getContext().getSharedPreferences("emoji", 0).getString("recents", "");
+        String r = getContext().getSharedPreferences("emoji", 0).getString("recents" + String.valueOf(ms.getServiceType()), "");
         if (r == null || r.length() <= 0 || (!r.contains("\t"))) {
         } else {
             List<String> sp = Arrays.asList(r.split(","));

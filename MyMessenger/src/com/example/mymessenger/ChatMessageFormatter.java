@@ -6,7 +6,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.regex.Matcher;
@@ -26,16 +28,11 @@ import android.text.style.ImageSpan;
 import android.util.DisplayMetrics;
 
 public class ChatMessageFormatter {
-	private static final Factory spannableFactory = Spannable.Factory
-	        .getInstance();
+	private static final Factory spannableFactory = Spannable.Factory.getInstance();
 
-	private static final Map<Pattern, String> emoticons = new HashMap<Pattern, String>();
+	private static final Map< Integer, Map<Pattern, String> > emoticons = new HashMap< Integer, Map<Pattern, String> >();
 
-	public static void addPatternVk(long code){
-		String scode = long_to_hex_string(code);
-		addPattern(emoticons, string_from_hex_string(scode), Vk.getEmojiUrl(scode));
-	}
-	
+
 	public int substring_hex_to_int(String code, int start, int end){
 		return Integer.parseInt(code.substring(start, end), 16);
 	}
@@ -67,14 +64,20 @@ public class ChatMessageFormatter {
 		return "";
 	}
 	
-	private static void addPattern(Map<Pattern, String> map, String smile,
-	        String resource) {
-	    map.put(Pattern.compile(Pattern.quote(smile)), resource);
+	public static void addPattern(int ser_type, String resource, String smile){
+		Map<Pattern, String> map = emoticons.get(ser_type);
+		if(map == null){
+			map = new HashMap<Pattern, String>();
+			emoticons.put(ser_type, map);
+		}
+		
+		map.put(Pattern.compile(Pattern.quote(smile)), resource);
 	}
-	
-	public static boolean addSmiles(Context context, Spannable spannable, int line_height) throws MalformedURLException, IOException {
+		
+	public static boolean addSmiles(Context context, Spannable spannable, int ser_type, int line_height) throws MalformedURLException, IOException {
 	    boolean hasChanges = false;
-	    for (Entry<Pattern, String> entry : emoticons.entrySet()) {
+	    if(emoticons.get(ser_type) == null)return hasChanges;
+	    for (Entry<Pattern, String> entry : emoticons.get(ser_type).entrySet()) {
 	        Matcher matcher = entry.getKey().matcher(spannable);
 	        while (matcher.find()) {
 	            boolean set = true;
@@ -106,10 +109,10 @@ public class ChatMessageFormatter {
 	    return hasChanges;
 	}
 
-	public static Spannable getSmiledText(Context context, CharSequence text, int line_height) {
+	public static Spannable getSmiledText(Context context, CharSequence text, int ser_type, int line_height) {
 	    Spannable spannable = spannableFactory.newSpannable(text);
 	    try {
-			addSmiles(context, spannable, line_height);
+			addSmiles(context, spannable, ser_type, line_height);
 		} catch (MalformedURLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -122,6 +125,7 @@ public class ChatMessageFormatter {
 	
 	public static Drawable getEmojiDrawableVk(String code, int size){
 		String t = getCachedFile(Vk.getEmojiUrl(code), MyApplication.context);
+		if(t == null)return null;
         BitmapFactory.Options options = new BitmapFactory.Options();
         
         options.inDensity = DisplayMetrics.DENSITY_MEDIUM;
@@ -154,6 +158,7 @@ public class ChatMessageFormatter {
 	    	return output.getPath();	    	
 	    }
 	    
+	    boolean failed = false;
 	    InputStream stream = null;
 	    FileOutputStream fos = null;
 	    try {
@@ -169,6 +174,7 @@ public class ChatMessageFormatter {
 	    	// successfully finished
 	    } catch (Exception e) {
 	    	e.printStackTrace();
+	    	failed = true;
 	    } finally {
 	    	if (stream != null) {
 	    		try {
@@ -185,7 +191,7 @@ public class ChatMessageFormatter {
 	    		}
 	    	}
 		}
-		    
-		return output.getPath();
+		if(failed)return null;
+		else return output.getPath();
 	}
 }

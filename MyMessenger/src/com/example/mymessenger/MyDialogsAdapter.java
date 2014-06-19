@@ -64,7 +64,7 @@ public class MyDialogsAdapter extends BaseAdapter {
 	    MyApplication app = (MyApplication) ((Activity) context).getApplication();
 	    
 	    TextView textLabel = (TextView) view.findViewById(R.id.dlgview_dlgsername);
-    	textLabel.setText( app.getService( dlg.getMsgService() ).getServiceName() );
+    	textLabel.setText( app.getService( dlg.getMsgServiceType() ).getServiceName() );
 	    
     	textLabel = (TextView) view.findViewById(R.id.dlgview_dlgname);
     	textLabel.setText( dlg.getParticipantsNames() );
@@ -73,7 +73,7 @@ public class MyDialogsAdapter extends BaseAdapter {
     	textLabel.setText( dlg.getLastMessageTime().format("%H:%M %d.%m.%Y") );
         
     	textLabel = (TextView) view.findViewById(R.id.dlgview_dlgtext);
-    	textLabel.setText( ChatMessageFormatter.getSmiledText(context, dlg.snippet, textLabel.getLineHeight()) );
+    	textLabel.setText( ChatMessageFormatter.getSmiledText(context, dlg.snippet, dlg.getMsgServiceType(), textLabel.getLineHeight()) );
     	
     	ImageView iv = (ImageView) view.findViewById(R.id.dlgview_iconmain);
     	if(dlg.participants.get(0).icon_100 != null){	    	
@@ -109,7 +109,7 @@ public class MyDialogsAdapter extends BaseAdapter {
 	
 		iv = (ImageView) view.findViewById(R.id.dlgview_dlgtexticon);
 	    if(dlg.snippet_out == 1){
-	    	mContact my_contact = app.getService(dlg.msg_service).getMyContact();
+	    	mContact my_contact = app.getService(dlg.msg_service_type).getMyContact();
 	    	if(my_contact.icon_100 != null){	    	
 	    		iv.setImageBitmap( my_contact.icon_100 );
 	     	} else if(my_contact.icon_100_url != null){

@@ -173,8 +173,12 @@ public class Vk extends MessageService {
 		//VKUIHelper.onDestroy((Activity) this.context);
 		
 		for(long[] group : emoji){
-			for(long code : group)
-				ChatMessageFormatter.addPatternVk(code);
+			for(long code : group){
+				String scode = ChatMessageFormatter.long_to_hex_string(code);
+				String res_url = "http://vk.com/images/emoji/" + scode + ".png";
+				String ccode = ChatMessageFormatter.string_from_hex_string(scode);
+				ChatMessageFormatter.addPattern(getServiceType(), res_url, ccode);
+			}
 		}
 		
 	}
@@ -960,7 +964,7 @@ public class Vk extends MessageService {
 			    			mdl.snippet = item.getString( "body" );
 			    			mdl.snippet_out = item.getInt( "out" );
 			    			mdl.last_msg_time.set(item.getLong("date")*1000);
-			    			mdl.msg_service = MessageService.VK;
+			    			mdl.msg_service_type = MessageService.VK;
 			    			
 			    			dlgs.add(mdl);
 			        	}
@@ -1075,5 +1079,6 @@ public class Vk extends MessageService {
 	public int[] getEmojiGroupsIcons() {
 		return emoji_group_icons;
 	}
+
 
 }

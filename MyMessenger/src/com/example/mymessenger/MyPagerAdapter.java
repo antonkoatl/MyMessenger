@@ -79,8 +79,12 @@ public class MyPagerAdapter extends FragmentPagerAdapter {
     public int getItemPosition(Object object)
     {
     	Log.d("MyPagerAdapter","getItemPosition");
+    	if(object == null)
+    		return POSITION_NONE;
     	if (object instanceof ServicesMenuFragment)
-            return POSITION_NONE;
+            return ((ServicesMenuFragment) object).POSITION;
+    	if (object instanceof ListViewSimpleFragment)
+            return ((ListViewSimpleFragment) object).POSITION;
         return POSITION_NONE;
     }
 

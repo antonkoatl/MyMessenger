@@ -12,6 +12,7 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentPagerAdapter;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.ContextMenu;
@@ -34,6 +35,8 @@ public class ServicesMenuFragment extends Fragment implements OnClickListener, O
 	static final int MENU_CON_DELETE = 102;
 	
 	boolean isForDelete = false;
+	
+	public int POSITION = FragmentPagerAdapter.POSITION_UNCHANGED;
 	
 	@Override
     public View onCreateView(LayoutInflater inflater,
