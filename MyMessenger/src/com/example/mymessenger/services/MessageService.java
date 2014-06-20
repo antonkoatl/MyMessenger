@@ -189,6 +189,7 @@ public abstract class MessageService {
 	
 	public final void setActiveDialog(mDialog dlg) {
 		active_dlg = dlg;
+		msApp.sPref.edit().putString("active_dialog", dlg.getParticipantsAddresses()).commit();
 	}
 			
 	//отправка сообщения

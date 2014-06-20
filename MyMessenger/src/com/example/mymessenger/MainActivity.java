@@ -89,13 +89,6 @@ public class MainActivity extends ActionBarActivity {
     protected void onStop() {
     	super.onStop();
     	Log.d("MainActivity", "onStop");
-    	
-    	Editor ed = app.sPref.edit();
-    	if(app.getActiveService() != null){
-    		ed.putInt("active_service", app.getActiveService().getServiceType());
-    		ed.putString("active_dialog", app.getActiveService().getActiveDialog().getParticipantsAddresses());
-    	}
-    	ed.commit();
     }
     
     @Override 

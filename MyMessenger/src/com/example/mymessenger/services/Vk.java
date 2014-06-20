@@ -68,6 +68,8 @@ public class Vk extends MessageService {
 	private static String sTokenKey = "VK_ACCESS_TOKEN";
 	private static String[] sMyScope = new String[]{VKScope.FRIENDS, VKScope.WALL, VKScope.PHOTOS, VKScope.NOHTTPS, VKScope.MESSAGES};
 	
+	static final int MAX_REQUESTS_WAITING_FOR_AUTH = 10;
+	
 	boolean accum_cnt_handler_isRunning = false; //??
 	
 	boolean finished; //??
@@ -91,30 +93,8 @@ public class Vk extends MessageService {
 	List<mDialog> loading_msgs = new ArrayList<mDialog>();
 	
 	List<VKRequest> requests_waiting_for_auth = new ArrayList<VKRequest>();
-	boolean requests_waiting_for_auth_runnable_active = false;
-		
+
 	public void requestNewMessagesRunnable(AsyncTaskCompleteListener<RunnableAdvanced<?>> cb){
-		if(!authorised){
-			class Runnable_r implements Runnable {
-				AsyncTaskCompleteListener<RunnableAdvanced<?>> cb;
-				
-				Runnable_r(AsyncTaskCompleteListener<RunnableAdvanced<?>> cb){
-					this.cb = cb;
-				}
-				
-				@Override
-				public void run() {
-					requestNewMessagesRunnable(cb);
-				}
-				
-			};
-			
-			Runnable r = new Runnable_r(cb);
-			handler.postDelayed(r, 10000);
-			Log.d("requestNewMessagesRunnable", "Not authorised, retrying in 1 sec");
-			return;
-		}
-		
 		VKRequest request = new VKRequest("messages.getLongPollServer", VKParameters.from(VKApiConst.COUNT, String.valueOf(1)));
 		request.secure = false;
 		VKParameters preparedParameters = request.getPreparedParameters();
@@ -457,12 +437,14 @@ public class Vk extends MessageService {
             	setup_stage++;
             	setupStages();
             }
+            execRequestsWaitingForAuth();
         }
 
         @Override
         public void onAcceptUserToken(VKAccessToken token) {
         	Log.d("VKSdkListener", "onAcceptUserToken" );
         	authorised = true;
+        	execRequestsWaitingForAuth();
         }
     };
 	
@@ -479,40 +461,7 @@ public class Vk extends MessageService {
 	        	if(msApp.getCurrentActivity() != null) authorize(msApp.getCurrentActivity());
 			}
 			
-			if(requests_waiting_for_auth.size() < 10){
-				requests_waiting_for_auth.add(error.request);
-				Log.d("HandleApiError", "request added to requests_waiting_for_auth");
-			}
-        				
-			
-			if(!requests_waiting_for_auth_runnable_active){
-				requests_waiting_for_auth_runnable_active = true;
-				
-				Runnable r = new RunnableAdvanced<Void>(){
-
-					@Override
-					public void run() {
-						if(authorization_finished){
-							Log.d("+++", VKSdk.getAccessToken().accessToken);
-							for(VKRequest r : requests_waiting_for_auth){
-								Log.d("HandleApiError", "Executing request from requests_waiting_for_auth: " + r.methodName);
-								Log.d("HandleApiError", "Executing request from requests_waiting_for_auth: " + r.methodName);
-								VKRequest r_new = new VKRequest(r.methodName, r.getMethodParameters());
-								r_new.executeWithListener(r.requestListener);
-							}
-							requests_waiting_for_auth.clear();
-							requests_waiting_for_auth_runnable_active = false;
-						} else {
-							Log.d("HandleApiError", "Auth not finished, waiting: " + String.valueOf(requests_waiting_for_auth.size()));
-							handler.postDelayed(this, 10000);
-						}
-					}
-					
-				};
-				
-				handler.postDelayed(r, 20000);
-			}
-			
+			addRequestWaitingForAuth(error.request);
 			
 			
 		}
@@ -1081,4 +1030,28 @@ public class Vk extends MessageService {
 	}
 
 
+	public void addRequestWaitingForAuth(VKRequest r){
+		if(requests_waiting_for_auth.size() < MAX_REQUESTS_WAITING_FOR_AUTH){
+			requests_waiting_for_auth.add(r);
+			Log.d("addRequestWaitingForAuth", "request added to requests_waiting_for_auth: " + r.methodName);
+		} else {
+			Log.d("addRequestWaitingForAuth", "request not added to requests_waiting_for_auth, dropped: " + r.methodName);
+		}
+	}
+	
+	private void execRequestsWaitingForAuth(){
+		VKRequest r_new = null;
+		if(requests_waiting_for_auth.size() > 0){
+			r_new = new VKRequest(requests_waiting_for_auth.get(0).methodName, requests_waiting_for_auth.get(0).getMethodParameters());
+			r_new.executeWithListener(requests_waiting_for_auth.get(0).requestListener);
+			Log.d("addRequestWaitingForAuth", "Executing request from requests_waiting_for_auth: " + r_new.methodName);
+		}
+		for(int i = 1; i < requests_waiting_for_auth.size(); i++){
+			VKRequest r_new_t = new VKRequest(requests_waiting_for_auth.get(i).methodName, requests_waiting_for_auth.get(i).getMethodParameters());
+			r_new_t.executeAfterRequest(r_new, requests_waiting_for_auth.get(i).requestListener);
+			Log.d("addRequestWaitingForAuth", "Executing request from requests_waiting_for_auth: " + r_new_t.methodName);
+			r_new = r_new_t;
+		}
+		requests_waiting_for_auth.clear();
+	}
 }

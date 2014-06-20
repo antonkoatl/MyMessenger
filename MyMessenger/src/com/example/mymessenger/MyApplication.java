@@ -21,7 +21,7 @@ public class MyApplication extends Application {
 	public List<MessageService> myMsgServices;
 	public int active_service;
 	PendingIntent pi;
-	SharedPreferences sPref;
+	public SharedPreferences sPref;
 	
 	public List<AsyncTaskCompleteListener<Void>> cnts_updaters;
 	public List<AsyncTaskCompleteListener<List<mDialog>>> dlgs_updaters;
@@ -117,8 +117,7 @@ public class MyApplication extends Application {
 
 	public void setActiveService(int msgService) {
 		active_service = msgService;
-		
-		
+		sPref.edit().putInt("active_service", active_service).commit();		
 	}
 
 	

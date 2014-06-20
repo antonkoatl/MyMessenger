@@ -60,8 +60,9 @@ public class DBHelper extends SQLiteOpenHelper {
 		
 		String my_table_name = getTableNameDlgs(ms);
 		Collections.sort(dlg.participants);
-		String selection = DBHelper.colParticipants + " = " + dlg.getParticipantsAddresses();
-		Cursor c = db.query(my_table_name, null, selection, null, null, null, null);
+		String selection = DBHelper.colParticipants + " = ?";
+		String selection_args[] = {dlg.getParticipantsAddresses()};
+		Cursor c = db.query(my_table_name, null, selection, selection_args, null, null, null);
 		
 		int dlg_key = 0;
 		
