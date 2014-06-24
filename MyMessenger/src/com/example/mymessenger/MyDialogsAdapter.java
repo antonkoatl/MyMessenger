@@ -9,6 +9,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.BitmapFactory;
+import android.os.SystemClock;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -52,10 +53,19 @@ public class MyDialogsAdapter extends BaseAdapter {
 	public View getView(int position, View convertView, ViewGroup parent) {
 		//View view = convertView; // Использовать повторно View, решить что делать с шириной
 		View view = null;
-		
+		long tstart = SystemClock.currentThreadTimeMillis();
+		long ttemp = SystemClock.currentThreadTimeMillis();
+		long tinf = 0;
+		long ttl = 0;
+		long tiv1 = 0;
+		long tiv2 = 0;
 	    if (view == null) {
 	      view = lInflater.inflate(R.layout.dialogs_row_layout, parent, false);
+	      
+	      tinf = SystemClock.currentThreadTimeMillis() - ttemp;
+	      ttemp = SystemClock.currentThreadTimeMillis();
 	    }
+	    if(false)return view;
 	    
 	    mDialog dlg = data.get(position);
 	    
@@ -71,9 +81,17 @@ public class MyDialogsAdapter extends BaseAdapter {
     	
     	textLabel = (TextView) view.findViewById(R.id.dlgview_dlgdate);
     	textLabel.setText( dlg.getLastMessageTime().format("%H:%M %d.%m.%Y") );
+    	
+    	ttemp = SystemClock.currentThreadTimeMillis();
         
     	textLabel = (TextView) view.findViewById(R.id.dlgview_dlgtext);
-    	textLabel.setText( ChatMessageFormatter.getSmiledText(context, dlg.snippet, dlg.getMsgServiceType(), textLabel.getLineHeight()) );
+    	if(dlg.snippet_spannable_cache == null){
+    		dlg.snippet_spannable_cache = ChatMessageFormatter.getSmiledText(context, dlg.snippet, dlg.getMsgServiceType(), textLabel.getLineHeight());  
+    	}
+    	textLabel.setText( dlg.snippet_spannable_cache );
+    	
+    	ttl = SystemClock.currentThreadTimeMillis() - ttemp;
+	    ttemp = SystemClock.currentThreadTimeMillis();
     	
     	ImageView iv = (ImageView) view.findViewById(R.id.dlgview_iconmain);
     	if(dlg.participants.get(0).icon_100 != null){	    	
@@ -106,6 +124,9 @@ public class MyDialogsAdapter extends BaseAdapter {
             intent.putExtra("url", dlg.participants.get(0).icon_100_url);
             context.getApplicationContext().startService(intent);
     	}
+    	
+    	tiv1 = SystemClock.currentThreadTimeMillis() - ttemp;
+	    ttemp = SystemClock.currentThreadTimeMillis();
 	
 		iv = (ImageView) view.findViewById(R.id.dlgview_dlgtexticon);
 	    if(dlg.snippet_out == 1){
@@ -145,6 +166,11 @@ public class MyDialogsAdapter extends BaseAdapter {
      		iv.getLayoutParams().width = 0;
      		iv.requestLayout();
         }
+	    
+	    tiv2 = SystemClock.currentThreadTimeMillis() - ttemp;
+	    ttemp = SystemClock.currentThreadTimeMillis();
+	    
+	    Log.d("TIMING", "INF: " + String.valueOf(tinf) + ", TL: " + String.valueOf(ttl) + ", IV1: " + String.valueOf(tiv1) + ", IV2: " + String.valueOf(tiv2) + ", Total: " + String.valueOf(SystemClock.currentThreadTimeMillis() - tstart));
     	
     	//Log.d("MyDialogsAdapter", data.size() + " : " + position + " : " + dlg.getParticipantsNames());
 		return view;

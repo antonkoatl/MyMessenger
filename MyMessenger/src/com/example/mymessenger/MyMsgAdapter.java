@@ -83,8 +83,10 @@ public class MyMsgAdapter extends BaseAdapter {
 	    lp_date.addRule(left ? RelativeLayout.RIGHT_OF : RelativeLayout.LEFT_OF, textLabel_text.getId());
 	    textLabel_date.setLayoutParams(lp_date);
 	    
-	    
-	    textLabel_text.setText( ChatMessageFormatter.getSmiledText(context, msg.text, ser.getServiceType(), textLabel_text.getLineHeight()) );
+	    if(msg.text_spannable_cache == null){
+	    	msg.text_spannable_cache = ChatMessageFormatter.getSmiledText(context, msg.text, ser.getServiceType(), textLabel_text.getLineHeight());  
+    	}
+	    textLabel_text.setText( msg.text_spannable_cache );
     	
 	    textLabel_text.setBackgroundResource(left ? R.drawable.bubble_green : R.drawable.bubble_yellow);
 	    textLabel_text.setGravity(left ? Gravity.RIGHT : Gravity.LEFT);

@@ -2,6 +2,7 @@ package com.example.mymessenger;
 
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.text.Spannable;
 import android.text.format.Time;
 
 public class mMessage implements Parcelable {
@@ -19,6 +20,8 @@ public class mMessage implements Parcelable {
 	public int msg_service;
 	
 	public int flags;
+	
+	public Spannable text_spannable_cache = null;
 		
 	public mMessage() {
 		sendTime = new Time();

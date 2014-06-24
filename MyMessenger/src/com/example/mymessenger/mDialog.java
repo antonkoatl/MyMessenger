@@ -3,6 +3,7 @@ package com.example.mymessenger;
 import java.util.ArrayList;
 import java.util.List;
 
+import android.text.Spannable;
 import android.text.format.Time;
 
 public class mDialog {
@@ -13,6 +14,8 @@ public class mDialog {
 	public Time last_msg_time;
 	public String snippet;
 	public int snippet_out;
+	
+	public Spannable snippet_spannable_cache = null;
 	
 	public mDialog() {
 		messages = new ArrayList<mMessage>();
