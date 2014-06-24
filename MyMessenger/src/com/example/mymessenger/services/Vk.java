@@ -16,6 +16,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.app.AlertDialog;
 import android.content.ContentValues;
 import android.content.Context;
@@ -93,6 +94,8 @@ public class Vk extends MessageService {
 	List<mDialog> loading_msgs = new ArrayList<mDialog>();
 	
 	List<VKRequest> requests_waiting_for_auth = new ArrayList<VKRequest>();
+	
+	AsyncTaskCompleteListener<MessageService> cbms_for_setup = null;
 
 	public void requestNewMessagesRunnable(AsyncTaskCompleteListener<RunnableAdvanced<?>> cb){
 		VKRequest request = new VKRequest("messages.getLongPollServer", VKParameters.from(VKApiConst.COUNT, String.valueOf(1)));
@@ -414,7 +417,7 @@ public class Vk extends MessageService {
         @Override
         public void onTokenExpired(VKAccessToken expiredToken) {
         	Log.d("VKSdkListener", "onTokenExpired" );
-        	if(msApp.getCurrentActivity() != null) authorize(msApp.getCurrentActivity());
+        	if(msApp.getMainActivity() != null) authorize(msApp.getMainActivity());
             //VKSdk.authorize(sMyScope, false, false);
         }
 
@@ -458,7 +461,7 @@ public class Vk extends MessageService {
 		if(error.apiError.errorCode == 5){ // User authorization failed.
 			if(authorization_finished && check_access_toten(error) ){
 				//Log.d("HandleApiError", "VKSdk.authorize: " + error.apiError.errorMessage);
-	        	if(msApp.getCurrentActivity() != null) authorize(msApp.getCurrentActivity());
+	        	if(msApp.getMainActivity() != null) authorize(msApp.getMainActivity());
 			}
 			
 			addRequestWaitingForAuth(error.request);
@@ -713,9 +716,10 @@ public class Vk extends MessageService {
 	}
 
 	@Override
-	public void setup() {
+	public void setup(AsyncTaskCompleteListener<MessageService> asms) {
 		isSetupFinished = false;
 		setup_stage = 1;
+		cbms_for_setup = asms;
 		setupStages();
 	}
 	
@@ -731,7 +735,7 @@ public class Vk extends MessageService {
 				toast.show();
 			}
 			//VKSdk.authorize(sMyScope, false, true);
-			authorize(MyApplication.getCurrentActivity());
+			authorize(MyApplication.getMainActivity());
 			break;
 		case 2:
 			requestAccountInfo();
@@ -753,6 +757,7 @@ public class Vk extends MessageService {
 			break;
 		case 4:
 			isSetupFinished = true;
+			if(cbms_for_setup != null)cbms_for_setup.onTaskComplete(this);
 			break;
 		}
 	}

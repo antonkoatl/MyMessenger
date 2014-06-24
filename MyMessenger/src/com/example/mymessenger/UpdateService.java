@@ -37,7 +37,7 @@ public class UpdateService extends Service {
 		
 		if(remove){
 			RunnableAdvanced<?> r = runnables.get(ss);
-			r.kill();
+			if(r != null)r.kill();
 			return START_REDELIVER_INTENT;
 		}
 		

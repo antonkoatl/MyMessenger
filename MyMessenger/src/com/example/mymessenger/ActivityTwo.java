@@ -394,13 +394,11 @@ public class ActivityTwo extends ActionBarActivity implements OnClickListener {
 	@Override
 	protected void onResume() { 
 		super.onResume();
-		app.setCurrentActivity(this);
 	} 
 	
 	@Override
     protected void onPause() {
     	super.onPause();
-    	app.setCurrentActivity(null);
     }
 	
 }

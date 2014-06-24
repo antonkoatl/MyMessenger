@@ -92,7 +92,7 @@ public abstract class MessageService {
 	public abstract void requestMarkAsReaded(mMessage msg);
 	
 	public abstract void requestNewMessagesRunnable(AsyncTaskCompleteListener<RunnableAdvanced<?>> cb); //Запросить алгоритм для отслеживания новых сообщений	
-	public abstract void setup(); //Подготовить сервис для работы
+	public abstract void setup(AsyncTaskCompleteListener<MessageService> asms); //Подготовить сервис для работы
 	public abstract void init(); //Инициализация, после авторизации
 	public abstract void unsetup(); //Удалить сервис
 	public abstract long[][] getEmojiCodes();

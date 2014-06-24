@@ -103,7 +103,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 			listview.setAdapter(msg_adapter);
 			
 			MessageService ms = app.getActiveService();
-			if(ms != null)ms.requestMessages(ms.getActiveDialog(), 20, 0, async_complete_listener_msg);
+			if(ms != null && ms.getActiveDialog() != null)ms.requestMessages(ms.getActiveDialog(), 20, 0, async_complete_listener_msg);
 			listview.setRefreshing();
 			
 			//msg_adapter.isLoading = true;
@@ -225,7 +225,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 				
 				InputMethodManager inputManager = (InputMethodManager) app.getSystemService(Context.INPUT_METHOD_SERVICE); 
 				inputManager.hideSoftInputFromWindow(
-				        app.getCurrentActivity().getCurrentFocus().getWindowToken(),
+				        app.getMainActivity().getCurrentFocus().getWindowToken(),
 				        InputMethodManager.HIDE_NOT_ALWAYS); 
 				
 				Log.d("ActivityTwo.onClick.msg_sendbutton", text);

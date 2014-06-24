@@ -12,6 +12,7 @@ import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.content.res.Configuration;
 import android.os.Bundle;
+import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
@@ -45,6 +46,8 @@ public class MainActivity extends ActionBarActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        app.setMainActivity(this);
+        
         Log.d("MainActivity", "onCreate^" + String.valueOf(savedInstanceState == null));
         
         setContentView(R.layout.pager);
@@ -61,7 +64,6 @@ public class MainActivity extends ActionBarActivity {
         
         
         sPref = getSharedPreferences("MyPref", MODE_PRIVATE);
-        
     }
 
     @Override
@@ -75,14 +77,12 @@ public class MainActivity extends ActionBarActivity {
 		super.onResume();
 		Log.d("MainActivity", "onResume");
 		VKUIHelper.onResume(this);
-		app.setCurrentActivity(this);
 	} 
 
     @Override
     protected void onPause() {
     	super.onPause();
     	Log.d("MainActivity", "onPause");
-    	app.setCurrentActivity(null);
     }
     
     @Override
@@ -94,8 +94,9 @@ public class MainActivity extends ActionBarActivity {
     @Override 
 	protected void onDestroy() { 
 		super.onDestroy();
+		app.setMainActivity(null);
 		Log.d("MainActivity", "onDestroy");
-		VKUIHelper.onDestroy(this); 
+		VKUIHelper.onDestroy(this);
 	} 
     
     @Override
@@ -200,8 +201,8 @@ public class MainActivity extends ActionBarActivity {
 		
 		if(requestCode == SelectServiceActivity.REQUEST_CODE){
 			if(resultCode == SelectServiceActivity.RESULT_ADDED){
-				pagerAdapter.notifyDataSetChanged();
-				//getSupportFragmentManager().beginTransaction().remove(pagerAdapter.getRegisteredFragment(0)).commit();				
+				int service_type = data.getIntExtra("service_type", 0);
+				app.newService(service_type);
 			}
 			if(resultCode == SelectServiceActivity.RESULT_NOT_ADDED){
 				Toast.makeText(this, "Service not added", Toast.LENGTH_SHORT).show();

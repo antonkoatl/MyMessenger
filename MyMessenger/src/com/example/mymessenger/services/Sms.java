@@ -62,7 +62,7 @@ public class Sms extends MessageService {
 	}
 	
 	@Override
-	public void setup() {    	
+	public void setup(AsyncTaskCompleteListener<MessageService> asms) {    	
     	
 	}
 

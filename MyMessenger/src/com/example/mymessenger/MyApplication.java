@@ -3,9 +3,13 @@ package com.example.mymessenger;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Stack;
+
 import com.example.mymessenger.services.MessageService;
 import com.example.mymessenger.services.Sms;
 import com.example.mymessenger.services.Vk;
+import com.example.mymessenger.ui.ListViewSimpleFragment;
+import com.example.mymessenger.ui.ServicesMenuFragment;
 
 import android.app.Activity;
 import android.app.Application;
@@ -15,6 +19,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.os.HandlerThread;
+import android.support.v4.app.FragmentPagerAdapter;
 
 public class MyApplication extends Application {
 	public static Context context;
@@ -33,7 +38,7 @@ public class MyApplication extends Application {
 	public boolean msgs_loading_maxed = false;
 	public boolean dlgs_loading_maxed = false;
 	
-	private static Activity mCurrentActivity = null;
+	private static Activity mMainActivity = null;
 	
 	@Override
 	public void onCreate() {
@@ -101,13 +106,14 @@ public class MyApplication extends Application {
 	
 	
 	
-    public static Activity getCurrentActivity(){
-          return mCurrentActivity;
+    public static Activity getMainActivity(){
+          return mMainActivity;
     }
     
-    public static void setCurrentActivity(Activity mActivity){
-          mCurrentActivity = mActivity;
+    public static void setMainActivity(Activity mActivity){
+    	mMainActivity = mActivity;
     }
+
 
 	public void requestLastDialogs(int count, int offset, AsyncTaskCompleteListener<List<mDialog>> cb) {
 		for(MessageService msg : myMsgServices){
@@ -146,8 +152,8 @@ public class MyApplication extends Application {
 	}
 	
 	public void triggerCntsUpdaters(){
-		if(getCurrentActivity() != null){
-			getCurrentActivity().runOnUiThread(new Runnable() {
+		if(getMainActivity() != null){
+			getMainActivity().runOnUiThread(new Runnable() {
 			     @Override
 			     public void run() {
 			    	 for(AsyncTaskCompleteListener<Void> updater : cnts_updaters)
@@ -158,8 +164,8 @@ public class MyApplication extends Application {
 	}
 	
 	public void triggerDlgsUpdaters(final List<mDialog> dlgs){
-		if(getCurrentActivity() != null){
-			getCurrentActivity().runOnUiThread(new Runnable() {
+		if(getMainActivity() != null){
+			getMainActivity().runOnUiThread(new Runnable() {
 			     @Override
 			     public void run() {
 			    	 for(AsyncTaskCompleteListener<List<mDialog>> updater : dlgs_updaters)
@@ -170,8 +176,8 @@ public class MyApplication extends Application {
 	}
 	
 	public void triggerMsgsUpdaters(final List<mMessage> msgs){
-		if(getCurrentActivity() != null){
-			getCurrentActivity().runOnUiThread(new Runnable() {
+		if(getMainActivity() != null){
+			getMainActivity().runOnUiThread(new Runnable() {
 			     @Override
 			     public void run() {
 			    	 for(AsyncTaskCompleteListener<List<mMessage>> updater : msgs_updaters)
@@ -225,20 +231,40 @@ public class MyApplication extends Application {
 			case MessageService.VK: ms = new Vk(this);
 			}
 			
-			ms.setup();
-			ms.init();
+			AsyncTaskCompleteListener<MessageService> asms = new AsyncTaskCompleteListener<MessageService>(){
+
+				@Override
+				public void onTaskComplete(MessageService ms) {
+					ms.init();
+					
+					String usingservices = "";
+					for(MessageService mst : myMsgServices){
+						usingservices += String.valueOf(mst.getServiceType()) + ",";
+					}
+					usingservices += String.valueOf(ms.getServiceType());
+					
+					Editor ed = sPref.edit();
+			    	ed.putString("usingservices", usingservices);
+			    	ed.commit();
+			    	
+			    	addMsgService(ms);
+			    	
+			    	ServicesMenuFragment fr = (ServicesMenuFragment) ((MainActivity) getMainActivity()).pagerAdapter.getRegisteredFragment(0);				
+					fr.POSITION = FragmentPagerAdapter.POSITION_NONE;
+					
+					ListViewSimpleFragment fr2 = (ListViewSimpleFragment) ((MainActivity) getMainActivity()).pagerAdapter.getRegisteredFragment(1);			
+					fr2.POSITION = FragmentPagerAdapter.POSITION_NONE;
+					
+					((MainActivity) getMainActivity()).pagerAdapter.notifyDataSetChanged();
+				}
+				
+			};
 			
-			String usingservices = "";
-			for(MessageService mst : myMsgServices){
-				usingservices += String.valueOf(mst.getServiceType()) + ",";
-			}
-			usingservices += String.valueOf(service_type);
+			ms.setup(asms);
 			
-			Editor ed = sPref.edit();
-	    	ed.putString("usingservices", usingservices);
-	    	ed.commit();
-	    	
-	    	addMsgService(ms);
+			
+			
+			
 			return true;
 		} else return false;
 	}

@@ -39,36 +39,50 @@ public class SelectServiceActivity extends Activity {
 	    gridview.setOnItemClickListener(new OnItemClickListener() {
 	        public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
 	        	Log.d("SelectServiceActivity::OnItemClickListener", "onItemClick");
-	            boolean added = false; 
+	            boolean added = false;
+	            Intent intent = new Intent();
 	            switch(position){
-	            case 0:	added = app.newService(MessageService.SMS);
-	            case 1:	added = app.newService(MessageService.VK);
+	            case 0:	intent.putExtra("service_type", MessageService.SMS); added = true;
+	            case 1:	intent.putExtra("service_type", MessageService.VK); added = true;
 	            }
-	            if(added)setResult(RESULT_ADDED, new Intent());
-	            else setResult(RESULT_NOT_ADDED, new Intent());
+	            if(added)setResult(RESULT_ADDED, intent);
+	            else setResult(RESULT_NOT_ADDED, intent);
 	            finish();	            
 	        }
 	    });
 	}
 	
 	@Override
+    protected void onStart(){
+    	super.onStart();
+    }
+	
+	@Override
 	protected void onResume() { 
 		super.onResume();
-		app.setCurrentActivity(this);
 		//VKUIHelper.onResume(this);
 	}
 	
 	@Override
     protected void onPause() {
     	super.onPause();
-    	app.setCurrentActivity(null);
+    }
+	
+	@Override
+    protected void onStop() {
+    	super.onStop();
     }
 
 	@Override 
 	protected void onDestroy() { 
 		super.onDestroy();
-		//VKUIHelper.onDestroy(this); 
+		//VKUIHelper.onDestroy(this);
 	}
+	
+	@Override
+    public void onBackPressed() {
+        super.onBackPressed();
+    }
 	
 	@Override 
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {

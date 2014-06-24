@@ -238,6 +238,12 @@ public class ServicesMenuFragment extends Fragment implements OnClickListener, O
 			if(isForDelete){
 				((MyApplication) getActivity().getApplication()).deleteService( getServiceFromButtonId( view.getId() ).getServiceType() );
 				//setForNormal();
+				ServicesMenuFragment fr = (ServicesMenuFragment) ((MainActivity) getActivity()).pagerAdapter.getRegisteredFragment(0);		
+				fr.POSITION = FragmentPagerAdapter.POSITION_NONE;
+				
+				ListViewSimpleFragment fr2 = (ListViewSimpleFragment) ((MainActivity) getActivity()).pagerAdapter.getRegisteredFragment(1);				
+				fr2.POSITION = FragmentPagerAdapter.POSITION_NONE;
+				
 				((MainActivity) getActivity()).pagerAdapter.notifyDataSetChanged();				
 			} else {
 				MessageService ser = getServiceFromButtonId(view.getId()); //TODO: replace for tag?
