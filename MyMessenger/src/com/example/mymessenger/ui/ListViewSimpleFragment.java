@@ -53,7 +53,7 @@ import android.widget.AdapterView.OnItemClickListener;
 
 
 public class ListViewSimpleFragment extends Fragment implements OnClickListener, OnTouchListener {
-	String mode;
+	public String mode;
 
 	private boolean dlg_isLoading = false; //Индикатор загрузки, для автоматической подгрузки диалогов при пролистывании
 	private boolean listview_refreshing_for_dlgs = false;
@@ -84,14 +84,24 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
     public static ListViewSimpleFragment newInstance(String mode) {
     	ListViewSimpleFragment fragmentFirst = new ListViewSimpleFragment();
     	fragmentFirst.mode = mode;
+
         return fragmentFirst;
+    }
+    
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        Log.d("ListViewSimpleFragment", "onCreate()");
     }
 	
 	@Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 
 		rootView = null;
-	    
+		
+		if(savedInstanceState != null)
+			mode = savedInstanceState.getString("fragment_mode");
+			    
 	    if (mode.equals("messages")) {
 	    	rootView = inflater.inflate(R.layout.msg_list, container, false);
 
@@ -595,7 +605,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 			if (visibleItemCount == 0) return;
 			
 			
-			if ( ( firstVisibleItem == 0 ) && app.getActiveService() != null && app.getActiveService().getActiveDialog() != null && !app.getActiveService().isAllMsgsDownloaded()){
+			if ( ( firstVisibleItem == 0 ) && app.getActiveService() != null && app.getActiveService().getActiveDialog() != null && app.getActiveService().isAllMsgsDownloaded()){
 				if(!listview.isRefreshing()){	
 					MessageService ms = app.getActiveService();
 					//last_requested_msgs_size = showing_messages.size();
@@ -647,6 +657,11 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
             this.emojiPopup.showEmojiPopup(false);
             this.emojiPopup.onKeyboardStateChanged(false, -1);
         }
+    }
+	
+	public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putString("fragment_mode", mode);
     }
 
 }

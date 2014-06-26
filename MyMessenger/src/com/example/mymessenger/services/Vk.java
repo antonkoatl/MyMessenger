@@ -907,7 +907,7 @@ public class Vk extends MessageService {
 			        	JSONArray items = response_json.getJSONArray("items");
 			        	
 			        	for (int i = 0; i < items.length(); i++) {
-			    			JSONObject item = items.getJSONObject(i);
+			    			JSONObject item = items.getJSONObject(i).getJSONObject("message");
 			    			mDialog mdl = new mDialog();			    				
 		    				String[] recipient_ids = item.getString( "user_id" ).split(",");
 		    				

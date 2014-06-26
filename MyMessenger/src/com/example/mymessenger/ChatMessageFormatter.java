@@ -22,10 +22,12 @@ import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.os.SystemClock;
 import android.text.Spannable;
 import android.text.Spannable.Factory;
 import android.text.style.ImageSpan;
 import android.util.DisplayMetrics;
+import android.util.Log;
 
 public class ChatMessageFormatter {
 	private static final Factory spannableFactory = Spannable.Factory.getInstance();
@@ -124,7 +126,18 @@ public class ChatMessageFormatter {
 	}
 	
 	public static Drawable getEmojiDrawableVk(String code, int size){
+		long tstart = SystemClock.currentThreadTimeMillis();
+		long ttemp = SystemClock.currentThreadTimeMillis();
+		long t1 = 0;
+		long t2 = 0;
+		long t3 = 0;
+		long t4 = 0;
+		long t5 = 0;
+		
 		String t = getCachedFile(Vk.getEmojiUrl(code), MyApplication.context);
+		t1 = SystemClock.currentThreadTimeMillis() - ttemp;
+	    ttemp = SystemClock.currentThreadTimeMillis();
+	      
 		if(t == null)return null;
         BitmapFactory.Options options = new BitmapFactory.Options();
         
@@ -132,19 +145,29 @@ public class ChatMessageFormatter {
         options.inTargetDensity = MyApplication.context.getResources().getDisplayMetrics().densityDpi;
         options.inScaled = true;
         
+        t2 = SystemClock.currentThreadTimeMillis() - ttemp;
+	    ttemp = SystemClock.currentThreadTimeMillis();
+        
         Bitmap b = BitmapFactory.decodeFile( t, options );
+        t3 = SystemClock.currentThreadTimeMillis() - ttemp;
+	    ttemp = SystemClock.currentThreadTimeMillis();
+	    
         if(size > 0){        	
         	b = Bitmap.createScaledBitmap(b, size, size, true);
         }
+        t4 = SystemClock.currentThreadTimeMillis() - ttemp;
+	    ttemp = SystemClock.currentThreadTimeMillis();
         
         Drawable d = new BitmapDrawable(MyApplication.context.getResources(), b);
         
         d.setBounds(0, 0, d.getIntrinsicWidth(), d.getIntrinsicHeight());
-        
+        t5 = SystemClock.currentThreadTimeMillis() - ttemp;
+	    ttemp = SystemClock.currentThreadTimeMillis();
+        /*
         if(size > 0){        	
         	b = Bitmap.createScaledBitmap(b, size, size, true);
-        }
-        
+        }*/
+	    Log.d("TIMING", "T1: " + String.valueOf(t1) + ", T2: " + String.valueOf(t2) + ", T3: " + String.valueOf(t3) + ", T4: " + String.valueOf(t4) + ", T5: " + String.valueOf(t5) + ", Total: " + String.valueOf(SystemClock.currentThreadTimeMillis() - tstart));
         return d;
 	}
 	

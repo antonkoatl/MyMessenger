@@ -170,7 +170,7 @@ public class MyDialogsAdapter extends BaseAdapter {
 	    tiv2 = SystemClock.currentThreadTimeMillis() - ttemp;
 	    ttemp = SystemClock.currentThreadTimeMillis();
 	    
-	    Log.d("TIMING", "INF: " + String.valueOf(tinf) + ", TL: " + String.valueOf(ttl) + ", IV1: " + String.valueOf(tiv1) + ", IV2: " + String.valueOf(tiv2) + ", Total: " + String.valueOf(SystemClock.currentThreadTimeMillis() - tstart));
+	    //Log.d("TIMING", "INF: " + String.valueOf(tinf) + ", TL: " + String.valueOf(ttl) + ", IV1: " + String.valueOf(tiv1) + ", IV2: " + String.valueOf(tiv2) + ", Total: " + String.valueOf(SystemClock.currentThreadTimeMillis() - tstart));
     	
     	//Log.d("MyDialogsAdapter", data.size() + " : " + position + " : " + dlg.getParticipantsNames());
 		return view;

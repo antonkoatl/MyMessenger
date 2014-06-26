@@ -1,8 +1,10 @@
 package com.example.mymessenger;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Stack;
 
 import com.example.mymessenger.services.MessageService;
@@ -19,6 +21,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.os.HandlerThread;
+import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentPagerAdapter;
 
 public class MyApplication extends Application {

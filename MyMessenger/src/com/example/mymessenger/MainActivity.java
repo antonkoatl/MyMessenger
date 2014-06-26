@@ -197,7 +197,7 @@ public class MainActivity extends ActionBarActivity {
 	@Override 
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		super.onActivityResult(requestCode, resultCode, data);
-		VKUIHelper.onActivityResult(requestCode, resultCode, data); 
+		VKUIHelper.onActivityResult(this, requestCode, resultCode, data); 
 		
 		if(requestCode == SelectServiceActivity.REQUEST_CODE){
 			if(resultCode == SelectServiceActivity.RESULT_ADDED){

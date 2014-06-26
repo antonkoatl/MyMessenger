@@ -39,7 +39,7 @@ public abstract class MessageService {
 	protected int dlgs_count;
 	protected boolean dl_all_dlgs_downloaded = false; //¬се диалоги загружены из сети
 	protected mDialog dl_current_dlg; //ѕри загрузке сообщений дл€ одного диалога, показывает что все загружены
-	protected boolean dl_all_msgs_downloaded = false;
+	protected boolean dl_all_msgs_downloaded = true;
 	protected boolean dl_all_new_msgs_downloaded = false;
 	protected int dlgs_thread_count = 0; // оличество потоков, загружающих диалоги в данных момент
 	protected Map<mDialog, IntegerMutable> msgs_thread_count; // оличество потоков, загружающих сообщени€ дл€ определЄнного диалога в данных момент
