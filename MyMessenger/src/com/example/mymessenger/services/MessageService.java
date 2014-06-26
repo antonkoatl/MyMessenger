@@ -254,10 +254,10 @@ public abstract class MessageService {
     				dlgs.add(mdl);
     				dlgs_count++;
     			}
-    			
-    			if(cb != null){    				
-    				cb.onTaskComplete(dlgs);
-	    		}
+    		}
+    		
+    		if(cb != null){    				
+				cb.onTaskComplete(dlgs);
     		}
 		}
     	

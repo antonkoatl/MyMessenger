@@ -4,8 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.example.mymessenger.AsyncTaskCompleteListener;
+import com.example.mymessenger.DlgListItem;
 import com.example.mymessenger.EmojiPopup;
 import com.example.mymessenger.MainActivity;
+import com.example.mymessenger.MsgListItem;
 import com.example.mymessenger.MyApplication;
 import com.example.mymessenger.MyDialogsAdapter;
 import com.example.mymessenger.MyMsgAdapter;
@@ -55,7 +57,6 @@ import android.widget.AdapterView.OnItemClickListener;
 public class ListViewSimpleFragment extends Fragment implements OnClickListener, OnTouchListener {
 	public String mode;
 
-	private boolean dlg_isLoading = false; //Индикатор загрузки, для автоматической подгрузки диалогов при пролистывании
 	private boolean listview_refreshing_for_dlgs = false;
 	
 	int async_complete_listener_msg_update_total_offset;
@@ -63,8 +64,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 	MyDialogsAdapter dlg_adapter;
 	private PullToRefreshListView listview;
 	MyApplication app;
-	List<mMessage> showing_messages;
-	List<mDialog> showing_dialogs;
+
 	private int supposedFVI;
 	
 	int loaded_dlgs_from_each;
@@ -107,9 +107,8 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 
 	    	listview = (PullToRefreshListView) rootView.findViewById(R.id.listview_object);
 	    	((Button) rootView.findViewById(R.id.msg_sendbutton)).setOnClickListener(this);
-			showing_messages = new ArrayList<mMessage>();
 			
-			msg_adapter = new MyMsgAdapter(getActivity(), showing_messages);
+			msg_adapter = new MyMsgAdapter(getActivity(), new ArrayList<mMessage>());
 			listview.setAdapter(msg_adapter);
 			
 			MessageService ms = app.getActiveService();
@@ -194,10 +193,8 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 	    if (mode.equals("dialogs")) {
 	    	rootView = inflater.inflate(R.layout.listview_simple, container, false);
 	    	listview = (PullToRefreshListView) rootView.findViewById(R.id.listview_object);
-	    	
-	    	showing_dialogs = new ArrayList<mDialog>();
-			
-			dlg_adapter = new MyDialogsAdapter(getActivity(), showing_dialogs);
+
+			dlg_adapter = new MyDialogsAdapter(getActivity(), null);
 			listview.setAdapter(dlg_adapter);
 
 			app.requestLastDialogs(20, 0, async_complete_listener_dlg);
@@ -348,13 +345,13 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 			for(mMessage msg : result){
 				boolean added = false;
 				
-				int tind = showing_messages.indexOf(msg);
+				int tind = msg_adapter.indexOf(msg);
 				if(tind != -1){
 					added = true;
 				} else {				
-					for(int i = 0; i < showing_messages.size(); i++){
-						if( Time.compare(msg.sendTime, showing_messages.get(i).sendTime ) <= 0 ){
-							showing_messages.add(i, msg);
+					for(int i = 0; i < msg_adapter.getCount(); i++){
+						if( Time.compare(msg.sendTime, ((MsgListItem) msg_adapter.getItem(i)).msg.sendTime ) <= 0 ){
+							msg_adapter.add(i, msg);
 							if(i == 0)append_count++;
 							added = true;
 							break;
@@ -362,7 +359,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 					}
 				}
 				if(!added){
-					showing_messages.add(msg);
+					msg_adapter.add(msg);
 					append_count++;
 				}
 	        }
@@ -416,21 +413,21 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 			for(mDialog dlg : result){
 				boolean added = false;
 				
-				int tind = showing_dialogs.indexOf(dlg);
+				int tind = dlg_adapter.indexOf(dlg);
 				if(tind != -1){
-					//showing_dialogs.set(tind, dlg);
-					mDialog dlg2 = showing_dialogs.remove(tind);
+					//showing_dialogs.set(tind, dlg); dlg_adapter.getItem(0).equals(dlg)
+					mDialog dlg2 = dlg_adapter.remove(tind);
 					dlg2.update(dlg);
 					dlg = dlg2;
 					changed = true;
 				}
 				
-				for(int i = 0; i < showing_dialogs.size(); i++){
-					if(showing_dialogs.get(i).getLastMessageTime() == null || dlg.getLastMessageTime() == null){
+				for(int i = 0; i < dlg_adapter.getCount(); i++){
+					if( ((DlgListItem) dlg_adapter.getItem(i)).dlg.getLastMessageTime() == null || dlg.getLastMessageTime() == null){
 						Log.d("smth", "wrong");
 					}
-					if( dlg.getLastMessageTime().after( showing_dialogs.get(i).getLastMessageTime() ) ){
-						showing_dialogs.add(i, dlg);
+					if( dlg.getLastMessageTime().after( ((DlgListItem) dlg_adapter.getItem(i)).dlg.getLastMessageTime() ) ){
+						dlg_adapter.add(i, dlg);
 						changed = true;
 						added = true;
 						break;
@@ -438,7 +435,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 				}
 
 				if(!added){
-					showing_dialogs.add(dlg);
+					dlg_adapter.add(dlg);
 					changed = true;
 				}
 	        }
@@ -458,30 +455,30 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 
 		@Override
 		public void onTaskComplete(List<mDialog> result) {
-			if(showing_dialogs.size() == 0)return;
+			if(dlg_adapter.getCount() == 0)return;
 			for(mDialog dlg : result){
-				if(dlg.last_msg_time.before( showing_dialogs.get(showing_dialogs.size() - 1).last_msg_time ) ){ // Поступивший диалог был позже, чем последний отображаемый
+				if(dlg.last_msg_time.before( ((DlgListItem) dlg_adapter.getItem(dlg_adapter.getCount() - 1)).dlg.last_msg_time ) ){ // Поступивший диалог был позже, чем последний отображаемый
 					continue;
 				}
 				
 				boolean updated = false;
 				
-				int tind = showing_dialogs.indexOf(dlg);
+				int tind = dlg_adapter.indexOf(dlg);
 				if(tind != -1){
-					mDialog dlg2 = showing_dialogs.remove(tind);
+					mDialog dlg2 = dlg_adapter.remove(tind);
 					dlg2.update(dlg);
 					dlg = dlg2;
 					updated = true;
 				}
 				
-				for(int i = 0; i < showing_dialogs.size(); i++){
-					if(showing_dialogs.get(i).getLastMessageTime() == null || dlg.getLastMessageTime() == null){
+				for(int i = 0; i < dlg_adapter.getCount(); i++){
+					if(((DlgListItem) dlg_adapter.getItem(i)).dlg.getLastMessageTime() == null || dlg.getLastMessageTime() == null){
 						Log.d("smth", "wrong");
 					}
-					if( dlg.getLastMessageTime().after( showing_dialogs.get(i).getLastMessageTime() ) ){
-						showing_dialogs.add(i, dlg);
+					if( dlg.getLastMessageTime().after( ((DlgListItem) dlg_adapter.getItem(i)).dlg.getLastMessageTime() ) ){
+						dlg_adapter.add(i, dlg);
 						if(!updated){
-							showing_dialogs.remove(showing_dialogs.size() - 1);
+							dlg_adapter.remove(dlg_adapter.getCount() - 1);
 						}
 						break;
 					}	
@@ -496,32 +493,32 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 	AsyncTaskCompleteListener<List<mMessage>> async_complete_listener_msg_update = new AsyncTaskCompleteListener<List<mMessage>>(){
 		@Override
 		public void onTaskComplete(List<mMessage> result) {
-			if(showing_messages.size() == 0)return;
+			if(msg_adapter.getCount() == 0)return;
 			
 			for(mMessage msg : result){
 				if(msg.msg_service != app.getActiveService().getServiceType()){ // Не тот сервис - источник
 					continue;
 				}
 				
-				if(msg.sendTime.before( showing_messages.get(0).sendTime ) ){ // Поступившее сообщение было позже, чем последнее отображаемое
+				if(msg.sendTime.before( ((MsgListItem) msg_adapter.getItem(0)).msg.sendTime ) ){ // Поступившее сообщение было позже, чем последнее отображаемое
 					continue;
 				}
 				
 				boolean updated = false;
 				
-				int tind = showing_messages.indexOf(msg);
+				int tind = msg_adapter.indexOf(msg);
 				if(tind != -1){
-					mMessage msg2 = showing_messages.remove(tind);
+					mMessage msg2 = msg_adapter.remove(tind);
 					msg2.update(msg);
 					msg = msg2;
 					updated = true;
 				}
 				
-				for(int i = showing_messages.size() - 1; i >= 0; i--){
-					if( msg.sendTime.after( showing_messages.get(i).sendTime) ){
-						showing_messages.add(i+1, msg);
+				for(int i = msg_adapter.getCount() - 1; i >= 0; i--){
+					if( msg.sendTime.after( ((MsgListItem) msg_adapter.getItem(0)).msg.sendTime ) ){
+						msg_adapter.add(i+1, msg);
 						if(!updated){
-							showing_messages.remove(0);
+							msg_adapter.remove(0);
 						}
 						break;
 					}	
@@ -537,7 +534,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 
 		@Override
 		public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-			mDialog dlg = showing_dialogs.get(position);
+			mDialog dlg = ((DlgListItem) dlg_adapter.getItem(position)).dlg;
 			app.setActiveService( dlg.getMsgServiceType() );
 			app.getService( dlg.getMsgServiceType() ).setActiveDialog(dlg);
 			ListViewSimpleFragment fr = (ListViewSimpleFragment) ((MainActivity) getActivity()).pagerAdapter.getRegisteredFragment(2);
@@ -558,10 +555,9 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 
 		@Override
 		public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
-			if ( !app.dlgs_loading_maxed && ( (totalItemCount - (firstVisibleItem + visibleItemCount)) < 5 ) && !dlg_isLoading) {
+			if ( !app.dlgs_loading_maxed && ( (totalItemCount - (firstVisibleItem + visibleItemCount)) < 5 ) && !app.isLoadingDlgs()) {
 				app.requestLastDialogs(20, loaded_dlgs_from_each, async_complete_listener_dlg);
 				loaded_dlgs_from_each += 20;
-				dlg_isLoading = true;
 			}
 		}
 
@@ -609,7 +605,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 				if(!listview.isRefreshing()){	
 					MessageService ms = app.getActiveService();
 					//last_requested_msgs_size = showing_messages.size();
-					ms.requestMessages(ms.getActiveDialog(), 20, showing_messages.size(), async_complete_listener_msg);		
+					ms.requestMessages(ms.getActiveDialog(), 20, msg_adapter.getCount(), async_complete_listener_msg);		
 					listview.setRefreshingNoAnimation();
 				}
 				
@@ -639,8 +635,9 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 		    int lastVisibleRow = listview.getLastVisiblePosition();
 		    
 		    for(int i=firstVisibleRow;i<=lastVisibleRow;i++){
-		    	mMessage msg = (mMessage) listview.getItemAtPosition(i);
-		    	if(msg == null)continue;
+		    	MsgListItem msl = ((MsgListItem) listview.getItemAtPosition(i));
+		    	if(msl == null)continue;
+		    	mMessage msg = msl.msg;
 		    	if(!msg.getFlag(mMessage.LOADING) && !msg.getFlag(mMessage.OUT) && !msg.getFlag(mMessage.READED)){
 		    		app.getActiveService().requestMarkAsReaded(msg);
 		    	}

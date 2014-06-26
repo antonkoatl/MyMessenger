@@ -14,9 +14,7 @@ public class mDialog {
 	public Time last_msg_time;
 	public String snippet;
 	public int snippet_out;
-	
-	public Spannable snippet_spannable_cache = null;
-	
+		
 	public mDialog() {
 		messages = new ArrayList<mMessage>();
 		participants = new ArrayList<mContact>();
@@ -75,12 +73,16 @@ public class mDialog {
 		
 	@Override
 	public boolean equals(Object o){
-		  if(o instanceof mDialog){
-			  mDialog toCompare = (mDialog) o;
+		if(o instanceof mDialog){
+			mDialog toCompare = (mDialog) o;
 		    return this.participants.equals(toCompare.participants);
-		  }
-		  return false;
 		}
+		if(o instanceof DlgListItem){
+			DlgListItem toCompare = (DlgListItem) o;
+		    return this.participants.equals(toCompare.dlg.participants);
+		}
+		return false;
+	}
 
 
 	public String getParticipantsAddresses() {

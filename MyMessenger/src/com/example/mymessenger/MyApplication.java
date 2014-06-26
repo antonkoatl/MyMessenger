@@ -20,6 +20,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
+import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentPagerAdapter;
@@ -42,6 +43,14 @@ public class MyApplication extends Application {
 	public boolean dlgs_loading_maxed = false;
 	
 	private static Activity mMainActivity = null;
+	
+	static HandlerThread thread1 = new HandlerThread("MsgListHandlerThread");
+	static Handler handler1 = null;
+	
+	static{
+		thread1.start();
+	    handler1 = new Handler(thread1.getLooper());
+	}
 	
 	@Override
 	public void onCreate() {
@@ -84,8 +93,6 @@ public class MyApplication extends Application {
         //Запуск сервиса обновлений        
         Intent intent1 = new Intent(this, UpdateService.class);
 		startService(intent1);
-		
-		
 	}
 	
 	public void addMsgService(MessageService mServive){

@@ -20,9 +20,7 @@ public class mMessage implements Parcelable {
 	public int msg_service;
 	
 	public int flags;
-	
-	public Spannable text_spannable_cache = null;
-		
+			
 	public mMessage() {
 		sendTime = new Time();
 	}
@@ -69,6 +67,10 @@ public class mMessage implements Parcelable {
 		if(o instanceof mMessage){
 			mMessage toCompare = (mMessage) o;
 		    return this.text.equals(toCompare.text) && Time.compare(this.sendTime, toCompare.sendTime) == 0;
+		}
+		if(o instanceof MsgListItem){
+			MsgListItem toCompare = (MsgListItem) o;
+		    return this.text.equals(toCompare.msg.text) && Time.compare(this.sendTime, toCompare.msg.sendTime) == 0;
 		}
         return false;
 	}
