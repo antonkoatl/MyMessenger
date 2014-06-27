@@ -73,9 +73,9 @@ public class SmsReceiver extends BroadcastReceiver {
 			msg.text = sms.getDisplayMessageBody();
 			msg.sendTime = new Time();
 			msg.sendTime.set(sms.getTimestampMillis());
+			msg.msg_service = MessageService.SMS;
 						
 			Intent intent2 = new Intent(MsgReceiver.ACTION_RECEIVE);
-		    intent2.putExtra("service_type", MessageService.SMS);
 		    intent2.putExtra("msg", msg);
 		    context.sendBroadcast(intent2);
 		    
