@@ -39,6 +39,7 @@ import com.example.mymessenger.AsyncTaskCompleteListener;
 import com.example.mymessenger.ChatMessageFormatter;
 import com.example.mymessenger.DBHelper;
 import com.example.mymessenger.DownloadService;
+import com.example.mymessenger.mGlobal;
 import com.example.mymessenger.MainActivity;
 import com.example.mymessenger.MsgReceiver;
 import com.example.mymessenger.MyApplication;
@@ -1021,9 +1022,10 @@ public class Vk extends MessageService {
 	public long[][] getEmojiCodes() {
 		return emoji;
 	}
-			
-	public static String getEmojiUrl(String code){
-		return "http://vk.com/images/emoji/" + code + ".png";
+	
+	@Override		
+	public String getEmojiUrl(long code){
+		return "http://vk.com/images/emoji/" + mGlobal.LongToHexStr(code) + ".png";
 	}
 
 	@Override

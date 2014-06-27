@@ -31,7 +31,7 @@ import android.widget.LinearLayout.LayoutParams;
 import android.widget.TextView;
 import java.util.Locale;
 
-import com.example.mymessenger.Global;
+import com.example.mymessenger.mGlobal;
 import com.example.mymessenger.R;
 
 public class PagerSlidingTabStrip extends HorizontalScrollView {
@@ -263,7 +263,7 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
             tab.setFocusable(true);
             tab.setGravity(Gravity.CENTER);
             tab.setSingleLine();
-            tab.setPadding(0, 0, Global.scale(5.0f), 0);
+            tab.setPadding(0, 0, mGlobal.scale(5.0f), 0);
             TextView bv = new TextView(getContext());
             bv.setText(badge);
             bv.setTextColor(-1);
@@ -308,7 +308,7 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
             wSum += this.tabsContainer.getChildAt(i).getMeasuredWidth();
             i++;
         }
-        expand = Math.abs(w - wSum) < Global.scale(50.0f) || this.shouldExpand;
+        expand = Math.abs(w - wSum) < mGlobal.scale(50.0f) || this.shouldExpand;
         i = 0;
         while (i < this.tabsContainer.getChildCount()) {
             View v = this.tabsContainer.getChildAt(i);

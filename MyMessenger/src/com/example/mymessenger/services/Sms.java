@@ -498,5 +498,11 @@ public class Sms extends MessageService {
 		return emoji_group_icons;
 	}
 
+	@Override
+	public String getEmojiUrl(long code) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 
 }

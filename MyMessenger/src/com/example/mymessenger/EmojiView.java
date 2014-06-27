@@ -41,6 +41,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import com.example.mymessenger.services.MessageService;
 import com.example.mymessenger.ui.PagerSlidingTabStrip;
@@ -78,10 +79,12 @@ public class EmojiView extends LinearLayout {
     private HashMap<Long, Float> useCounts;
     private ArrayList<GridView> views;
 	private MessageService ms;
+	private Context context;
 
 
     private class EmojiGridAdapter extends BaseAdapter {
         long[] data;
+        Drawable[] data2;
 
         class ImageView1 extends ImageView {
             ImageView1(Context $anonymous0) {
@@ -95,6 +98,7 @@ public class EmojiView extends LinearLayout {
 
         public EmojiGridAdapter(long[] d) {
             this.data = d;
+            this.data2 = new Drawable[d.length];
         }
 
         public int getCount() {
@@ -109,6 +113,43 @@ public class EmojiView extends LinearLayout {
             return data[position];
         }
 
+        class RunnableGetEmojiItem implements Runnable{
+        	ImageView iv;
+        	int position;
+        	boolean valid = true;
+        	
+        	RunnableGetEmojiItem(ImageView iv, int position){
+        		this.iv = iv;
+        		this.position = position;
+        	}
+        	
+			@Override
+			public void run() {
+
+			    AsyncTaskCompleteListener<Drawable> cbcf = new AsyncTaskCompleteListener<Drawable>(){
+					@Override
+					public void onTaskComplete(Drawable result) {
+						if(valid){
+							iv.setImageDrawable(result);
+							runners.remove(iv);
+						}
+					}
+			    	
+			    };
+			    
+				ChatMessageFormatter.getDownload(ms.getEmojiUrl( EmojiGridAdapter.this.data[position] ), cbcf, mGlobal.scale(30));
+				
+			}
+
+			public void makeInvalid() {
+				valid = false;
+			}
+        	
+        };
+        
+        Map<ImageView, Runnable> runners = new HashMap<ImageView, Runnable>();
+        
+        
         public View getView(int position, View convertView, ViewGroup parent) {
             ImageView iv;
             if (convertView != null) {
@@ -126,8 +167,18 @@ public class EmojiView extends LinearLayout {
                 iv.setBackgroundResource(R.drawable.highlight);
                 iv.setScaleType(ScaleType.CENTER);
             }
-            iv.setImageDrawable(ChatMessageFormatter.getEmojiDrawableVk( convertToHexStr(this.data[position]), Global.scale(30) ));
+            
             iv.setTag(Long.valueOf(this.data[position]));
+            iv.setImageDrawable(null);
+            
+            if(runners.containsKey(iv)){
+            	RunnableGetEmojiItem r = (RunnableGetEmojiItem) runners.get(iv);
+            	r.makeInvalid();            	
+            }
+            
+            RunnableGetEmojiItem r = new RunnableGetEmojiItem(iv, position);
+            runners.put(iv, r);
+            MyApplication.handler1.post(r);
             return iv;
         }
     }
@@ -180,6 +231,7 @@ public class EmojiView extends LinearLayout {
     
     public EmojiView(Context context, MessageService ms) {
         super(context);
+        this.context = context;
         this.views = new ArrayList();
         this.adapters = new ArrayList();
         this.ms = ms;
@@ -286,7 +338,7 @@ public class EmojiView extends LinearLayout {
         if (d != null) {
             v.setImageDrawable(d);
         }
-        v.setLayoutParams(new LayoutParams(Global.scale(r4f), Global.scale(r4f)));
+        v.setLayoutParams(new LayoutParams(mGlobal.scale(r4f), mGlobal.scale(r4f)));
         v.setOnClickListener(listener);
         StateListDrawable bg = new StateListDrawable();
         int[] r2_intA = new int[1];
@@ -303,7 +355,7 @@ public class EmojiView extends LinearLayout {
         int i = 0;
         while (i < data.length) {
             GridView gv = new GridView(getContext());
-            gv.setColumnWidth(Global.scale(45.0f));
+            gv.setColumnWidth(mGlobal.scale(45.0f));
             gv.setNumColumns(-1);
             EmojiGridAdapter adapter = new EmojiGridAdapter(data[i]);
             gv.setAdapter(adapter);
@@ -318,8 +370,8 @@ public class EmojiView extends LinearLayout {
         this.tabs.setShouldExpand(true);
         this.tabs.setIndicatorColor(-9275523);
         this.tabs.setUnderlineColor(1284347553);
-        this.tabs.setIndicatorHeight(Global.scale(2.0f));
-        this.tabs.setUnderlineHeight(Global.scale(2.0f));
+        this.tabs.setIndicatorHeight(mGlobal.scale(2.0f));
+        this.tabs.setUnderlineHeight(mGlobal.scale(2.0f));
         this.tabs.setDividerColor(864850327);
         this.tabs.setTabBackground(0);
         setBackgroundColor(-1315086);
@@ -337,7 +389,7 @@ public class EmojiView extends LinearLayout {
                 }
             }
         });
-        this.emojiTabsWrap.addView(bsBtn, new LayoutParams(Global.scale(61.0f), -1));
+        this.emojiTabsWrap.addView(bsBtn, new LayoutParams(mGlobal.scale(61.0f), -1));
         this.recentsWrap = new FrameLayout(getContext());
         this.recentsWrap.addView((View) this.views.get(0));
         TextView empty = new TextView(getContext());
@@ -348,7 +400,7 @@ public class EmojiView extends LinearLayout {
         this.recentsWrap.addView(empty);
         ((GridView) this.views.get(0)).setEmptyView(empty);
         //addView(this.emojiTabsWrap, new LayoutParams(-1, Global.scale(GalleryPickerFooterView.SIZE)));
-        addView(this.emojiTabsWrap, new LayoutParams(-1, Global.scale(48.0f)));
+        addView(this.emojiTabsWrap, new LayoutParams(-1, mGlobal.scale(48.0f)));
         addView(this.pager, new LayoutParams(-1, -1, 1.0f));
         loadRecents();
         this.tabs.setOnPageChangeListener(new OnPageChangeListener() {

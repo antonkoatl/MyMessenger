@@ -7,7 +7,7 @@ import android.text.Spannable;
 import android.text.Spannable.Factory;
 
 
-public class Global {
+public class mGlobal {
 	public static float displayDensity;
 	public static Resources res;
 	public static boolean inited;
@@ -32,5 +32,22 @@ public class Global {
         return Math.round(displayDensity * dip);
     }
 	
+	
+	public static String LongToHexStr(long code) {
+        int i = 0; 
+        while (i <= 4) {
+            int cc = (int) ((code >> ((i) * 16)) & 65535);
+            if (cc == 0) {
+                break;
+            }
+            i++;
+        }
+
+        if(i == 1)return String.format("%04X", code);
+        if(i == 2)return String.format("%08X", code);
+        if(i == 3)return String.format("%12X", code);
+        if(i == 4)return String.format("%16X", code);
+        return "";
+    }
 
 }

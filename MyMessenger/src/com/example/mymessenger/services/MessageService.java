@@ -507,4 +507,25 @@ public abstract class MessageService {
 	
 	msRefreshDlgs_cb msRefreshDlgsCb = new msRefreshDlgs_cb();
 	msRefreshMsgs_cb msRefreshMsgsCb = new msRefreshMsgs_cb();
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	// Emoji
+	public abstract String getEmojiUrl(long code);
+	
+	
+	
+	
+	
+	
 }

@@ -121,11 +121,11 @@ public class EmojiPopup {
 
 
     public void onKeyboardStateChanged(boolean visible, int h) {
-        if (Global.isTablet) {
+        if (mGlobal.isTablet) {
         } else {
             this.keyboardVisible = visible;
             this.keyboardHeight = h;
-            if (this.keyboardHeight <= Global.scale(100.0f) || (!visible)) {
+            if (this.keyboardHeight <= mGlobal.scale(100.0f) || (!visible)) {
                 Log.i("vk", new StringBuilder("ST Keyboard height = ").append(this.keyboardHeight).append(", visible = ").append(visible).toString());
             } else {
                 this.context.getSharedPreferences("emoji", 0).edit().putInt(new StringBuilder("kbd_height").append(this.context.getResources().getDisplayMetrics().widthPixels).append("_").append(this.context.getResources().getDisplayMetrics().heightPixels).toString(), this.keyboardHeight).commit();
@@ -148,7 +148,7 @@ public class EmojiPopup {
         
         
         IntentFilter filter;
-        if (Global.isTablet) { /*isTablet 
+        if (mGlobal.isTablet) { /*isTablet 
             if (show) {
                 if (this.emojiPopup == null) {
                     createEmojiPopup();
@@ -188,12 +188,12 @@ public class EmojiPopup {
             if (this.emojiPopup == null) {
                 createEmojiPopup();
             }
-            if (this.keyboardHeight <= Global.scale(100.0f)) {
-                this.keyboardHeight = this.context.getSharedPreferences("emoji", 0).getInt(new StringBuilder("kbd_height").append(this.context.getResources().getDisplayMetrics().widthPixels).append("_").append(this.context.getResources().getDisplayMetrics().heightPixels).toString(), Global.scale(200.0f));
+            if (this.keyboardHeight <= mGlobal.scale(100.0f)) {
+                this.keyboardHeight = this.context.getSharedPreferences("emoji", 0).getInt(new StringBuilder("kbd_height").append(this.context.getResources().getDisplayMetrics().widthPixels).append("_").append(this.context.getResources().getDisplayMetrics().heightPixels).toString(), mGlobal.scale(200.0f));
             }
             Log.i("vk", new StringBuilder("PP Keyboard height = ").append(this.keyboardHeight).toString());
-            if (this.keyboardHeight < Global.scale(200.0f)) {
-                this.keyboardHeight = Global.scale(200.0f);
+            if (this.keyboardHeight < mGlobal.scale(200.0f)) {
+                this.keyboardHeight = mGlobal.scale(200.0f);
             }
             if (this.keyboardVisible || this.keyboardHeight <= this.contentView.getHeight() / 2) {
                 this.emojiPopup.setHeight(MeasureSpec.makeMeasureSpec(this.keyboardHeight, MeasureSpec.EXACTLY));
