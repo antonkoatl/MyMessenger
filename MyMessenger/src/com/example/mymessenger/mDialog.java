@@ -5,6 +5,7 @@ import java.util.List;
 
 import android.text.Spannable;
 import android.text.format.Time;
+import android.view.View;
 
 public class mDialog {
 	public List<mMessage> messages;
@@ -14,6 +15,8 @@ public class mDialog {
 	public Time last_msg_time;
 	public String snippet;
 	public int snippet_out;
+	
+	public DlgListItem dlg_ui_helper;
 		
 	public mDialog() {
 		messages = new ArrayList<mMessage>();
@@ -105,6 +108,8 @@ public class mDialog {
 					messages.add(pos, m);
 				}
 			}
+			
+			dlg_ui_helper.update();
 		}		
 	}
 	
@@ -122,6 +127,13 @@ public class mDialog {
 			}
 			return true;
 		} else return false;
+	}
+
+
+	public void setupView(View view) {
+		if(dlg_ui_helper == null)dlg_ui_helper = new DlgListItem(this, (MyApplication) view.getContext().getApplicationContext() );
+		
+		dlg_ui_helper.setupView(view);
 	}
 
 }

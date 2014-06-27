@@ -26,16 +26,16 @@ import android.widget.TextView;
 
 public class MyDialogsAdapter extends BaseAdapter {
 	LayoutInflater lInflater;
-	List<DlgListItem> data;
+	List<mDialog> data;
 	Context context;
 	
 	public MyDialogsAdapter(Context context, List<mDialog> showing_dialogs) {
 	    lInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-	    data = new ArrayList<DlgListItem>();
+	    data = new ArrayList<mDialog>();
 	    
 	    if(showing_dialogs != null){
 		    for(mDialog dlg : showing_dialogs)
-		    	data.add( new DlgListItem(dlg, ((MyApplication) context.getApplicationContext())) );
+		    	data.add( dlg );
 	    }
 	    this.context = context;
 	}
@@ -64,9 +64,9 @@ public class MyDialogsAdapter extends BaseAdapter {
 			view = lInflater.inflate(R.layout.dialogs_row_layout, parent, false);
 		}
 		
-		DlgListItem dli = data.get(position);
+		mDialog dlg = data.get(position);
 		
-		dli.setupView(view);
+		dlg.setupView(view);
 		
 		return view;
 	}
@@ -76,17 +76,17 @@ public class MyDialogsAdapter extends BaseAdapter {
 	}
 
 	public void add(int i, mDialog dlg) {
-		data.add(i, new DlgListItem(dlg, ((MyApplication) context.getApplicationContext()) ));
+		data.add(i, dlg);
 		notifyDataSetChanged();	
 	}
 
-	public void add(mDialog msg) {
-		data.add(new DlgListItem(msg, ((MyApplication) context.getApplicationContext()) ));
+	public void add(mDialog dlg) {
+		data.add(dlg);
 		notifyDataSetChanged();	
 	}
 
 	public mDialog remove(int tind) {
-		mDialog t = data.remove(tind).dlg; 
+		mDialog t = data.remove(tind); 
 		notifyDataSetChanged();
 		return t;			
 	}

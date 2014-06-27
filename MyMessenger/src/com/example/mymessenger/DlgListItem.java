@@ -1,7 +1,5 @@
 package com.example.mymessenger;
 
-import com.example.mymessenger.MsgListItem.RunnableUpdateMsgItem;
-
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.BitmapFactory;
@@ -149,13 +147,6 @@ public class DlgListItem {
 
 	@Override
 	public boolean equals(Object obj) {
-		if (this.dlg == obj)
-			return true;
-		if (this.dlg != null && obj != null && dlg.getClass() == obj.getClass()){
-			mDialog other = (mDialog) obj;
-			return dlg.equals(other);
-		}
-		
 		if (this == obj)
 			return true;
 		if (obj == null)
@@ -169,6 +160,10 @@ public class DlgListItem {
 		} else if (!dlg.equals(other.dlg))
 			return false;
 		return true;
+	}
+
+	public void update() {
+		snippet_spannable_cache = null;
 	}
 	
 	

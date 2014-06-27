@@ -103,14 +103,6 @@ public class MsgListItem {
 
 	@Override
 	public boolean equals(Object obj) {
-		if (this.msg == obj)
-			return true;
-		if (this.msg != null && obj != null && msg.getClass() == obj.getClass()){
-			mMessage other = (mMessage) obj;
-			return msg.equals(other);
-		}
-
-		
 		if (this == obj)
 			return true;
 		if (obj == null)

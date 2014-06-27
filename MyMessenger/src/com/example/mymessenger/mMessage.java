@@ -4,6 +4,7 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.text.Spannable;
 import android.text.format.Time;
+import android.view.View;
 
 public class mMessage implements Parcelable {
 	public static final int OUT = 1;
@@ -20,6 +21,8 @@ public class mMessage implements Parcelable {
 	public int msg_service;
 	
 	public int flags;
+	
+	public MsgListItem msg_ui_helper;
 			
 	public mMessage() {
 		sendTime = new Time();
@@ -68,10 +71,6 @@ public class mMessage implements Parcelable {
 			mMessage toCompare = (mMessage) o;
 		    return this.text.equals(toCompare.text) && Time.compare(this.sendTime, toCompare.sendTime) == 0;
 		}
-		if(o instanceof MsgListItem){
-			MsgListItem toCompare = (MsgListItem) o;
-		    return this.text.equals(toCompare.msg.text) && Time.compare(this.sendTime, toCompare.msg.sendTime) == 0;
-		}
         return false;
 	}
 
@@ -85,5 +84,11 @@ public class mMessage implements Parcelable {
 
 	public void update(mMessage msg) {
 		this.flags = msg.flags;
+	}
+
+	public void setupUIView(View view) {
+		if(msg_ui_helper == null)msg_ui_helper = new MsgListItem(this, (MyApplication) view.getContext().getApplicationContext() );
+		
+		msg_ui_helper.setupView(view);
 	}
 }

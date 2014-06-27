@@ -4,10 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.example.mymessenger.AsyncTaskCompleteListener;
-import com.example.mymessenger.DlgListItem;
 import com.example.mymessenger.EmojiPopup;
 import com.example.mymessenger.MainActivity;
-import com.example.mymessenger.MsgListItem;
 import com.example.mymessenger.MyApplication;
 import com.example.mymessenger.MyDialogsAdapter;
 import com.example.mymessenger.MyMsgAdapter;
@@ -355,7 +353,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 					added = true;
 				} else {				
 					for(int i = 0; i < msg_adapter.getCount(); i++){
-						if( Time.compare(msg.sendTime, ((MsgListItem) msg_adapter.getItem(i)).msg.sendTime ) <= 0 ){
+						if( Time.compare(msg.sendTime, ((mMessage) msg_adapter.getItem(i)).sendTime ) <= 0 ){
 							msg_adapter.add(i, msg);
 							if(i == 0)append_count++;
 							added = true;
@@ -428,10 +426,10 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 				}
 				
 				for(int i = 0; i < dlg_adapter.getCount(); i++){
-					if( ((DlgListItem) dlg_adapter.getItem(i)).dlg.getLastMessageTime() == null || dlg.getLastMessageTime() == null){
+					if( ((mDialog) dlg_adapter.getItem(i)).getLastMessageTime() == null || dlg.getLastMessageTime() == null){
 						Log.d("smth", "wrong");
 					}
-					if( dlg.getLastMessageTime().after( ((DlgListItem) dlg_adapter.getItem(i)).dlg.getLastMessageTime() ) ){
+					if( dlg.getLastMessageTime().after( ((mDialog) dlg_adapter.getItem(i)).getLastMessageTime() ) ){
 						dlg_adapter.add(i, dlg);
 						changed = true;
 						added = true;
@@ -462,7 +460,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 		public void onTaskComplete(List<mDialog> result) {
 			if(dlg_adapter.getCount() == 0)return;
 			for(mDialog dlg : result){
-				if(dlg.last_msg_time.before( ((DlgListItem) dlg_adapter.getItem(dlg_adapter.getCount() - 1)).dlg.last_msg_time ) ){ // Поступивший диалог был позже, чем последний отображаемый
+				if(dlg.last_msg_time.before( ((mDialog) dlg_adapter.getItem(dlg_adapter.getCount() - 1)).last_msg_time ) ){ // Поступивший диалог был позже, чем последний отображаемый
 					continue;
 				}
 				
@@ -477,10 +475,10 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 				}
 				
 				for(int i = 0; i < dlg_adapter.getCount(); i++){
-					if(((DlgListItem) dlg_adapter.getItem(i)).dlg.getLastMessageTime() == null || dlg.getLastMessageTime() == null){
+					if(((mDialog) dlg_adapter.getItem(i)).getLastMessageTime() == null || dlg.getLastMessageTime() == null){
 						Log.d("smth", "wrong");
 					}
-					if( dlg.getLastMessageTime().after( ((DlgListItem) dlg_adapter.getItem(i)).dlg.getLastMessageTime() ) ){
+					if( dlg.getLastMessageTime().after( ((mDialog) dlg_adapter.getItem(i)).getLastMessageTime() ) ){
 						dlg_adapter.add(i, dlg);
 						if(!updated){
 							dlg_adapter.remove(dlg_adapter.getCount() - 1);
@@ -505,7 +503,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 					continue;
 				}
 				
-				if(msg.sendTime.before( ((MsgListItem) msg_adapter.getItem(0)).msg.sendTime ) ){ // Поступившее сообщение было позже, чем последнее отображаемое
+				if(msg.sendTime.before( ((mMessage) msg_adapter.getItem(0)).sendTime ) ){ // Поступившее сообщение было позже, чем последнее отображаемое
 					continue;
 				}
 				
@@ -520,7 +518,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 				}
 				
 				for(int i = msg_adapter.getCount() - 1; i >= 0; i--){
-					if( msg.sendTime.after( ((MsgListItem) msg_adapter.getItem(0)).msg.sendTime ) ){
+					if( msg.sendTime.after( ((mMessage) msg_adapter.getItem(0)).sendTime ) ){
 						msg_adapter.add(i+1, msg);
 						if(!updated){
 							msg_adapter.remove(0);
@@ -539,7 +537,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 
 		@Override
 		public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-			mDialog dlg = ((DlgListItem) dlg_adapter.getItem(position)).dlg;
+			mDialog dlg = ((mDialog) dlg_adapter.getItem(position));
 			app.setActiveService( dlg.getMsgServiceType() );
 			app.getService( dlg.getMsgServiceType() ).setActiveDialog(dlg);
 			((MainActivity) getActivity()).pagerAdapter.recreateFragment(2);
@@ -637,9 +635,8 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 		    int lastVisibleRow = listview.getLastVisiblePosition();
 		    
 		    for(int i=firstVisibleRow;i<=lastVisibleRow;i++){
-		    	MsgListItem msl = ((MsgListItem) listview.getItemAtPosition(i));
-		    	if(msl == null)continue;
-		    	mMessage msg = msl.msg;
+		    	mMessage msg = ((mMessage) listview.getItemAtPosition(i));
+		    	if(msg == null)continue;
 		    	if(!msg.getFlag(mMessage.LOADING) && !msg.getFlag(mMessage.OUT) && !msg.getFlag(mMessage.READED)){
 		    		app.getActiveService().requestMarkAsReaded(msg);
 		    	}

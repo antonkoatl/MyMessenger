@@ -29,7 +29,7 @@ import android.widget.TextView;
 
 public class MyMsgAdapter extends BaseAdapter {
 	LayoutInflater lInflater;
-	List<MsgListItem> data;
+	List<mMessage> data;
 	Context context;
 	
 	
@@ -37,10 +37,10 @@ public class MyMsgAdapter extends BaseAdapter {
 	public MyMsgAdapter(Context context, List<mMessage> msgs) {
 	    lInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 	    
-	    data = new ArrayList<MsgListItem>();
+	    data = new ArrayList<mMessage>();
 	    if(msgs != null){
 		    for(mMessage msg : msgs)
-		    	data.add( new MsgListItem(msg, ((MyApplication) context.getApplicationContext())) );
+		    	data.add( msg );
 	    }
 	    this.context = context;
 	}
@@ -69,11 +69,9 @@ public class MyMsgAdapter extends BaseAdapter {
 	    if (view == null) {
 	    	view = lInflater.inflate(R.layout.list_row_layout, parent, false);
 	    }
-	    
-	    
-	    MsgListItem mli = data.get(position);
-	    
-	    mli.setupView(view);
+
+	    mMessage msg = data.get(position);
+	    msg.setupUIView(view);
 	    	
 		return view;
 	}
@@ -97,17 +95,17 @@ public class MyMsgAdapter extends BaseAdapter {
 	}
 
 	public void add(int i, mMessage msg) {
-		data.add(i, new MsgListItem(msg, ((MyApplication) context.getApplicationContext()) ));
+		data.add(i, msg);
 		notifyDataSetChanged();	
 	}
 
 	public void add(mMessage msg) {
-		data.add(new MsgListItem(msg, ((MyApplication) context.getApplicationContext()) ));
+		data.add(msg);
 		notifyDataSetChanged();	
 	}
 
 	public mMessage remove(int tind) {
-		mMessage t = data.remove(tind).msg; 
+		mMessage t = data.remove(tind); 
 		notifyDataSetChanged();
 		return t;			
 	}

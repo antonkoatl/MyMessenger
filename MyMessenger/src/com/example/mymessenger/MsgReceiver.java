@@ -39,8 +39,12 @@ public class MsgReceiver extends BroadcastReceiver {
 			dlgs.add(dlg);
 			app.triggerDlgsUpdaters(dlgs);
 			app.triggerMsgsUpdaters(msgs);
-			if(!msg.getFlag(mMessage.OUT) && app.getUA() != app.UA_MSGS_LIST && app.getUA() != app.UA_DLGS_LIST)
-				createInfoNotification(context, msg);
+			if(!msg.getFlag(mMessage.OUT)){
+				if(app.getUA() != app.UA_MSGS_LIST && app.getUA() != app.UA_DLGS_LIST)
+					createInfoNotification(context, msg);
+				else
+					createSimpleNotification(context, msg);
+			}
 		}
 
 		if(intent.getAction().equals(ACTION_UPDATE)){
@@ -97,6 +101,22 @@ public class MsgReceiver extends BroadcastReceiver {
 
 	        Notification notification = nb.build(); //генерируем уведомление
 	        manager.notify(0 , notification); // отображаем его пользователю.
+	      //notifications.put(lastId, notification); //теперь мы можем обращаться к нему по id
+	    //return lastId++;
+	  }
+	
+	public void createSimpleNotification(Context context, mMessage msg){
+		manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+		
+	    Intent notificationIntent = new Intent(context, MainActivity.class); // по клику на уведомлении откроется MainActivity
+	    notificationIntent.putExtra("notification_clicked_msg", true);
+	    notificationIntent.putExtra("msg", msg);
+	    
+	    NotificationCompat.Builder nb = new NotificationCompat.Builder(context)
+	        .setDefaults(Notification.DEFAULT_ALL); // звук, вибро и диодный индикатор выставляются по умолчанию
+
+	        Notification notification = nb.build(); //генерируем уведомление
+	        manager.notify(1, notification); // отображаем его пользователю.
 	      //notifications.put(lastId, notification); //теперь мы можем обращаться к нему по id
 	    //return lastId++;
 	  }
