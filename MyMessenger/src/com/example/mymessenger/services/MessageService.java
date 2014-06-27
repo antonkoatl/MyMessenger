@@ -274,48 +274,12 @@ public abstract class MessageService {
 
 		@Override
 		public void onTaskComplete(List<mMessage> result) {
-			SQLiteDatabase db = msApp.dbHelper.getWritableDatabase();
-    		String my_table_name = msApp.dbHelper.getTableNameMsgs(MessageService.this);
-    		int dlg_key = msApp.dbHelper.getDlgId(dlg, MessageService.this);
-    		List<mMessage> msgs = new ArrayList<mMessage>();
-    		
-    		for (mMessage msg : result) {
-				String selection = DBHelper.colDlgkey + " = ? AND " + DBHelper.colSendtime + " = ? AND " + DBHelper.colBody + " = ?";
-    			String[] selectionArgs = { String.valueOf(dlg_key), String.valueOf(msg.sendTime.toMillis(false)), msg.text };
-    			Cursor c = db.query(my_table_name, null, selection, selectionArgs, null, null, null);
-
-    			if(c.moveToFirst()){
-    				int  flags_in_db = c.getInt( c.getColumnIndex(DBHelper.colFlags) );
-    				
-    				if(msg.flags != flags_in_db){
-    					//update
-    					int id = c.getInt(c.getColumnIndex(DBHelper.colId));
-    					c.close();
-	    				
-    					msApp.dbHelper.updateMsg(id, msg, MessageService.this);			    					
-	    							    				
-	    				msgs.add(msg);
-    				} else {
-    					//not update
-    					c.close();
-    					continue;
-    				}
-    			} else {
-    				//add
-    				c.close();
-    				
-    				msApp.dbHelper.insertMsg(msg, my_table_name, dlg_key);
-    				    				
-    				msgs.add(msg);
-    			}
-    			
-    			
+			
+			result = msApp.update_db_msgs(result, MessageService.this, dlg);
+			
+			if(cb != null){    				
+				cb.onTaskComplete(result);
     		}
-    		
-    		if(cb != null){    				
-				cb.onTaskComplete(msgs);
-    		}
-    		
 		}
     	
     }

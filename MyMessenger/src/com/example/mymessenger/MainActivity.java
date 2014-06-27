@@ -48,6 +48,9 @@ public class MainActivity extends ActionBarActivity {
         super.onCreate(savedInstanceState);
         app.setMainActivity(this);
         
+        Intent intent = getIntent(); 
+        boolean notification_clicked_msg = intent.getBooleanExtra("notification_clicked_msg", false);
+        
         Log.d("MainActivity", "onCreate^" + String.valueOf(savedInstanceState == null));
         
         setContentView(R.layout.pager);
@@ -61,7 +64,26 @@ public class MainActivity extends ActionBarActivity {
         mViewPager = (ViewPager) findViewById(R.id.pager);
         mViewPager.setAdapter(pagerAdapter);
         
-        
+        if(notification_clicked_msg){
+        	mMessage msg = (mMessage) intent.getParcelableExtra("msg");
+        	app.setActiveService(msg.msg_service);
+        	MessageService ms = app.getActiveService();
+        	
+        	mDialog dlg = new mDialog();        	
+        	dlg.participants.add( msg.respondent );			
+        	dlg.snippet = msg.text;
+			dlg.snippet_out = msg.getFlag(mMessage.OUT) ? 1 : 0;
+			dlg.last_msg_time.set(msg.sendTime);
+			dlg.msg_service_type = msg.msg_service;
+			
+        	ms.setActiveDialog(dlg);
+        	List<mDialog> dlgs = new ArrayList<mDialog>();
+        	dlgs.add(dlg);
+        	app.triggerDlgsUpdaters(dlgs);
+        	
+        	pagerAdapter.recreateFragment(2);
+        	mViewPager.setCurrentItem(2, false);
+        }
         
         sPref = getSharedPreferences("MyPref", MODE_PRIVATE);
     }

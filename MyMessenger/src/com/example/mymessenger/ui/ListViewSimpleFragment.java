@@ -55,7 +55,9 @@ import android.widget.AdapterView.OnItemClickListener;
 
 
 public class ListViewSimpleFragment extends Fragment implements OnClickListener, OnTouchListener {
-	public String mode;
+	public static int DIALOGS = 1;
+	public static int MESSAGES = 2;
+	public int mode;
 
 	private boolean listview_refreshing_for_dlgs = false;
 	
@@ -81,7 +83,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 	public int POSITION = FragmentPagerAdapter.POSITION_UNCHANGED;
 	
 	// newInstance constructor for creating fragment with arguments
-    public static ListViewSimpleFragment newInstance(String mode) {
+    public static ListViewSimpleFragment newInstance(int mode) {
     	ListViewSimpleFragment fragmentFirst = new ListViewSimpleFragment();
     	fragmentFirst.mode = mode;
 
@@ -100,9 +102,9 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 		rootView = null;
 		
 		if(savedInstanceState != null)
-			mode = savedInstanceState.getString("fragment_mode");
+			mode = savedInstanceState.getInt("fragment_mode");
 			    
-	    if (mode.equals("messages")) {
+	    if (mode == MESSAGES) {
 	    	rootView = inflater.inflate(R.layout.msg_list, container, false);
 
 	    	listview = (PullToRefreshListView) rootView.findViewById(R.id.listview_object);
@@ -190,7 +192,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 	        this.emojiPopup = new EmojiPopup(getActivity(), rootView, R.drawable.ic_msg_panel_smiles, app.getActiveService());
 	    }
 	    
-	    if (mode.equals("dialogs")) {
+	    if (mode == DIALOGS) {
 	    	rootView = inflater.inflate(R.layout.listview_simple, container, false);
 	    	listview = (PullToRefreshListView) rootView.findViewById(R.id.listview_object);
 
@@ -259,6 +261,8 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 	public void onStart(){
 		super.onStart();
 		Log.d("ListViewSimpleFragment", "onStart");
+		if(mode == DIALOGS)app.setUA(MyApplication.UA_DLGS_LIST);
+		if(mode == MESSAGES)app.setUA(MyApplication.UA_MSGS_LIST);
 		// Apply any required UI change now that the Fragment is visible.
 	}
 	
@@ -282,6 +286,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 	public void onStop(){
 		super.onStop();
 		Log.d("ListViewSimpleFragment", "onStop");
+		app.setUA(0);
 		// Apply any required UI change now that the Fragment is visible.
 	}
 		
@@ -537,12 +542,9 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 			mDialog dlg = ((DlgListItem) dlg_adapter.getItem(position)).dlg;
 			app.setActiveService( dlg.getMsgServiceType() );
 			app.getService( dlg.getMsgServiceType() ).setActiveDialog(dlg);
-			ListViewSimpleFragment fr = (ListViewSimpleFragment) ((MainActivity) getActivity()).pagerAdapter.getRegisteredFragment(2);
-			
-			fr.POSITION = FragmentPagerAdapter.POSITION_NONE;
+			((MainActivity) getActivity()).pagerAdapter.recreateFragment(2);
 			
 			//fr.refresh_data();
-            ((MainActivity) getActivity()).pagerAdapter.notifyDataSetChanged();
 			((MainActivity) getActivity()).mViewPager.setCurrentItem(2);			
 			//Intent intent = new Intent(getActivity(), ActivityTwo.class);
 			//intent.putExtra("mode", "messages");
@@ -630,7 +632,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 
 	@Override
 	public boolean onTouch(View v, MotionEvent event) {
-		if(mode.equals("messages")){
+		if(mode == MESSAGES){
 			int firstVisibleRow = listview.getFirstVisiblePosition();
 		    int lastVisibleRow = listview.getLastVisiblePosition();
 		    
@@ -658,7 +660,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 	
 	public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        outState.putString("fragment_mode", mode);
+        outState.putInt("fragment_mode", mode);
     }
 
 }

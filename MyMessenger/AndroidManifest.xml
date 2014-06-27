@@ -43,6 +43,7 @@
         <receiver android:name="MsgReceiver">
             <intent-filter>
                 <action android:name="android.mymessenger.MSG_RECEIVED"/>
+                <action android:name="android.mymessenger.MSG_UPDATED"/>
             </intent-filter>
         </receiver>
         <receiver android:name="DownloaderResultReceiver">

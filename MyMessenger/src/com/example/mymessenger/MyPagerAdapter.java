@@ -33,9 +33,9 @@ public class MyPagerAdapter extends FragmentPagerAdapter {
         case 0:
             return new ServicesMenuFragment();
         case 1:
-            return ListViewSimpleFragment.newInstance("dialogs");
+            return ListViewSimpleFragment.newInstance(ListViewSimpleFragment.DIALOGS);
         default:
-            return ListViewSimpleFragment.newInstance("messages");
+            return ListViewSimpleFragment.newInstance(ListViewSimpleFragment.MESSAGES);
         }
     }
 
@@ -87,6 +87,22 @@ public class MyPagerAdapter extends FragmentPagerAdapter {
             return ((ListViewSimpleFragment) object).POSITION;
         return POSITION_NONE;
     }
+
+	public void recreateFragment(int n) {
+		if(n == 0){
+			ServicesMenuFragment fr = (ServicesMenuFragment) getRegisteredFragment(n);
+			if(fr != null)
+				fr.POSITION = FragmentPagerAdapter.POSITION_NONE;
+		}
+		
+		if(n == 1 || n == 2){
+			ListViewSimpleFragment fr = (ListViewSimpleFragment) getRegisteredFragment(n);
+			if(fr != null)
+				fr.POSITION = FragmentPagerAdapter.POSITION_NONE;
+		}
+		
+		notifyDataSetChanged();		
+	}
 
 	
 }

@@ -14,6 +14,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteDatabase.CursorFactory;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.net.Uri;
+import android.util.Log;
 
 public class DBHelper extends SQLiteOpenHelper {
 	public static final String dbName = "myDB";
@@ -68,6 +69,35 @@ public class DBHelper extends SQLiteOpenHelper {
 		
 		if(c.moveToFirst()){
 			dlg_key = c.getInt( c.getColumnIndex(DBHelper.colId) );
+		}
+		c.close();
+		
+		return dlg_key;
+	}
+	
+	public int getDlgId(String from_id, MessageService ms) {
+		SQLiteDatabase db = getReadableDatabase();
+		
+		String my_table_name = getTableNameDlgs(ms);
+		String selection = DBHelper.colParticipants + " = ?";
+		String selection_args[] = {from_id};
+		Cursor c = db.query(my_table_name, null, selection, selection_args, null, null, null);
+		
+		int dlg_key = 0;
+		
+		if(c.moveToFirst()){
+			dlg_key = c.getInt( c.getColumnIndex(DBHelper.colId) );
+		} else {
+			ContentValues cv = new ContentValues();
+			cv.put(colParticipants, from_id);
+			SQLiteDatabase dbw = getWritableDatabase();
+			dbw.insert(my_table_name, null, cv);
+			
+			if(c.moveToFirst()){
+				dlg_key = c.getInt( c.getColumnIndex(DBHelper.colId) );
+			} else {
+				Log.d("DBHelper", "Dlg not created!");
+			}
 		}
 		c.close();
 		
@@ -349,4 +379,29 @@ public class DBHelper extends SQLiteOpenHelper {
 		
 		return msg;
 	}
+
+	
+	public mDialog getDlgById(int dlg_key, MessageService ms) {
+		mDialog dlg = null;
+		SQLiteDatabase db = getReadableDatabase();
+		
+		String table_name = getTableNameDlgs(ms);
+		String selection = colId + " = " + String.valueOf(dlg_key);
+		
+		Cursor cursor = db.query(table_name, null, selection, null, null, null, null);
+		
+		if(cursor.moveToFirst()){
+			dlg = new mDialog();
+			dlg.participants.add( ms.getContact( cursor.getString(cursor.getColumnIndex(colParticipants)) ) );
+        	if(!cursor.isNull( cursor.getColumnIndex(colLastmsgtime) )) dlg.last_msg_time.set( cursor.getLong(cursor.getColumnIndex(colLastmsgtime)) );
+        	if(!cursor.isNull( cursor.getColumnIndex(colSnippet) )) dlg.snippet = cursor.getString(cursor.getColumnIndex(colSnippet));
+        	if(!cursor.isNull( cursor.getColumnIndex(colSnippetOut) )) dlg.snippet_out = cursor.getInt(cursor.getColumnIndex(colSnippetOut));
+        	dlg.msg_service_type = ms.getServiceType();
+		}
+		cursor.close();
+		
+		return dlg;
+	}
+
+	
 }

@@ -550,60 +550,54 @@ public class Vk extends MessageService {
 				  
 				  if(item.getInt(0) == 1) { // 1,$message_id,$flags -- замена флагов сообщения (FLAGS:=$flags)
 					  int message_id = item.getInt(1);
-					  mMessage msg = msApp.dbHelper.getMsgByMsgId(message_id, Vk.this);
-					  if(msg != null){
-						  int flags = item.getInt(2);
-						  
-						  msg.setFlag(mMessage.READED, (flags & 1) != 1);
-						  msg.setFlag(mMessage.OUT, (flags & 2) == 2);
-						  
-						  Intent intent = new Intent(MsgReceiver.ACTION_UPDATE);
-				    	  intent.putExtra("service_type", getServiceType());
-				    	  intent.putExtra("msg", msg);
-				    	  msApp.sendBroadcast(intent);
-					  }
+					  int flags = item.getInt(2);
+					  
+					  Intent intent = new Intent(MsgReceiver.ACTION_UPDATE);
+					  intent.putExtra("msg_flags", flags);
+			    	  intent.putExtra("msg_id", message_id);
+			    	  intent.putExtra("msg_mode", MsgReceiver.UPDATE_REPLACE);
+			    	  intent.putExtra("service_type", getServiceType());
+			    	  msApp.sendBroadcast(intent);
 				  }
 
 				  if(item.getInt(0) == 2) { // 2,$message_id,$mask[,$user_id] -- установка флагов сообщения (FLAGS|=$mask)
 					  int message_id = item.getInt(1);
-					  mMessage msg = msApp.dbHelper.getMsgByMsgId(message_id, Vk.this);
-					  if(msg != null){
-						  int flags = item.getInt(2);
-						  
-						  msg.setFlag(mMessage.READED, (flags & 1) != 1);
-						  msg.setFlag(mMessage.OUT, (flags & 2) == 2);
-						  
-						  Intent intent = new Intent(MsgReceiver.ACTION_UPDATE);
-				    	  intent.putExtra("service_type", getServiceType());
-				    	  intent.putExtra("msg", msg);
-				    	  msApp.sendBroadcast(intent);
-					  }
+					  int flags = item.getInt(2);
+
+					  Intent intent = new Intent(MsgReceiver.ACTION_UPDATE);
+					  intent.putExtra("msg_flags", flags);
+			    	  intent.putExtra("msg_id", message_id);
+			    	  intent.putExtra("msg_mode", MsgReceiver.UPDATE_INSTALL);
+			    	  intent.putExtra("service_type", getServiceType());
+			    	  msApp.sendBroadcast(intent);
 				  }
 
 				  if(item.getInt(0) == 3) { // 3,$message_id,$mask[,$user_id] -- сброс флагов сообщения (FLAGS&=~$mask)
 					  int message_id = item.getInt(1);
-					  mMessage msg = msApp.dbHelper.getMsgByMsgId(message_id, Vk.this);
-					  if(msg != null){
-						  int flags = item.getInt(2);
-						  
-						  msg.setFlag(mMessage.READED, (flags & 1) == 1);
-						  msg.setFlag(mMessage.OUT, (flags & 2) != 2);
-						  
-						  Intent intent = new Intent(MsgReceiver.ACTION_UPDATE);
-				    	  intent.putExtra("service_type", getServiceType());
-				    	  intent.putExtra("msg", msg);
-				    	  msApp.sendBroadcast(intent);
-					  }
+					  int flags = item.getInt(2);
+
+					  Intent intent = new Intent(MsgReceiver.ACTION_UPDATE);
+			    	  intent.putExtra("msg_flags", flags);
+			    	  intent.putExtra("msg_id", message_id);
+			    	  intent.putExtra("msg_mode", MsgReceiver.UPDATE_RESET);
+			    	  intent.putExtra("service_type", getServiceType());
+			    	  msApp.sendBroadcast(intent);
+
 				  }
 
 				  if (item.getInt(0) == 4) { // 4,$message_id,$flags,$from_id,$timestamp,$subject,$text,$attachments -- добавление нового сообщения
 					  String msg_id = item.getString(1);
 					  int flags = item.getInt(2);
 					  String from_id = item.getString(3);
-					  int timestamp = item.getInt(4);
+					  long timestamp = item.getInt(4);
 					  String subject = item.getString(5);
-					  String text = item.getString(6);
-					 
+					  String text = item.getString(6);					  
+					  JSONObject attachments = item.getJSONObject(7);
+					  
+					  if(attachments.has("from")){ //chat, skip
+						  return;
+					  }
+					  
 					  mMessage msg = new mMessage();
 					  msg.respondent = getContact( from_id );
 					  msg.setFlag(mMessage.OUT, (flags & 2) == 2);
@@ -613,7 +607,6 @@ public class Vk extends MessageService {
 		 			  msg.msg_service = getServiceType();
 					 
 					  Intent intent = new Intent(MsgReceiver.ACTION_RECEIVE);
-			    	  intent.putExtra("service_type", getServiceType());
 			    	  intent.putExtra("msg", msg);
 			    	  msApp.sendBroadcast(intent);
 
@@ -908,7 +901,11 @@ public class Vk extends MessageService {
 			        	
 			        	for (int i = 0; i < items.length(); i++) {
 			    			JSONObject item = items.getJSONObject(i).getJSONObject("message");
-			    			mDialog mdl = new mDialog();			    				
+			    			if(item.has("chat_id")){ //chat, skipping
+			        			continue;
+			        		}
+			    			
+			    			mDialog mdl = new mDialog();    				
 		    				String[] recipient_ids = item.getString( "user_id" ).split(",");
 		    				
 		    				for(String rid : recipient_ids){

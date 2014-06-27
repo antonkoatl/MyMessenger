@@ -20,6 +20,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.v4.app.Fragment;
@@ -46,6 +48,19 @@ public class MyApplication extends Application {
 	
 	static HandlerThread thread1 = new HandlerThread("MsgListHandlerThread");
 	static Handler handler1 = null;
+	
+	public int active_user_action = 0;
+	public static final int UA_SERVICES_MENU = 1;
+	public static final int UA_DLGS_LIST = 2;
+	public static final int UA_MSGS_LIST = 3;
+	
+	public void setUA(int action){
+		active_user_action = action;
+	}
+	
+	public int getUA(){
+		return active_user_action;
+	}
 	
 	static{
 		thread1.start();
@@ -184,8 +199,9 @@ public class MyApplication extends Application {
 			});
 		}		
 	}
-	
+		
 	public void triggerMsgsUpdaters(final List<mMessage> msgs){
+		
 		if(getMainActivity() != null){
 			getMainActivity().runOnUiThread(new Runnable() {
 			     @Override
@@ -317,6 +333,60 @@ public class MyApplication extends Application {
 		}
 	}
 
+	public List<mMessage> update_db_msgs(List<mMessage> result, MessageService ms, mDialog dlg) {
+		SQLiteDatabase db = dbHelper.getWritableDatabase();
+		String my_table_name = dbHelper.getTableNameMsgs(ms);
+		List<mMessage> msgs = new ArrayList<mMessage>();
+		
+		for (mMessage msg : result) {
+			if( update_db_msg(msg, dlg) ) msgs.add(msg);
+		}
+		
+		return msgs;		
+	}
+	
+	public mDialog update_db_dlg(mMessage msg){
+		int dlg_key = dbHelper.getDlgId(msg.respondent.address, getService(msg.msg_service));
+		mDialog dlg = dbHelper.getDlgById(dlg_key, getService(msg.msg_service));
+		if(dlg.last_msg_time.before(msg.sendTime)){
+			dlg.last_msg_time.set(msg.sendTime);
+			dlg.snippet = msg.text;
+			dlg.snippet_out = msg.getFlag(mMessage.OUT) ? 1 : 0;
+			dbHelper.updateDlg(dlg_key, dlg, getService(msg.msg_service));
+		}
+		return dlg;
+	}
+	
+	public boolean update_db_msg(mMessage msg, mDialog dlg) {
+		SQLiteDatabase db = dbHelper.getWritableDatabase();
+		MessageService ms = getService(msg.msg_service);
+		int dlg_key = dbHelper.getDlgId(dlg, ms);
+		String my_table_name = dbHelper.getTableNameMsgs(ms);
+		String selection = DBHelper.colDlgkey + " = ? AND " + DBHelper.colSendtime + " = ? AND " + DBHelper.colBody + " = ?";
+		String[] selectionArgs = { String.valueOf(dlg_key), String.valueOf(msg.sendTime.toMillis(false)), msg.text };
+		Cursor c = db.query(my_table_name, null, selection, selectionArgs, null, null, null);
+
+		if(c.moveToFirst()){
+			int  flags_in_db = c.getInt( c.getColumnIndex(DBHelper.colFlags) );
+			
+			if(msg.flags != flags_in_db){
+				//update
+				int id = c.getInt(c.getColumnIndex(DBHelper.colId));
+				c.close();
+				dbHelper.updateMsg(id, msg, ms);							    				
+				return true;
+			} else {
+				//not update
+				c.close();
+				return false;
+			}
+		} else {
+			//add
+			c.close();			
+			dbHelper.insertMsg(msg, my_table_name, dlg_key);			    				
+			return true;
+		}
+	}
 	
 	
 }

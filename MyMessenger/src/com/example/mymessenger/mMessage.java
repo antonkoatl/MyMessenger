@@ -32,8 +32,8 @@ public class mMessage implements Parcelable {
 	}
 
 	@Override
-	public void writeToParcel(Parcel dest, int flags) {
-		dest.writeParcelable(respondent, flags);
+	public void writeToParcel(Parcel dest, int parcel_flags) {
+		dest.writeParcelable(respondent, parcel_flags);
 		dest.writeString(text);
 		dest.writeLong(sendTime.toMillis(true));
 		dest.writeInt(flags);
