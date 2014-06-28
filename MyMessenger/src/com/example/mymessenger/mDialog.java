@@ -11,12 +11,14 @@ public class mDialog {
 	public List<mMessage> messages;
 	public List<mContact> participants;
 	public int msg_service_type;
+	public long chat_id;
 	
 	public Time last_msg_time;
 	public String snippet;
 	public int snippet_out;
 	
 	public DlgListItem dlg_ui_helper;
+	public String title;
 		
 	public mDialog() {
 		messages = new ArrayList<mMessage>();
@@ -33,7 +35,7 @@ public class mDialog {
 			if(participants.size() > 1) {
 				int i = 1;
 				do {
-					res += ", " + (participants.get(0).name == null ? participants.get(0).address : participants.get(0).name);
+					res += ", " + (participants.get(i).name == null ? participants.get(i).address : participants.get(i).name);
 					i++;
 				} while (i < participants.size());
 			}
@@ -80,17 +82,18 @@ public class mDialog {
 			mDialog toCompare = (mDialog) o;
 		    return this.participants.equals(toCompare.participants);
 		}
-		if(o instanceof DlgListItem){
-			DlgListItem toCompare = (DlgListItem) o;
-		    return this.participants.equals(toCompare.dlg.participants);
-		}
 		return false;
 	}
 
 
 	public String getParticipantsAddresses() {
 		String res = "";
-		for(mContact cnt : participants)res += cnt.address;
+		for(mContact cnt : participants){
+			if(res.length() == 0)
+				res += cnt.address;
+			else
+				res += "," + cnt.address;
+		}		
 		return res;
 	}
 
@@ -134,6 +137,14 @@ public class mDialog {
 		if(dlg_ui_helper == null)dlg_ui_helper = new DlgListItem(this, (MyApplication) view.getContext().getApplicationContext() );
 		
 		dlg_ui_helper.setupView(view);
+	}
+
+
+	public CharSequence getDialogTitle() {
+		if(chat_id != 0){
+			return title;
+		} else 
+			return participants.get(0).name == null ? participants.get(0).address : participants.get(0).name;
 	}
 
 }

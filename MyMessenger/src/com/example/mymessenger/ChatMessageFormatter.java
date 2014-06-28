@@ -216,6 +216,9 @@ public class ChatMessageFormatter {
         Bitmap b = BitmapFactory.decodeFile( file_path, options );
         t3 = SystemClock.currentThreadTimeMillis() - ttemp;
 	    ttemp = SystemClock.currentThreadTimeMillis();
+	    if(b == null){
+	    	return null;
+	    }
 	    
         if(size > 0){        	
         	b = Bitmap.createScaledBitmap(b, size, size, true);

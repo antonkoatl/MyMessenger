@@ -78,6 +78,7 @@ public class mMessage implements Parcelable {
 		return (flags & FLAG) == FLAG;
 	}
 	
+	@Deprecated
 	public void setFlag(int FLAG, boolean val){
 		flags = val ? flags | FLAG : flags & ~FLAG;
 	}
@@ -90,5 +91,13 @@ public class mMessage implements Parcelable {
 		if(msg_ui_helper == null)msg_ui_helper = new MsgListItem(this, (MyApplication) view.getContext().getApplicationContext() );
 		
 		msg_ui_helper.setupView(view);
+	}
+
+	public void setOut(boolean b) {
+		setFlag(OUT, b);
+	}
+	
+	public boolean isOut(boolean b) {
+		return getFlag(OUT);
 	}
 }

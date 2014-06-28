@@ -31,14 +31,21 @@ public class MsgReceiver extends BroadcastReceiver {
 		
 		if(intent.getAction().equals(ACTION_RECEIVE)){
 			mMessage msg = (mMessage) intent.getParcelableExtra("msg");			
-			List<mMessage> msgs = new ArrayList<mMessage>();
-			msgs.add(msg);
-			mDialog dlg = app.update_db_dlg(msg);
+
+			
+			long chat_id = intent.getLongExtra("chat_id", 0);
+			
+			mDialog dlg;
+			if(chat_id != 0)
+				dlg = app.update_db_dlg(msg, chat_id);
+			else
+				dlg = app.update_db_dlg(msg);
+			
 			app.update_db_msg(msg, dlg);
 			List<mDialog> dlgs = new ArrayList<mDialog>();
 			dlgs.add(dlg);
 			app.triggerDlgsUpdaters(dlgs);
-			app.triggerMsgsUpdaters(msgs);
+			app.triggerMsgUpdaters(msg, dlg);
 			if(!msg.getFlag(mMessage.OUT)){
 				if(app.getUA() != app.UA_MSGS_LIST && app.getUA() != app.UA_DLGS_LIST)
 					createInfoNotification(context, msg);
@@ -69,12 +76,11 @@ public class MsgReceiver extends BroadcastReceiver {
 					if( (flags & 2) == 2 )msg.setFlag(mMessage.OUT, false);
 				}
 				
-				List<mMessage> msgs = new ArrayList<mMessage>();
-				msgs.add(msg);
+
 				//int dlg_key = app.dbHelper.getDlgId(msg.respondent.address, app.getService(msg.msg_service));
 				mDialog dlg = app.update_db_dlg(msg);
 				app.update_db_msg(msg, dlg);
-				app.triggerMsgsUpdaters(msgs);
+				app.triggerMsgUpdaters(msg, dlg);
 				Log.d("MsgReceiver", "Msg updated: " + msg.text);
 			}
 			

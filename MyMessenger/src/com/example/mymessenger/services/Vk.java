@@ -346,8 +346,19 @@ public class Vk extends MessageService {
 
 	@Override
 	public boolean sendMessage(String address, String text) {
-		VKRequest request = new VKRequest("messages.send", VKParameters.from(VKApiConst.USER_ID, address,
-				VKApiConst.MESSAGE, text));
+		VKRequest request;
+		
+		long id = Long.valueOf(address);
+		if(id > 2000000000){ //chat
+			id -= 2000000000;
+			request = new VKRequest("messages.send", VKParameters.from("chat_id", String.valueOf(id),
+					VKApiConst.MESSAGE, text));
+		} else {
+			request = new VKRequest("messages.send", VKParameters.from(VKApiConst.USER_ID, address,
+					VKApiConst.MESSAGE, text));
+		}
+		
+		
 		request.secure = false;
 		VKParameters preparedParameters = request.getPreparedParameters();
 		
@@ -458,7 +469,7 @@ public class Vk extends MessageService {
 	
     
 	public void HandleApiError(VKError error){
-		Log.d("HandleApiError", String.valueOf(error.apiError.errorCode) + " :: " + error.apiError.errorMessage);
+		Log.d("HandleApiError", String.valueOf(error.apiError.errorCode) + " :: " + error.apiError.errorMessage + " :: " + error.apiError.requestParams.toString());
 		if(error.apiError.errorCode == 5){ // User authorization failed.
 			if(authorization_finished && check_access_toten(error) ){
 				//Log.d("HandleApiError", "VKSdk.authorize: " + error.apiError.errorMessage);
@@ -596,22 +607,32 @@ public class Vk extends MessageService {
 					  JSONObject attachments = item.getJSONObject(7);
 					  
 					  if(attachments.has("from")){ //chat, skip
-						  return;
-					  }
-					  
-					  mMessage msg = new mMessage();
-					  msg.respondent = getContact( from_id );
-					  msg.setFlag(mMessage.OUT, (flags & 2) == 2);
-		  		 	  msg.text = text;
-		 			  msg.sendTime.set(timestamp*1000);
-		 			  msg.id = msg_id;
-		 			  msg.msg_service = getServiceType();
-					 
-					  Intent intent = new Intent(MsgReceiver.ACTION_RECEIVE);
-			    	  intent.putExtra("msg", msg);
-			    	  msApp.sendBroadcast(intent);
+						  long chat_id = Long.valueOf(from_id) - 2000000000; //hint
+						  mMessage msg = new mMessage();
+						  msg.respondent = getContact( attachments.getString("from") );
+						  msg.setOut((flags & 2) == 2);
+			  		 	  msg.text = text;
+			 			  msg.sendTime.set(timestamp*1000);
+			 			  msg.id = msg_id;
+			 			  msg.msg_service = getServiceType();
 
-					  //Log.d("LongPollRunnable", text);
+			 			  Intent intent = new Intent(MsgReceiver.ACTION_RECEIVE);
+			 			  intent.putExtra("msg", msg);
+			 			  intent.putExtra("chat_id", chat_id);
+			 			  msApp.sendBroadcast(intent);
+					  } else {					  
+						  mMessage msg = new mMessage();
+						  msg.respondent = getContact( from_id );
+						  msg.setOut((flags & 2) == 2);
+			  		 	  msg.text = text;
+			 			  msg.sendTime.set(timestamp*1000);
+			 			  msg.id = msg_id;
+			 			  msg.msg_service = getServiceType();
+						 
+						  Intent intent = new Intent(MsgReceiver.ACTION_RECEIVE);
+				    	  intent.putExtra("msg", msg);
+				    	  msApp.sendBroadcast(intent);
+					  }
 				  }
 			  }
 
@@ -764,11 +785,11 @@ public class Vk extends MessageService {
 			public void run() {
 				if(isSetupFinished){
 					//Подключение к базе данных, получение количества диалогов
-					SQLiteDatabase db = msApp.dbHelper.getReadableDatabase();		
+					/*SQLiteDatabase db = msApp.dbHelper.getReadableDatabase();		
 					String my_table_name = msApp.dbHelper.getTableNameDlgs(Vk.this);
 					Cursor c = db.query(my_table_name, null, null, null, null, null, null);
 					dlgs_count = c.getCount();
-					c.close();
+					c.close();*/
 					//db.close();
 					
 					requestAccountInfo();
@@ -796,7 +817,7 @@ public class Vk extends MessageService {
 		msApp.startService(intent);	
 	}
 	
-	public void requestMarkAsReaded(mMessage msg){
+	public void requestMarkAsReaded(mMessage msg, final mDialog dlg){
 		VKRequest request = new VKRequest("messages.markAsRead", VKParameters.from("message_ids", msg.id, VKApiConst.USER_ID, msg.respondent.address));
 		
 		msg.setFlag(mMessage.LOADING, true);
@@ -810,13 +831,11 @@ public class Vk extends MessageService {
 				    @Override				    
 				    public void onComplete(VKResponse response) {				    	
 				    	Log.d("requestContacts", "onComplete" );
-				    	List<mMessage> msgs = new ArrayList<mMessage>();
 				        try {
 				        	int resp = response.json.getInt("response");
 				        	if(resp == 1)tmsg.setFlag(mMessage.READED, true);
 				        	tmsg.setFlag(mMessage.LOADING, false);
-				        	msgs.add(tmsg);
-				        	msApp.triggerMsgsUpdaters(msgs);
+				        	msApp.triggerMsgUpdaters(tmsg, dlg);
 						} catch (JSONException e) {
 							e.printStackTrace();
 						}
@@ -902,17 +921,20 @@ public class Vk extends MessageService {
 			        	
 			        	for (int i = 0; i < items.length(); i++) {
 			    			JSONObject item = items.getJSONObject(i).getJSONObject("message");
-			    			if(item.has("chat_id")){ //chat, skipping
-			        			continue;
+			    			
+			    			mDialog mdl = new mDialog();
+			    			
+			    			if(item.has("chat_id")){
+			    				mdl.chat_id = item.getLong("chat_id");
+			    				JSONArray ids = item.getJSONArray("chat_active");
+			    				for(int i1 = 0; i1 < ids.length(); i1++){
+			    					mdl.participants.add( getContact( ids.getString(i1) ) );
+			    				}
+			        		} else {			    			    				
+		    					mdl.participants.add( getContact( item.getString( "user_id" ) ) );
 			        		}
 			    			
-			    			mDialog mdl = new mDialog();    				
-		    				String[] recipient_ids = item.getString( "user_id" ).split(",");
-		    				
-		    				for(String rid : recipient_ids){
-	    						mdl.participants.add( getContact( rid ) );
-		    				}
-		    				
+			    			mdl.title = item.getString("title");
 			    			mdl.snippet = item.getString( "body" );
 			    			mdl.snippet_out = item.getInt( "out" );
 			    			mdl.last_msg_time.set(item.getLong("date")*1000);
@@ -949,9 +971,15 @@ public class Vk extends MessageService {
 	protected void getMessagesFromNet(mDialog dlg, int count, int offset, AsyncTaskCompleteListener<List<mMessage>> cb) {
 		// Обновление информации о количестве потоков загрузки
 		updateMsgsThreadCount(dlg, 1);
+		VKRequest request;
 		
-		VKRequest request = new VKRequest("messages.getHistory", VKParameters.from(VKApiConst.COUNT, String.valueOf(count),
-				VKApiConst.OFFSET, String.valueOf(offset), VKApiConst.USER_ID, dlg.getParticipants()));
+		if(dlg.chat_id == 0){
+			request = new VKRequest("messages.getHistory", VKParameters.from(VKApiConst.COUNT, String.valueOf(count),
+					VKApiConst.OFFSET, String.valueOf(offset), VKApiConst.USER_ID, dlg.getParticipants()));
+		} else {
+			request = new VKRequest("messages.getHistory", VKParameters.from(VKApiConst.COUNT, String.valueOf(count),
+					VKApiConst.OFFSET, String.valueOf(offset), "chat_id", String.valueOf(dlg.chat_id)));
+		}
 		request.secure = false;
 		VKParameters preparedParameters = request.getPreparedParameters();
 

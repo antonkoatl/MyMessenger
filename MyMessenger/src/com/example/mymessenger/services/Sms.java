@@ -56,9 +56,9 @@ public class Sms extends MessageService {
         self_contact = new mContact("");
         self_contact.name = sPref.getString("current_account", "account_name");        
         
-        Cursor cursor = app.getApplicationContext().getContentResolver().query(Uri.parse("content://mms-sms/conversations?simple=true"), null, null, null, null);
+        /*Cursor cursor = app.getApplicationContext().getContentResolver().query(Uri.parse("content://mms-sms/conversations?simple=true"), null, null, null, null);
         dlgs_count = cursor.getCount();
-        cursor.close();
+        cursor.close();*/
 	}
 	
 	@Override
@@ -454,7 +454,7 @@ public class Sms extends MessageService {
 	}
 
 	@Override
-	public void requestMarkAsReaded(mMessage msg) {
+	public void requestMarkAsReaded(mMessage msg, mDialog dlg) {
 		// TODO Auto-generated method stub
 		
 	}

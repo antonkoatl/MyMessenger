@@ -36,7 +36,6 @@ public abstract class MessageService {
 	protected String service_name = "service_name";
 	protected int service_type;
 	
-	protected int dlgs_count;
 	protected boolean dl_all_dlgs_downloaded = false; //Все диалоги загружены из сети
 	protected mDialog dl_current_dlg; //При загрузке сообщений для одного диалога, показывает что все загружены
 	protected boolean dl_all_msgs_downloaded = true;
@@ -89,7 +88,7 @@ public abstract class MessageService {
 	
 	public abstract void requestContactData(mContact cnt);
 	public abstract void requestContacts(int offset, int count, AsyncTaskCompleteListener<List<mContact>> cb);
-	public abstract void requestMarkAsReaded(mMessage msg);
+	public abstract void requestMarkAsReaded(mMessage msg, mDialog dlg);
 	
 	public abstract void requestNewMessagesRunnable(AsyncTaskCompleteListener<RunnableAdvanced<?>> cb); //Запросить алгоритм для отслеживания новых сообщений	
 	public abstract void setup(AsyncTaskCompleteListener<MessageService> asms); //Подготовить сервис для работы
@@ -189,7 +188,7 @@ public abstract class MessageService {
 	
 	public final void setActiveDialog(mDialog dlg) {
 		active_dlg = dlg;
-		msApp.sPref.edit().putString("active_dialog", dlg.getParticipantsAddresses()).commit();
+		msApp.sPref.edit().putInt("active_dialog", msApp.dbHelper.getDlgId(dlg, this)).commit();
 	}
 			
 	//отправка сообщения
@@ -252,7 +251,6 @@ public abstract class MessageService {
     				msApp.dbHelper.insertDlg(mdl, MessageService.this);
     					    				
     				dlgs.add(mdl);
-    				dlgs_count++;
     			}
     		}
     		
@@ -331,7 +329,6 @@ public abstract class MessageService {
     				msApp.dbHelper.insertDlg(mdl, MessageService.this);
     					    				
     				update_dlgs.add(mdl);
-    				dlgs_count++;
     			}
     		}
     		

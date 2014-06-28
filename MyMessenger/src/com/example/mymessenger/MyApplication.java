@@ -36,7 +36,7 @@ public class MyApplication extends Application {
 	
 	public List<AsyncTaskCompleteListener<Void>> cnts_updaters;
 	public List<AsyncTaskCompleteListener<List<mDialog>>> dlgs_updaters;
-	public List<AsyncTaskCompleteListener<List<mMessage>>> msgs_updaters;
+	public List<AsyncTaskCompleteListenerMsg> msg_updaters;
 	
 	public List<download_waiter> dl_waiters;
 	public DBHelper dbHelper;
@@ -79,7 +79,7 @@ public class MyApplication extends Application {
 		myMsgServices = new ArrayList<MessageService>(); //Активные сервисы сообщений
 		cnts_updaters = new ArrayList<AsyncTaskCompleteListener<Void>>(); //Обработчики обвновлений контактных данных
 		dlgs_updaters = new ArrayList<AsyncTaskCompleteListener<List<mDialog>>>(); //Обработчики обвновлений диалогов
-		msgs_updaters = new ArrayList<AsyncTaskCompleteListener<List<mMessage>>>(); //Обработчики обвновлений сообщений
+		msg_updaters = new ArrayList<AsyncTaskCompleteListenerMsg>(); //Обработчики обвновлений сообщений
 		
 		dl_waiters = new ArrayList<download_waiter>(); //Обработчики завершения загрузок
 		
@@ -97,10 +97,9 @@ public class MyApplication extends Application {
         active_service = sPref.getInt("active_service", 0);
         if(active_service != 0 && getService(active_service) != null){
         	MessageService ms = getService(active_service);
-        	String dialog_addr = sPref.getString("active_dialog", "");
-        	if(dialog_addr.length() > 0){
-        		mDialog dlg = new mDialog();
-        		dlg.participants.add(ms.getContact(dialog_addr));
+        	int dialog_id = sPref.getInt("active_dialog", 0);
+        	if(dialog_id > 0){
+        		mDialog dlg = dbHelper.getDlgById(dialog_id, getActiveService());
         		ms.setActiveDialog(dlg);
         	}
         }
@@ -160,8 +159,8 @@ public class MyApplication extends Application {
 		if(!dlgs_updaters.contains(updater))dlgs_updaters.add(updater);
 	}
 	
-	public void registerMsgsUpdater(AsyncTaskCompleteListener<List<mMessage>> updater){
-		if(!msgs_updaters.contains(updater))msgs_updaters.add(updater);
+	public void registerMsgUpdater(AsyncTaskCompleteListenerMsg updater){
+		if(!msg_updaters.contains(updater))msg_updaters.add(updater);
 	}
 	
 	public void unregisterCntsUpdater(AsyncTaskCompleteListener<Void> updater){
@@ -172,8 +171,8 @@ public class MyApplication extends Application {
 		dlgs_updaters.remove(updater);
 	}
 	
-	public void unregisterMsgsUpdater(AsyncTaskCompleteListener<List<mMessage>> updater){
-		msgs_updaters.remove(updater);
+	public void unregisterMsgUpdater(AsyncTaskCompleteListenerMsg updater){
+		msg_updaters.remove(updater);
 	}
 	
 	public void triggerCntsUpdaters(){
@@ -200,18 +199,20 @@ public class MyApplication extends Application {
 		}		
 	}
 		
-	public void triggerMsgsUpdaters(final List<mMessage> msgs){
+	public void triggerMsgUpdaters(final mMessage msg, final mDialog dlg){
 		
 		if(getMainActivity() != null){
 			getMainActivity().runOnUiThread(new Runnable() {
 			     @Override
 			     public void run() {
-			    	 for(AsyncTaskCompleteListener<List<mMessage>> updater : msgs_updaters)
-			 			updater.onTaskComplete(msgs);
+			    	 for(AsyncTaskCompleteListenerMsg updater : msg_updaters)
+			 			updater.onTaskComplete(msg, dlg);
 			    }
 			});
 		}		
 	}
+	
+
 
 	public List<download_waiter> getDownloadWaiters(String url_path) {
 		List<download_waiter> dws = new ArrayList<download_waiter>();
@@ -346,7 +347,19 @@ public class MyApplication extends Application {
 	}
 	
 	public mDialog update_db_dlg(mMessage msg){
-		int dlg_key = dbHelper.getDlgId(msg.respondent.address, getService(msg.msg_service));
+		int dlg_key = dbHelper.getDlgIdOrCreate(msg.respondent.address, getService(msg.msg_service));
+		mDialog dlg = dbHelper.getDlgById(dlg_key, getService(msg.msg_service));
+		if(dlg.last_msg_time.before(msg.sendTime)){
+			dlg.last_msg_time.set(msg.sendTime);
+			dlg.snippet = msg.text;
+			dlg.snippet_out = msg.getFlag(mMessage.OUT) ? 1 : 0;
+			dbHelper.updateDlg(dlg_key, dlg, getService(msg.msg_service));
+		}
+		return dlg;
+	}
+	
+	public mDialog update_db_dlg(mMessage msg, long chat_id){
+		int dlg_key = dbHelper.getDlgIdOrCreate(chat_id, getService(msg.msg_service));
 		mDialog dlg = dbHelper.getDlgById(dlg_key, getService(msg.msg_service));
 		if(dlg.last_msg_time.before(msg.sendTime)){
 			dlg.last_msg_time.set(msg.sendTime);
@@ -388,5 +401,8 @@ public class MyApplication extends Application {
 		}
 	}
 	
-	
+	public interface AsyncTaskCompleteListenerMsg{
+		
+		public void onTaskComplete(mMessage msg, mDialog dlg);	
+	}
 }

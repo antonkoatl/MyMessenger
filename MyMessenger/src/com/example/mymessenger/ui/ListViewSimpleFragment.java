@@ -7,6 +7,7 @@ import com.example.mymessenger.AsyncTaskCompleteListener;
 import com.example.mymessenger.EmojiPopup;
 import com.example.mymessenger.MainActivity;
 import com.example.mymessenger.MyApplication;
+import com.example.mymessenger.MyApplication.AsyncTaskCompleteListenerMsg;
 import com.example.mymessenger.MyDialogsAdapter;
 import com.example.mymessenger.MyMsgAdapter;
 import com.example.mymessenger.R;
@@ -166,7 +167,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 	        	
 	        });
 	        
-	        app.registerMsgsUpdater(async_complete_listener_msg_update);
+	        app.registerMsgUpdater(async_complete_listener_msg_update);
 	        
 	        ImageView b = (ImageView) myLayout.findViewById(R.id.msg_keyboard);
 	        b.setOnClickListener(new OnClickListener(){
@@ -239,8 +240,10 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 				MessageService ms = app.getActiveService();
 				mDialog dlg = ms.getActiveDialog();
 				
-				for(mContact cnt : dlg.participants){
-					ms.sendMessage(cnt.address, text);
+				if(dlg.chat_id == 0){
+					ms.sendMessage(dlg.participants.get(0).address, text);
+				} else {
+					ms.sendMessage(String.valueOf(2000000000 + dlg.chat_id), text);
 				}
 				
 				ms.requestMessages(dlg, 1, 0, async_complete_listener_msg);
@@ -493,40 +496,43 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 		
 	};
 	
-	AsyncTaskCompleteListener<List<mMessage>> async_complete_listener_msg_update = new AsyncTaskCompleteListener<List<mMessage>>(){
+	AsyncTaskCompleteListenerMsg async_complete_listener_msg_update = new AsyncTaskCompleteListenerMsg(){
 		@Override
-		public void onTaskComplete(List<mMessage> result) {
+		public void onTaskComplete(mMessage msg, mDialog dlg) {
 			if(msg_adapter.getCount() == 0)return;
+
+			if(msg.msg_service != app.getActiveService().getServiceType()){ // Не тот сервис - источник
+				return;
+			}
 			
-			for(mMessage msg : result){
-				if(msg.msg_service != app.getActiveService().getServiceType()){ // Не тот сервис - источник
-					continue;
-				}
-				
-				if(msg.sendTime.before( ((mMessage) msg_adapter.getItem(0)).sendTime ) ){ // Поступившее сообщение было позже, чем последнее отображаемое
-					continue;
-				}
-				
-				boolean updated = false;
-				
-				int tind = msg_adapter.indexOf(msg);
-				if(tind != -1){
-					mMessage msg2 = msg_adapter.remove(tind);
-					msg2.update(msg);
-					msg = msg2;
-					updated = true;
-				}
-				
-				for(int i = msg_adapter.getCount() - 1; i >= 0; i--){
-					if( msg.sendTime.after( ((mMessage) msg_adapter.getItem(0)).sendTime ) ){
-						msg_adapter.add(i+1, msg);
-						if(!updated){
-							msg_adapter.remove(0);
-						}
-						break;
-					}	
-				}
-	        }
+			if(!dlg.equals(app.getActiveService().getActiveDialog())){ // Не тот диалог
+				return;
+			}
+			
+			if(msg.sendTime.before( ((mMessage) msg_adapter.getItem(0)).sendTime ) ){ // Поступившее сообщение было позже, чем последнее отображаемое
+				return;
+			}
+			
+			boolean updated = false;
+			
+			int tind = msg_adapter.indexOf(msg);
+			if(tind != -1){
+				mMessage msg2 = msg_adapter.remove(tind);
+				msg2.update(msg);
+				msg = msg2;
+				updated = true;
+			}
+			
+			for(int i = msg_adapter.getCount() - 1; i >= 0; i--){
+				if( msg.sendTime.after( ((mMessage) msg_adapter.getItem(0)).sendTime ) ){
+					msg_adapter.add(i+1, msg);
+					if(!updated){
+						msg_adapter.remove(0);
+					}
+					break;
+				}	
+			}
+
 			
 			msg_adapter.notifyDataSetChanged();		
 		}
@@ -638,7 +644,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 		    	mMessage msg = ((mMessage) listview.getItemAtPosition(i));
 		    	if(msg == null)continue;
 		    	if(!msg.getFlag(mMessage.LOADING) && !msg.getFlag(mMessage.OUT) && !msg.getFlag(mMessage.READED)){
-		    		app.getActiveService().requestMarkAsReaded(msg);
+		    		app.getActiveService().requestMarkAsReaded(msg, app.getActiveService().getActiveDialog());
 		    	}
 		    }
 		}
