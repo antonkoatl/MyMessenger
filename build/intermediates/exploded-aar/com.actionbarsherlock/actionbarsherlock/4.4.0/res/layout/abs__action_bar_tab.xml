@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<view
+    class="com.actionbarsherlock.internal.widget.ScrollingTabContainerView$TabView"
+    style="?attr/actionBarTabStyle" /><!-- From: file:/Users/jw/dev/ActionBarSherlock/target/checkout/actionbarsherlock/res/layout/abs__action_bar_tab.xml -->
