@@ -230,6 +230,16 @@ public class MainActivity extends ActionBarActivity {
 				Toast.makeText(this, "Service not added", Toast.LENGTH_SHORT).show();
 			}
 		}
+		
+		if(requestCode == ActivityTwo.REQUEST_CODE){
+			if(resultCode == ActivityTwo.RESULT_SELECTED){
+				MessageService ms = app.getService( data.getIntExtra("msg_service", 0) );
+				mContact cnt = ms.getContact( data.getStringExtra("cnt") );
+				mDialog dlg = ms.getDialog(cnt);
+				ms.setActiveDialog(dlg);
+				mViewPager.setCurrentItem(2);
+			}
+		}
 	}
 	
 

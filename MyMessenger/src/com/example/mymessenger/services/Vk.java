@@ -399,20 +399,17 @@ public class Vk extends MessageService {
 		switch(which) {
 		case 0:
 			if(getActiveDialog() != null){
-				intent = new Intent(con, ActivityTwo.class);
-				intent.putExtra("mode", "messages");
-				con.startActivity(intent);
+				((MainActivity) MyApplication.getMainActivity()).mViewPager.setCurrentItem(2);
 			}
 			break;
 		case 1:
 			intent = new Intent(con, ActivityTwo.class);
 			intent.putExtra("mode", "contacts");
-			con.startActivity(intent);
+			intent.putExtra("msg_service", getServiceType());
+			msApp.getMainActivity().startActivityForResult(intent, ActivityTwo.REQUEST_CODE);
 			break;
 		case 2:
-			intent = new Intent(con, ActivityTwo.class);
-			intent.putExtra("mode", "dialogs");
-			con.startActivity(intent);
+			((MainActivity) MyApplication.getMainActivity()).mViewPager.setCurrentItem(1);
 			break;
 		}
 	}

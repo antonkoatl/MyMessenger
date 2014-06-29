@@ -27,6 +27,14 @@ public class mDialog {
 	}
 	
 
+	public mDialog(mContact cnt) {
+		messages = new ArrayList<mMessage>();
+		participants = new ArrayList<mContact>();
+		last_msg_time = new Time();
+		this.participants.add(cnt);
+	}
+
+
 	public String getParticipantsNames(){
 		String res;
 		if(participants.size() > 0){
@@ -112,7 +120,7 @@ public class mDialog {
 				}
 			}
 			
-			dlg_ui_helper.update();
+			if(dlg_ui_helper != null)dlg_ui_helper.update();
 		}		
 	}
 	

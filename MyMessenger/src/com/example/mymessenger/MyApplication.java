@@ -100,7 +100,7 @@ public class MyApplication extends Application {
         	int dialog_id = sPref.getInt("active_dialog", 0);
         	if(dialog_id > 0){
         		mDialog dlg = dbHelper.getDlgById(dialog_id, getActiveService());
-        		ms.setActiveDialog(dlg);
+        		if(dlg != null)ms.setActiveDialog(dlg);
         	}
         }
         
@@ -346,20 +346,8 @@ public class MyApplication extends Application {
 		return msgs;		
 	}
 	
-	public mDialog update_db_dlg(mMessage msg){
-		int dlg_key = dbHelper.getDlgIdOrCreate(msg.respondent.address, getService(msg.msg_service));
-		mDialog dlg = dbHelper.getDlgById(dlg_key, getService(msg.msg_service));
-		if(dlg.last_msg_time.before(msg.sendTime)){
-			dlg.last_msg_time.set(msg.sendTime);
-			dlg.snippet = msg.text;
-			dlg.snippet_out = msg.getFlag(mMessage.OUT) ? 1 : 0;
-			dbHelper.updateDlg(dlg_key, dlg, getService(msg.msg_service));
-		}
-		return dlg;
-	}
 	
-	public mDialog update_db_dlg(mMessage msg, long chat_id){
-		int dlg_key = dbHelper.getDlgIdOrCreate(chat_id, getService(msg.msg_service));
+	public mDialog update_db_dlg(mMessage msg, int dlg_key){
 		mDialog dlg = dbHelper.getDlgById(dlg_key, getService(msg.msg_service));
 		if(dlg.last_msg_time.before(msg.sendTime)){
 			dlg.last_msg_time.set(msg.sendTime);

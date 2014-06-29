@@ -519,6 +519,20 @@ public abstract class MessageService {
 	
 	// Emoji
 	public abstract String getEmojiUrl(long code);
+
+
+	public mDialog getDialog(mContact cnt) {
+		// TODO Есть ли в базе? - Загрузить : Создасть. Обновить
+		mDialog dlg = msApp.dbHelper.getDlg(cnt.address, this);
+		
+		if(dlg == null){
+			dlg = new mDialog(cnt);
+			msApp.dbHelper.insertDlg(dlg, this);
+			refreshMessagesFromNet(dlg, null, 0);
+		}
+		
+		return dlg;
+	}
 	
 	
 	

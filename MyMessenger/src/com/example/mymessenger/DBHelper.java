@@ -118,6 +118,55 @@ public class DBHelper extends SQLiteOpenHelper {
 		return dlg_key;
 	}
 	
+	public void loadDlgFromCursor(mDialog dlg, Cursor cursor, MessageService ms){
+		if(cursor.isNull( cursor.getColumnIndex(colChatId) )){
+			dlg.participants.add( ms.getContact( cursor.getString( cursor.getColumnIndex(colParticipants) ) ) );
+		} else {
+			dlg.chat_id = cursor.getLong( cursor.getColumnIndex(colChatId) );
+			String[] ps = cursor.getString( cursor.getColumnIndex(colParticipants) ).split(",");
+			for(String part : ps) dlg.participants.add( ms.getContact( part ) );
+		}
+    	
+    	if(!cursor.isNull( cursor.getColumnIndex(colLastmsgtime) )) dlg.last_msg_time.set( cursor.getLong( cursor.getColumnIndex(colLastmsgtime) ) );
+    	if(!cursor.isNull( cursor.getColumnIndex(colSnippet) )) dlg.snippet = cursor.getString( cursor.getColumnIndex(colSnippet) );
+    	if(!cursor.isNull( cursor.getColumnIndex(colSnippetOut) )) dlg.snippet_out = cursor.getInt( cursor.getColumnIndex(colSnippetOut) );	        	
+    	if(!cursor.isNull( cursor.getColumnIndex(colTitle) )) dlg.title = cursor.getString( cursor.getColumnIndex(colTitle) );
+    	
+    	dlg.msg_service_type = ms.getServiceType();
+	}
+	
+	public mDialog getDlg(String from_id, MessageService ms) {
+		SQLiteDatabase db = getReadableDatabase();
+		
+		String my_table_name = getTableNameDlgs(ms);
+		String selection = colParticipants + " = ? AND " + colChatId + " IS NULL";
+		String selection_args[] = {from_id};
+		Cursor c = db.query(my_table_name, null, selection, selection_args, null, null, null);
+		
+		int dlg_key = 0;
+		mDialog dlg;
+		
+		if(c.moveToFirst()){
+			dlg_key = c.getInt( c.getColumnIndex(DBHelper.colId) );
+			dlg = new mDialog();
+			loadDlgFromCursor(dlg, c, ms);
+		} else {
+			dlg = null;
+			/*dlg = new mDialog();
+			dlg.participants.add( ms.getContact(from_id) );			
+			insertDlg(dlg, ms);
+			
+			if(c.moveToFirst()){
+				dlg_key = c.getInt( c.getColumnIndex(DBHelper.colId) );
+			} else {
+				Log.d("DBHelper", "Dlg not created!");
+			}*/
+		}
+		c.close();
+		
+		return dlg;
+	}
+	
 	public int getDlgIdOrCreate(long chat_id, MessageService ms) {
 		SQLiteDatabase db = getReadableDatabase();
 		
@@ -332,33 +381,11 @@ public class DBHelper extends SQLiteOpenHelper {
 		
 		boolean cursor_chk = true;
 		for (int i = 0; i < offset; i++) cursor_chk = cursor.moveToNext();
-				
-		// определяем номера столбцов по имени в выборке
-        int idColIndex = cursor.getColumnIndex( colId );
-        int partColIndex = cursor.getColumnIndex( colParticipants );
-        int lastMTColIndex = cursor.getColumnIndex( colLastmsgtime );
-        int snipColIndex = cursor.getColumnIndex( colSnippet );
-        int snipOutColIndex = cursor.getColumnIndex( colSnippetOut );
-        int colChatIdIndex = cursor.getColumnIndex( colChatId );
-        int colTitleIndex = cursor.getColumnIndex( colTitle );
-		
+						
 		for (int i = 0; i < count; i++) {
 			if(cursor_chk){
 				mDialog dlg = new mDialog();
-				if(cursor.isNull(colChatIdIndex)){
-					dlg.participants.add( ms.getContact( cursor.getString(partColIndex) ) );
-				} else {
-					dlg.chat_id = cursor.getLong(colChatIdIndex);
-					String[] ps = cursor.getString(partColIndex).split(",");
-					for(String part : ps) dlg.participants.add( ms.getContact( part ) );
-				}
-	        	
-	        	if(!cursor.isNull(lastMTColIndex)) dlg.last_msg_time.set( cursor.getLong(lastMTColIndex) );
-	        	if(!cursor.isNull(snipColIndex)) dlg.snippet = cursor.getString(snipColIndex);
-	        	if(!cursor.isNull(snipOutColIndex)) dlg.snippet_out = cursor.getInt(snipOutColIndex);	        	
-	        	if(!cursor.isNull(colTitleIndex)) dlg.title = cursor.getString(colTitleIndex);
-	        	
-	        	dlg.msg_service_type = ms.getServiceType();
+				loadDlgFromCursor(dlg, cursor, ms);
 	        	
 	        	result.add(dlg);
 	        	cursor_chk = cursor.moveToNext();
@@ -440,6 +467,24 @@ public class DBHelper extends SQLiteOpenHelper {
 		cursor.close();
 		
 		return msg;
+	}
+	
+	public int getDlgIdByMsgId(int message_id, MessageService ms){
+		SQLiteDatabase db = getReadableDatabase();
+		
+		String table_name = getTableNameMsgs(ms);
+		String selection = colMsgId + " = " + String.valueOf(message_id);
+		
+		Cursor cursor = db.query(table_name, null, selection, null, null, null, null);
+		
+		int dlg_key = -1;
+		
+		if(cursor.moveToFirst()){
+			dlg_key = cursor.getInt( cursor.getColumnIndex(colDlgkey));
+		}
+		cursor.close();
+		
+		return dlg_key;		
 	}
 
 	

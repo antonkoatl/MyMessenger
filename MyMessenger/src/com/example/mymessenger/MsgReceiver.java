@@ -36,10 +36,14 @@ public class MsgReceiver extends BroadcastReceiver {
 			long chat_id = intent.getLongExtra("chat_id", 0);
 			
 			mDialog dlg;
-			if(chat_id != 0)
-				dlg = app.update_db_dlg(msg, chat_id);
-			else
-				dlg = app.update_db_dlg(msg);
+			if(chat_id != 0){
+				int dlg_key = app.dbHelper.getDlgIdOrCreate(chat_id, app.getService(msg.msg_service));
+				dlg = app.update_db_dlg(msg, dlg_key);
+			}
+			else{
+				int dlg_key = app.dbHelper.getDlgIdOrCreate(msg.respondent.address, app.getService(msg.msg_service));
+				dlg = app.update_db_dlg(msg, dlg_key);
+			}
 			
 			app.update_db_msg(msg, dlg);
 			List<mDialog> dlgs = new ArrayList<mDialog>();
@@ -48,7 +52,7 @@ public class MsgReceiver extends BroadcastReceiver {
 			app.triggerMsgUpdaters(msg, dlg);
 			if(!msg.getFlag(mMessage.OUT)){
 				if(app.getUA() != app.UA_MSGS_LIST && app.getUA() != app.UA_DLGS_LIST)
-					createInfoNotification(context, msg);
+					createInfoNotification(context, msg, chat_id);
 				else
 					createSimpleNotification(context, msg);
 			}
@@ -78,7 +82,8 @@ public class MsgReceiver extends BroadcastReceiver {
 				
 
 				//int dlg_key = app.dbHelper.getDlgId(msg.respondent.address, app.getService(msg.msg_service));
-				mDialog dlg = app.update_db_dlg(msg);
+				int dlg_key = app.dbHelper.getDlgIdByMsgId(msg_id, app.getService(service_type));
+				mDialog dlg = app.update_db_dlg(msg, dlg_key);
 				app.update_db_msg(msg, dlg);
 				app.triggerMsgUpdaters(msg, dlg);
 				Log.d("MsgReceiver", "Msg updated: " + msg.text);
@@ -88,7 +93,7 @@ public class MsgReceiver extends BroadcastReceiver {
 		
 	}
 	
-	public void createInfoNotification(Context context, mMessage msg){
+	public void createInfoNotification(Context context, mMessage msg, long chat_id){
 		manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
 		
 	    Intent notificationIntent = new Intent(context, MainActivity.class); // по клику на уведомлении откроется MainActivity
@@ -102,7 +107,7 @@ public class MsgReceiver extends BroadcastReceiver {
 	        .setContentText(msg.text) // Основной текст уведомления
 	        .setContentIntent(PendingIntent.getActivity(context, 0, notificationIntent, PendingIntent.FLAG_CANCEL_CURRENT))
 	        .setWhen(msg.sendTime.toMillis(false)) //отображаемое время уведомления
-	        .setContentTitle("MyMessenger - " + app.getService(msg.msg_service).getServiceName()) //заголовок уведомления
+	        .setContentTitle(app.getService(msg.msg_service).getServiceName() + " - " + msg.respondent.getName() + (chat_id == 0 ? "" : " (chat)") ) //заголовок уведомления
 	        .setDefaults(Notification.DEFAULT_ALL); // звук, вибро и диодный индикатор выставляются по умолчанию
 
 	        Notification notification = nb.build(); //генерируем уведомление

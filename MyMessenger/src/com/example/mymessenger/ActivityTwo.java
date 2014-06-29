@@ -30,6 +30,9 @@ import android.widget.TextView;
 import android.widget.AdapterView.OnItemClickListener;
 
 public class ActivityTwo extends ActionBarActivity implements OnClickListener {
+	public static final int REQUEST_CODE = 200;
+	public static final int RESULT_SELECTED = 100;
+	
 	MyApplication app;
 	MyMsgAdapter msg_adapter;
 	MyDialogsAdapter dlg_adapter;
@@ -40,10 +43,6 @@ public class ActivityTwo extends ActionBarActivity implements OnClickListener {
 	List<mContact> showing_contacts;
 	private PullToRefreshListView listview;
 	
-	private boolean dlg_maxed;
-	private boolean dlg_isLoading;
-	private boolean msg_maxed;
-	private boolean msg_isLoading;
 	private boolean cnt_maxed;
 	private boolean cnt_isLoading;
 	
@@ -51,59 +50,22 @@ public class ActivityTwo extends ActionBarActivity implements OnClickListener {
 	private int async_complete_listener_msg_update_total_offset;
 	
 	public String mode;
+	public int msg_service;
 	
 	public final static String BROADCAST_ACTION = "ru.mymessage.servicebackbroadcast";
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		
-		dlg_maxed = false;
-		msg_maxed = false;
-		msg_isLoading = false;
-		
+				
 		app = (MyApplication) getApplicationContext();
 		
 		Intent intent = getIntent();	    
 	    mode = intent.getStringExtra("mode");
+	    msg_service = intent.getIntExtra("msg_service", 0);
 	    
 	    MessageService ms = app.getActiveService();
 	    
-	    if (mode.equals("messages")) {
-	    	setContentView(R.layout.msg_list);
-	    	listview = (PullToRefreshListView) findViewById(R.id.listview_object);
-	    	((Button) findViewById(R.id.msg_sendbutton)).setOnClickListener(this);
-			showing_messages = new ArrayList<mMessage>();
-			
-			msg_adapter = new MyMsgAdapter(this, showing_messages);
-			listview.setAdapter(msg_adapter);
-
-			ms.requestMessages(ms.getActiveDialog(), 20, 0, async_complete_listener_msg);
-			listview.setRefreshing();
-			
-	        listview.setOnItemClickListener(MsgClickListener);
-	        listview.setOnScrollListener(MsgScrollListener);
-	        
-	        
-	        supposedFVI = -1;
-	        
-	        setTitle(ms.getActiveDialog().getParticipantsNames());
-	    }
-	    
-	    if (mode.equals("dialogs")) {
-	    	setContentView(R.layout.listview_simple);
-	    	listview = (PullToRefreshListView) findViewById(R.id.listview_object);
-	    	
-	    	showing_dialogs = new ArrayList<mDialog>();
-			
-			dlg_adapter = new MyDialogsAdapter(this, showing_dialogs);
-			listview.setAdapter(dlg_adapter);
-
-			ms.requestDialogs(20, 0, async_complete_listener_dlg);
-			
-	        listview.setOnItemClickListener(DlgClickListener);
-	        listview.setOnScrollListener(DlgScrollListener);
-	    }
 	    
 	    if (mode.equals("contacts")) {
 	    	setContentView(R.layout.listview_simple);
@@ -114,6 +76,7 @@ public class ActivityTwo extends ActionBarActivity implements OnClickListener {
 			cnt_adapter = new MyContactsAdapter(this, showing_contacts);
 			listview.setAdapter(cnt_adapter);
 
+			cnt_isLoading = true;
 			ms.requestContacts(0, 20, async_complete_listener_cnt);
 			
 	        listview.setOnItemClickListener(CntClickListener);
@@ -125,85 +88,7 @@ public class ActivityTwo extends ActionBarActivity implements OnClickListener {
 	}
 	
 	
-	OnItemClickListener DlgClickListener = new OnItemClickListener(){
 
-		@Override
-		public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-			mDialog dlg = showing_dialogs.get(position);
-			((MyApplication) getApplicationContext()).getService( ((MyApplication) getApplicationContext()).active_service ).setActiveDialog(dlg);
-			Intent intent = new Intent(ActivityTwo.this, ActivityTwo.class);
-			intent.putExtra("mode", "messages");
-			startActivity(intent);
-		}
-		
-	};
-	
-	
-	OnScrollListener DlgScrollListener = new OnScrollListener(){
-
-		@Override
-		public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
-			if ( !dlg_maxed && ( (totalItemCount - (firstVisibleItem + visibleItemCount)) < 5 ) && !dlg_isLoading) {
-				MessageService ms = app.getService( app.active_service );
-				ms.requestDialogs(20, showing_dialogs.size(), async_complete_listener_dlg);
-				dlg_isLoading = true;
-			}
-		}
-
-		@Override
-		public void onScrollStateChanged(AbsListView view, int scrollState) {
-			// TODO Auto-generated method stub
-			
-		}
-		
-	};
-	
-	OnItemClickListener MsgClickListener = new OnItemClickListener(){
-
-		@Override
-		public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-
-		}
-		
-	};
-	
-	
-	OnScrollListener MsgScrollListener = new OnScrollListener(){
-
-		@Override
-		public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
-			if(supposedFVI != -1){
-				if(supposedFVI != firstVisibleItem){
-					Log.d("MsgScrollListener", "Wrong firstVisibleItem!!");
-					firstVisibleItem = supposedFVI;
-				}
-				supposedFVI = -1;
-			}
-			
-			Log.d("MsgScrollListener", String.valueOf(firstVisibleItem) + ", " + String.valueOf(listview.getFirstVisiblePosition()));
-			if (visibleItemCount == 0) return;
-			if ( !msg_maxed && ( firstVisibleItem == 0 ) && !msg_isLoading ) {
-				
-				msg_isLoading = true;
-
-				MessageService ms = app.getActiveService();
-				ms.requestMessages(ms.getActiveDialog(), 20, showing_messages.size(), async_complete_listener_msg);
-				listview.setRefreshing();
-				listview.setSelectionFromTop(firstVisibleItem  + 1, listview.getChildAt(firstVisibleItem).getTop());
-				//Log.d("MsgScrollListener", String.valueOf(firstVisibleItem + lmsgs.size()) + ", " + String.valueOf(listview.getChildAt(firstVisibleItem).getTop()));
-				
-				//supposedFVI = firstVisibleItem + lmsgs.size();
-				//Log.d("MsgScrollListener", String.valueOf(firstVisibleItem + lmsgs.size()) + ", " + String.valueOf(listview.getChildAt(firstVisibleItem).getTop()));
-			}
-		}
-
-		@Override
-		public void onScrollStateChanged(AbsListView view, int scrollState) {
-			// TODO Auto-generated method stub
-			
-		}
-		
-	};
 
 	
 	
@@ -212,13 +97,11 @@ public class ActivityTwo extends ActionBarActivity implements OnClickListener {
 		@Override
 		public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 			mContact cnt = showing_contacts.get(position);
-			MessageService ms = ((MyApplication) getApplicationContext()).getService( ((MyApplication) getApplicationContext()).active_service );
-			mDialog dlg = new mDialog();
-			dlg.participants.add(cnt);
-			ms.setActiveDialog(dlg);
-			Intent intent = new Intent(ActivityTwo.this, ActivityTwo.class);
-			intent.putExtra("mode", "messages");
-			startActivity(intent);
+			Intent intent = new Intent();
+			intent.putExtra("msg_service", msg_service);
+			intent.putExtra("cnt", cnt.address);
+			setResult(RESULT_SELECTED, intent);
+			finish();
 		}
 		
 	};
@@ -243,51 +126,6 @@ public class ActivityTwo extends ActionBarActivity implements OnClickListener {
 		
 	};
 	
-	
-	
-	
-	
-	AsyncTaskCompleteListener<List<mMessage>> async_complete_listener_msg = new AsyncTaskCompleteListener<List<mMessage>>(){
-
-		@Override
-		public void onTaskComplete(List<mMessage> result) {
-			listview.onRefreshComplete();
-			int s = showing_messages.size();
-			for(mMessage msg : result){
-	        	showing_messages.add(0, msg);
-	        }
-			msg_adapter.notifyDataSetChanged();
-			if( (showing_messages.size() - s) == 0 )msg_maxed = true;
-			
-			int firstVisibleItem = listview.getFirstVisiblePosition();
-
-			if(listview.getLastVisiblePosition() > 0)
-				listview.setSelectionFromTop(firstVisibleItem  + result.size(), listview.getChildAt(1).getTop()); //listView.getChildAt(i) works where 0 is the very first visible row and (n-1) is the last visible row (where n is the number of visible views you see).
-
-			msg_isLoading = false;
-	
-		}
-		
-	};
-	
-	
-	AsyncTaskCompleteListener<List<mDialog>> async_complete_listener_dlg = new AsyncTaskCompleteListener<List<mDialog>>(){
-
-		@Override
-		public void onTaskComplete(List<mDialog> result) {
-
-			int s = showing_dialogs.size();
-			for(mDialog dlg : result){
-	        	showing_dialogs.add(dlg);
-	        }
-			dlg_adapter.notifyDataSetChanged();
-			if( (showing_dialogs.size() - s) == 0 )dlg_maxed = true;
-			
-			dlg_isLoading = false;
-		
-		}
-		
-	};
 	
 	AsyncTaskCompleteListener<List<mContact>> async_complete_listener_cnt = new AsyncTaskCompleteListener<List<mContact>>(){
 
@@ -343,29 +181,6 @@ public class ActivityTwo extends ActionBarActivity implements OnClickListener {
 	
 	@Override
 	public void onClick(View view) {
-		switch (view.getId()){
-		case R.id.msg_sendbutton :
-			EditText textLabel = (EditText) findViewById(R.id.msg_entertext);
-			String text = textLabel.getText().toString();
-			textLabel.setText("");
-			
-			InputMethodManager inputManager = (InputMethodManager) app.getSystemService(Context.INPUT_METHOD_SERVICE); 
-			inputManager.hideSoftInputFromWindow(
-			        this.getCurrentFocus().getWindowToken(),
-			        InputMethodManager.HIDE_NOT_ALWAYS); 
-			
-			Log.d("ActivityTwo.onClick.msg_sendbutton", text);
-			MessageService ms = app.getActiveService();
-			mDialog dlg = ms.getActiveDialog();
-			
-			for(mContact cnt : dlg.participants){
-				ms.sendMessage(cnt.address, text);
-			}
-			
-			ms.requestMessages(dlg, 0, 1, async_complete_listener_msg);
-
-			break;
-		}
 			
 	}
 
