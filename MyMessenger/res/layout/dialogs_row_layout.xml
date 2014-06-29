@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/msg_container"
+    android:layout_width="fill_parent"
+    android:layout_height="64dp" >
+	
+    <ImageView
+        android:id="@+id/dlgview_iconmain"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="6dp"
+        android:src="@drawable/sample_image" />
+		
+	<TextView
+	    android:id="@+id/dlgview_dlgname"
+	    android:layout_width="256dp"
+	    android:layout_height="16dp"
+	    android:layout_below="@+id/dlgview_dlgsername"
+	    android:layout_toRightOf="@id/dlgview_iconmain"
+	    android:text="Иванов Иван"
+	    android:textSize="14sp" />
+
+	<TextView
+	    android:id="@+id/dlgview_dlgdate"
+	    android:layout_width="128dp"
+	    android:layout_height="16dp"
+	    android:layout_toRightOf="@id/dlgview_dlgsername"
+	    android:text="00:00 00.00.0000"
+	    android:textSize="14sp" />
+
+	<LinearLayout
+	    android:layout_width="wrap_content"
+	    android:layout_height="32dp"
+	    android:layout_below="@id/dlgview_dlgname"
+	    android:layout_toRightOf="@id/dlgview_iconmain" >
+
+		<ImageView
+		    android:id="@+id/dlgview_dlgtexticon"
+		    android:layout_width="32dp"
+		    android:layout_height="32dp"
+		    android:src="@drawable/sample_image" />
+
+		<TextView
+		    android:id="@+id/dlgview_dlgtext"
+		    android:layout_width="match_parent"
+		    android:layout_height="match_parent"
+		    android:gravity="center_vertical"
+		    android:text="Simple text message"
+		    android:textSize="14sp" />
+
+	</LinearLayout>
+
+	<TextView
+	    android:id="@+id/dlgview_dlgsername"
+	    android:layout_width="128dp"
+	    android:layout_height="16dp"
+	    android:layout_toRightOf="@id/dlgview_iconmain"
+	    android:text="Sms"
+	    android:textSize="14sp" />
+
+</RelativeLayout>
