@@ -10,7 +10,6 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.provider.ContactsContract;
 import android.telephony.SmsManager;
 import android.text.format.Time;
@@ -21,6 +20,7 @@ import com.example.mymessenger.ActivityTwo;
 import com.example.mymessenger.AsyncTaskCompleteListener;
 import com.example.mymessenger.MsgReceiver;
 import com.example.mymessenger.MyApplication;
+import com.example.mymessenger.R;
 import com.example.mymessenger.RunnableAdvanced;
 import com.example.mymessenger.SmsReceiver;
 import com.example.mymessenger.mContact;
@@ -35,20 +35,15 @@ public class Sms extends MessageService {
     private PendingIntent mDeliveredIntent;
 
     public Sms(MyApplication app) {
-        super(app);
-        service_name = "Sms";
-        service_type = SMS;
+        super(app, SMS, R.string.service_name_sms);
 
-        SharedPreferences sPref = app.getSharedPreferences(service_name, Context.MODE_PRIVATE); //загрузка конфигов
+        SharedPreferences sPref = app.getSharedPreferences(msServiceName, Context.MODE_PRIVATE); //загрузка конфигов
 
         mSentIntent = PendingIntent.getBroadcast(app.getApplicationContext(), 0, new Intent("CTS_SMS_SEND_ACTION"),
                 PendingIntent.FLAG_ONE_SHOT);
         mDeliveredIntent = PendingIntent.getBroadcast(app.getApplicationContext(), 0, new Intent("CTS_SMS_DELIVERY_ACTION"),
                 PendingIntent.FLAG_ONE_SHOT);
 
-        self_contact = new mContact("");
-        self_contact.name = sPref.getString("current_account", "account_name");        
-        
         /*Cursor cursor = app.getApplicationContext().getContentResolver().query(Uri.parse("content://mms-sms/conversations?simple=true"), null, null, null, null);
         dlgs_count = cursor.getCount();
         cursor.close();*/
@@ -59,7 +54,8 @@ public class Sms extends MessageService {
 
     }
 
-    public List<mDialog> getDialogs(int offset, int count) {
+    @Override
+    public List<mDialog> load_dialogs_from_db(int count, int offset) {
 		/*
 		 * Inbox = "content://sms/inbox"
 		 * Failed = "content://sms/failed"
@@ -132,8 +128,8 @@ public class Sms extends MessageService {
         return return_dialogs;
     }
 
-
-    public List<mMessage> getMessages(mDialog dlg, int offset, int count) {
+    @Override
+    public List<mMessage> load_msgs_from_db(mDialog dlg, int count, int offset) {
 		/* MESSAGE_TYPE_ALL    = 0;
 		 * MESSAGE_TYPE_INBOX  = 1;
 		 * MESSAGE_TYPE_SENT   = 2;
@@ -186,35 +182,36 @@ public class Sms extends MessageService {
 
 
     @Override
-    public void requestContactData(mContact cnt) {
-        String name = "";
+    public void load_cnts_from_db(List<mContact> cnts) {
+        for(mContact cnt : cnts) {
+            String name = "";
 
-        // define the columns I want the query to return
-        String[] name_projection = new String[] {
-                ContactsContract.PhoneLookup.DISPLAY_NAME,
-                ContactsContract.PhoneLookup._ID};
+            // define the columns I want the query to return
+            String[] name_projection = new String[]{
+                    ContactsContract.PhoneLookup.DISPLAY_NAME,
+                    ContactsContract.PhoneLookup._ID};
 
-        // encode the phone number and build the filter URI
-        Uri contactUri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(cnt.address));
+            // encode the phone number and build the filter URI
+            Uri contactUri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(cnt.address));
 
-        // query time
-        Cursor name_cursor = msApp.getApplicationContext().getContentResolver().query(contactUri, name_projection, null, null, null);
+            // query time
+            Cursor name_cursor = msApp.getApplicationContext().getContentResolver().query(contactUri, name_projection, null, null, null);
 
-        if(name_cursor != null) {
-            if (name_cursor.moveToFirst()) {
-                name =      name_cursor.getString(name_cursor.getColumnIndex(ContactsContract.PhoneLookup.DISPLAY_NAME));
-                //Log.v("SmsService.getContactName", "Contact Found @ " + cnt.address);
-                //Log.v("SmsService.getContactName", "Contact name  = " + name);
-            } else {
-                name = cnt.address;
-                //Log.v("SmsService.getContactName", "Contact Not Found @ " + cnt.address);
+            if (name_cursor != null) {
+                if (name_cursor.moveToFirst()) {
+                    name = name_cursor.getString(name_cursor.getColumnIndex(ContactsContract.PhoneLookup.DISPLAY_NAME));
+                    //Log.v("SmsService.getContactName", "Contact Found @ " + cnt.address);
+                    //Log.v("SmsService.getContactName", "Contact name  = " + name);
+                } else {
+                    name = cnt.address;
+                    //Log.v("SmsService.getContactName", "Contact Not Found @ " + cnt.address);
+                }
+                name_cursor.close();
             }
-            name_cursor.close();
+
+
+            cnt.name = name;
         }
-
-
-        cnt.name = name;
-        //((MyApplication) context).triggerCntsUpdaters();
     }
 
 
@@ -314,7 +311,7 @@ public class Sms extends MessageService {
     @Override
     public String[] getStringsForMainViewMenu() {
         String data[] = {"---", "New message", "All messages"};
-        List<mDialog> t = getDialogs(0, 1);
+        List<mDialog> t = load_dialogs_from_db(0, 1);
         if(t.size() > 0){
             setActiveDialog(t.get(0));
             data[0] = t.get(0).getParticipantsNames();
@@ -350,45 +347,9 @@ public class Sms extends MessageService {
         }
     }
 
+    @Override
+    protected void getContactsFromNet(List<mContact> cnts) {
 
-
-
-    class load_msgs_async extends AsyncTask<Integer, Void, List<mMessage>> {
-        private AsyncTaskCompleteListener<List<mMessage>> callback;
-        private mDialog dlg;
-
-        public load_msgs_async(AsyncTaskCompleteListener<List<mMessage>> cb, mDialog dialog) {
-            this.callback = cb;
-            this.dlg = dialog;
-        }
-
-        protected void onPostExecute(List<mMessage> result) {
-            callback.onTaskComplete(result);
-        }
-
-        @Override
-        protected List<mMessage> doInBackground(Integer... params) {
-            return getMessages(dlg, params[0], params[1]);
-        }
-    }
-
-
-    class load_dlgs_async extends AsyncTask<Integer, Void, List<mDialog>> {
-        private AsyncTaskCompleteListener<List<mDialog>> callback;
-
-        public load_dlgs_async(AsyncTaskCompleteListener<List<mDialog>> cb) {
-            this.callback = cb;
-        }
-
-        protected void onPostExecute(List<mDialog> result) {
-            dlgs_thread_count--;
-            callback.onTaskComplete(result);
-        }
-
-        @Override
-        protected List<mDialog> doInBackground(Integer... params) {
-            return getDialogs(params[0], params[1]);
-        }
     }
 
     @Override
@@ -465,20 +426,11 @@ public class Sms extends MessageService {
         return emoji;
     }
 
-    @Override
-    protected void getDialogsFromDB(int count, int offset, AsyncTaskCompleteListener<List<mDialog>> cb) {
-        dlgs_thread_count++;
-        new load_dlgs_async(cb).execute(offset, count);
-    }
+
 
     @Override
     protected void getDialogsFromNet(int count, int offset,	AsyncTaskCompleteListener<List<mDialog>> cb) {
 
-    }
-
-    @Override
-    protected void getMessagesFromDB(mDialog dlg, int count, int offset, AsyncTaskCompleteListener<List<mMessage>> cb) {
-        new load_msgs_async(cb, dlg).execute(offset, count);
     }
 
     @Override

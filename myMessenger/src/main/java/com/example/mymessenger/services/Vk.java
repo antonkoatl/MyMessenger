@@ -9,14 +9,11 @@ import android.content.SharedPreferences.Editor;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.BitmapFactory;
-import android.os.AsyncTask;
-import android.os.Handler;
 import android.util.Log;
 import android.widget.Toast;
 
 import com.example.mymessenger.ActivityTwo;
 import com.example.mymessenger.AsyncTaskCompleteListener;
-import com.example.mymessenger.ChatMessageFormatter;
 import com.example.mymessenger.DBHelper;
 import com.example.mymessenger.DownloadService;
 import com.example.mymessenger.MainActivity;
@@ -62,7 +59,7 @@ public class Vk extends MessageService {
 
     static final int MAX_REQUESTS_WAITING_FOR_AUTH = 10;
 
-    boolean accum_cnt_handler_isRunning = false; //??
+
 
     boolean finished; //??
     boolean handling; //??
@@ -72,9 +69,9 @@ public class Vk extends MessageService {
     private AsyncTaskCompleteListener<List<mMessage>> requestMessagesCallback; //??
     private AsyncTaskCompleteListener<List<mDialog>> requestDialogsCallback; //??
 
-    final Handler handler; //Для отложенного запроса данных о пользователях
 
-    private List<mContact> accum_cnt;
+
+
 
 
     boolean isSetupFinished = true;
@@ -87,6 +84,8 @@ public class Vk extends MessageService {
     List<VKRequest> requests_waiting_for_auth = new ArrayList<VKRequest>();
 
     AsyncTaskCompleteListener<MessageService> cbms_for_setup = null;
+
+    // Necessary methods
 
     public void requestNewMessagesRunnable(AsyncTaskCompleteListener<RunnableAdvanced<?>> cb){
         VKRequest request = new VKRequest("messages.getLongPollServer", VKParameters.from(VKApiConst.COUNT, String.valueOf(1)));
@@ -129,33 +128,18 @@ public class Vk extends MessageService {
     }
 
     public Vk(MyApplication app) {
-        super(app);
-        service_name = "Vk";
-        service_type = VK;
+        super(app, VK, R.string.service_name_vk);
 
-        sPref = app.getSharedPreferences(service_name, Context.MODE_PRIVATE); //загрузка конфигов
 
-        self_contact = new mContact(sPref.getString("active_account", ""));
-
-        accum_cnt = new ArrayList<mContact>();
-        handler = new Handler();
 
         //Инициализация VkSdk
         //VKUIHelper.onResume((Activity) this.context);
         VKSdk.initialize(sdkListener, "4161005", VKAccessToken.tokenFromSharedPreferences(this.msApp.getApplicationContext(), sTokenKey));
         //VKSdk.authorize(sMyScope, false, true);
         //VKUIHelper.onDestroy((Activity) this.context);
-
-        for(long[] group : emoji){
-            for(long code : group){
-                String scode = ChatMessageFormatter.long_to_hex_string(code);
-                String res_url = "http://vk.com/images/emoji/" + scode + ".png";
-                String ccode = ChatMessageFormatter.string_from_hex_string(scode);
-                ChatMessageFormatter.addPattern(getServiceType(), res_url, ccode);
-            }
-        }
-
     }
+
+    // Not necessary
 
     private void requestAccountInfo() { //Только при setup
         VKRequest request = new VKRequest("users.get", VKParameters.from(VKApiConst.FIELDS, "photo_100"));
@@ -171,19 +155,19 @@ public class Vk extends MessageService {
                     if(response_json.length() > 0){
                         JSONObject item = response_json.getJSONObject(0);
 
-                        if(self_contact == null)self_contact = new mContact(item.getString("id"));
-                        else self_contact.address = item.getString("id");
+                        if(msSelfContact == null) msSelfContact = new mContact(item.getString("id"));
+                        else msSelfContact.address = item.getString("id");
 
                         String name = item.getString("first_name");
                         name += " " + item.getString("last_name");
 
                         String photo_100_url = item.getString("photo_100");
-                        self_contact.icon_100_url = photo_100_url;
-                        self_contact.name = name;
+                        msSelfContact.icon_100_url = photo_100_url;
+                        msSelfContact.name = name;
 
-                        SharedPreferences sPref = msApp.getSharedPreferences(service_name, Context.MODE_PRIVATE); //загрузка конфигов
+                        SharedPreferences sPref = msApp.getSharedPreferences(msServiceName, Context.MODE_PRIVATE); //загрузка конфигов
                         Editor ed = sPref.edit();
-                        ed.putString("current_account", self_contact.address);
+                        ed.putString("current_account", msSelfContact.address);
                         ed.commit();
 
                         if(!isSetupFinished){
@@ -222,116 +206,85 @@ public class Vk extends MessageService {
 
 
     @Override
-    public void requestContactData(mContact cnt) {
-
-        msApp.dbHelper.loadContact(cnt, this);
-
-        accum_cnt.add(cnt);
-        //Log.d("requestContactData", "Requested new contact: " + cnt.address);
-
-        if(!accum_cnt_handler_isRunning){
-            accum_cnt_handler_isRunning = true;
-
-            handler.postDelayed(cnts_request_runnable, 500);
+    protected void getContactsFromNet(final List<mContact> cnts) {
+        String uids = cnts.get(0).address;
+        for(int i = 1; i < cnts.size(); i++){
+            uids += "," + cnts.get(i).address;
         }
 
-    }
-
-    Runnable cnts_request_runnable = new Runnable(){
-
-        @Override
-        public void run() {
-            //Do something after 500ms
-            //Log.d("requestContactData", "Starting downloading contact data...");
-            final List<mContact> cnt_temp = new ArrayList<mContact>(accum_cnt);
-
-
-            if(cnt_temp.size() == 0){
-                Log.e("cnts_request_runnable", "error");
-            }
-
-            accum_cnt.clear();
-
-            String uids = cnt_temp.get(0).address;
-            for(int i = 1; i < cnt_temp.size(); i++){
-                uids += "," + cnt_temp.get(i).address;
-            }
-
-            VKRequest request = new VKRequest("users.get", VKParameters.from(VKApiConst.USER_IDS, uids, VKApiConst.FIELDS, "photo_100"));
-            request.secure = false;
-            VKParameters preparedParameters = request.getPreparedParameters();
+        VKRequest request = new VKRequest("users.get", VKParameters.from(VKApiConst.USER_IDS, uids, VKApiConst.FIELDS, "photo_100"));
+        request.secure = false;
+        VKParameters preparedParameters = request.getPreparedParameters();
 
 
 
-            VKRequestListener rl = new VKRequestListenerWithCallback<Void>(null, Vk.this) {
-                @Override
-                public void onComplete(VKResponse response) {
-                    Log.d("VKRequestListener", response.request.methodName +  " :: onComplete");
-                    try {
-                        JSONArray response_json = response.json.getJSONArray("response");
-                        SQLiteDatabase db = msApp.dbHelper.getWritableDatabase();
-                        String my_table_name = msApp.dbHelper.getTableNameCnts(Vk.this);
-                        boolean updated = false;
+        VKRequestListener rl = new VKRequestListenerWithCallback<Void>(null, Vk.this) {
+            @Override
+            public void onComplete(VKResponse response) {
+                Log.d("VKRequestListener", response.request.methodName +  " :: onComplete");
+                try {
+                    JSONArray response_json = response.json.getJSONArray("response");
+                    SQLiteDatabase db = msApp.dbHelper.getWritableDatabase();
+                    String my_table_name = msApp.dbHelper.getTableNameCnts(Vk.this);
+                    boolean updated = false;
 
-                        for(int i = 0; i < response_json.length(); i++){
-                            JSONObject item = response_json.getJSONObject(i);
+                    for(int i = 0; i < response_json.length(); i++){
+                        JSONObject item = response_json.getJSONObject(i);
 
-                            mContact cnt = cnt_temp.get(i);
+                        mContact cnt = cnts.get(i);
 
-                            String name = item.getString("first_name");
-                            name += " " + item.getString("last_name");
+                        String name = item.getString("first_name");
+                        name += " " + item.getString("last_name");
 
-                            String photo_100_url = item.getString("photo_100");
+                        String photo_100_url = item.getString("photo_100");
 
-                            cnt.icon_100_url = photo_100_url;
+                        cnt.icon_100_url = photo_100_url;
 
-                            cnt.name = name;
+                        cnt.name = name;
 
 
 
-                            String selection = DBHelper.colAddress + " = ?";
-                            String[] selectionArgs = {cnt.address};
-                            Cursor c = db.query(my_table_name, null, selection, selectionArgs, null, null, null);
+                        String selection = DBHelper.colAddress + " = ?";
+                        String[] selectionArgs = {cnt.address};
+                        Cursor c = db.query(my_table_name, null, selection, selectionArgs, null, null, null);
 
-                            if(c.moveToFirst()){
-                                //update
-                                if(!cnt.name.equals(c.getString(c.getColumnIndex(DBHelper.colName)))){
-                                    msApp.dbHelper.updateCnt(cnt, Vk.this);
-                                    updated = true;
-                                }
-                                if(!cnt.icon_100_url.equals(c.getString(c.getColumnIndex(DBHelper.colIcon100url)))){
-                                    msApp.dbHelper.updateCnt(cnt, Vk.this);
-                                    updated = true;
-                                }
-
-                            } else {
-                                // add
-                                msApp.dbHelper.insertCnt(cnt, Vk.this);
+                        if(c.moveToFirst()){
+                            //update
+                            if(!cnt.name.equals(c.getString(c.getColumnIndex(DBHelper.colName)))){
+                                msApp.dbHelper.updateCnt(cnt, Vk.this);
+                                updated = true;
+                            }
+                            if(!cnt.icon_100_url.equals(c.getString(c.getColumnIndex(DBHelper.colIcon100url)))){
+                                msApp.dbHelper.updateCnt(cnt, Vk.this);
                                 updated = true;
                             }
 
+                        } else {
+                            // add
+                            msApp.dbHelper.insertCnt(cnt, Vk.this);
+                            updated = true;
                         }
 
-
-                        if(accum_cnt.size() > 0)handler.postDelayed(cnts_request_runnable, 500);
-                        else accum_cnt_handler_isRunning = false;
-
-                        if(updated)msApp.triggerCntsUpdaters();
-
-                    } catch (JSONException e) {
-                        e.printStackTrace();
                     }
+
+
+                    if(msAccumCnts.size() > 0)handler.postDelayed(cnts_request_runnable, 500);
+                    else accum_cnt_handler_isRunning = false;
+
+                    if(updated)msApp.triggerCntsUpdaters();
+
+                } catch (JSONException e) {
+                    e.printStackTrace();
                 }
+            }
 
 
 
-            };
+        };
 
-            request.executeWithListener(rl);
+        request.executeWithListener(rl);
 
-        }
-
-    };
+    }
 
 
     @Override
@@ -434,7 +387,7 @@ public class Vk extends MessageService {
             Log.d("VKSdkListener", "onReceiveNewToken " + newToken.accessToken + " :: " + sTokenKey + " :: " + VKSdk.getAccessToken().accessToken);
             newToken.saveTokenToSharedPreferences(msApp.getApplicationContext(), sTokenKey);
             authorization_finished = true;
-            authorised = true;
+            msAuthorised = true;
             if(!isSetupFinished){
                 setup_stage++;
                 setupStages();
@@ -445,7 +398,7 @@ public class Vk extends MessageService {
         @Override
         public void onAcceptUserToken(VKAccessToken token) {
             Log.d("VKSdkListener", "onAcceptUserToken" );
-            authorised = true;
+            msAuthorised = true;
             execRequestsWaitingForAuth();
         }
     };
@@ -655,7 +608,7 @@ public class Vk extends MessageService {
                         JSONObject item = items.getJSONObject(i);
 
                         mContact cnt;
-                        if(contacts.get(item.getString("id")) == null){
+                        if(msContacts.get(item.getString("id")) == null){
                             cnt = new mContact(item.getString("id"));
 
                             String name = item.getString("first_name");
@@ -685,9 +638,9 @@ public class Vk extends MessageService {
                             }.setParams(cnt);
                             msApp.dl_waiters.add(tw);
 
-                            contacts.put(item.getString("id"), cnt);
+                            msContacts.put(item.getString("id"), cnt);
                         }
-                        cnt = contacts.get(item.getString("id"));
+                        cnt = msContacts.get(item.getString("id"));
 
                         cnt.online = item.getInt("online") == 1 ? true : false;
 
@@ -708,15 +661,9 @@ public class Vk extends MessageService {
 
 
 
-    private List<mDialog> load_dialogs_from_db(int count, int offset){
-        return msApp.dbHelper.loadDlgs(this, count, offset);
-    }
 
-    private List<mMessage> load_msgs_from_db(mDialog dlg, int count, int offset){
-        List<mMessage> result = msApp.dbHelper.loadMsgs(this, dlg, count, offset);
 
-        return result;
-    }
+
 
     @Override
     public void setup(AsyncTaskCompleteListener<MessageService> asms) {
@@ -730,7 +677,7 @@ public class Vk extends MessageService {
         switch(setup_stage){
             case 1:
                 //authorization_finished = false;
-                authorised = false;
+                msAuthorised = false;
                 try{
                     VKSdk.logout();
                 } catch (Exception ex) {
@@ -745,7 +692,7 @@ public class Vk extends MessageService {
                 break;
             case 3:
                 Editor ed = sPref.edit();
-                ed.putString("active_account", self_contact.address);
+                ed.putString("active_account", msSelfContact.address);
                 ed.commit();
 
                 msApp.dbHelper.createTables(this);
@@ -818,7 +765,7 @@ public class Vk extends MessageService {
         VKRequestListener rl = new VKRequestListenerWithCallback<Void>(null, Vk.this) {
             @Override
             public void onComplete(VKResponse response) {
-                Log.d("requestContacts", "onComplete" );
+                Log.d("requestMarkAsReaded", "onComplete" );
                 try {
                     int resp = response.json.getInt("response");
                     if(resp == 1)tmsg.setFlag(mMessage.READED, true);
@@ -834,53 +781,6 @@ public class Vk extends MessageService {
         request.executeWithListener(rl);
     }
 
-    class load_dlgs_async extends AsyncTask<Integer, Void, List<mDialog>> {
-        private AsyncTaskCompleteListener<List<mDialog>> callback;
-
-        public load_dlgs_async(AsyncTaskCompleteListener<List<mDialog>> cb) {
-            this.callback = cb;
-        }
-
-        protected void onPostExecute(List<mDialog> result) {
-            dlgs_thread_count--;
-            if(callback != null)callback.onTaskComplete(result);
-        }
-
-        @Override
-        protected List<mDialog> doInBackground(Integer... params) {
-            return load_dialogs_from_db(params[0], params[1]);
-        }
-    }
-
-    class load_msgs_async extends AsyncTask<Integer, Void, List<mMessage>> {
-        private AsyncTaskCompleteListener<List<mMessage>> callback;
-        private mDialog dlg;
-
-        public load_msgs_async(AsyncTaskCompleteListener<List<mMessage>> cb, mDialog dialog) {
-            this.callback = cb;
-            this.dlg = dialog;
-        }
-
-        protected void onPostExecute(List<mMessage> result) {
-            updateMsgsThreadCount(dlg, -1);
-            if(callback != null)callback.onTaskComplete(result);
-        }
-
-        @Override
-        protected List<mMessage> doInBackground(Integer... params) {
-            return load_msgs_from_db(dlg, params[0], params[1]);
-        }
-    }
-
-
-
-    @Override
-    protected void getDialogsFromDB(int count, int offset, AsyncTaskCompleteListener<List<mDialog>> cb) {
-        // Обновление информации о количестве потоков загрузки
-        dlgs_thread_count += 1;
-
-        new load_dlgs_async(cb).execute(count, offset);
-    }
 
     @Override
     protected void getDialogsFromNet(int count, int offset, AsyncTaskCompleteListener<List<mDialog>> cb) {
@@ -945,14 +845,6 @@ public class Vk extends MessageService {
         };
 
         request.executeWithListener(rl);
-    }
-
-    @Override
-    protected void getMessagesFromDB(mDialog dlg, int count, int offset, AsyncTaskCompleteListener<List<mMessage>> cb) {
-        // Обновление информации о количестве потоков загрузки
-        updateMsgsThreadCount(dlg, 1);
-
-        new load_msgs_async(cb, dlg).execute(count, offset);
     }
 
     @Override

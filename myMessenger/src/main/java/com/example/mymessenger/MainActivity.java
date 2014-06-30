@@ -146,12 +146,12 @@ public class MainActivity extends SherlockFragmentActivity {
         int selected_service_for_dialogs = app.sPref.getInt("selected_service_for_dialogs", 0);
         String saved = null;
         if(selected_service_for_dialogs == 0){
-            saved = "All";
+            saved = getString(R.string.service_name_all);
         } else if(app.getService(selected_service_for_dialogs) != null){
             saved = app.getService(selected_service_for_dialogs).getServiceName();
         }
 
-        choices.add("All");
+        choices.add(getString(R.string.service_name_all));
         for(MessageService ms : app.myMsgServices){
             choices.add(ms.getServiceName());
         }
@@ -172,9 +172,9 @@ public class MainActivity extends SherlockFragmentActivity {
             public void onItemSelected(AdapterView<?> adapterView, View view, int pos, long id) {
                 String ser_name = (String) adapterView.getItemAtPosition(pos);
                 int ser_type = 0;
-                if(ser_name.equals("All")) ser_type = 0;
-                if(ser_name.equals("Sms")) ser_type = MessageService.SMS;
-                if(ser_name.equals("Vk")) ser_type = MessageService.VK;
+                if(ser_name.equals(getString(R.string.service_name_all))) ser_type = 0;
+                if(ser_name.equals(getString(R.string.service_name_sms))) ser_type = MessageService.SMS;
+                if(ser_name.equals(getString(R.string.service_name_vk))) ser_type = MessageService.VK;
                 ListViewSimpleFragment fr = (ListViewSimpleFragment) pagerAdapter.getRegisteredFragment(1);
                 fr.setSelectedService(ser_type);
             }
@@ -201,7 +201,7 @@ public class MainActivity extends SherlockFragmentActivity {
             int selected_service_for_dialogs = app.sPref.getInt("selected_service_for_dialogs", 0);
             String saved = null;
             if(selected_service_for_dialogs == 0){
-                saved = "All";
+                saved = getString(R.string.service_name_all);
             } else if(app.getService(selected_service_for_dialogs) != null){
                 saved = app.getService(selected_service_for_dialogs).getServiceName();
             }

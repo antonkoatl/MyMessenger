@@ -4,14 +4,19 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.os.AsyncTask;
+import android.os.Handler;
 import android.text.format.Time;
+import android.util.Log;
 
 import com.example.mymessenger.AsyncTaskCompleteListener;
+import com.example.mymessenger.ChatMessageFormatter;
 import com.example.mymessenger.DBHelper;
 import com.example.mymessenger.MyApplication;
 import com.example.mymessenger.RunnableAdvanced;
 import com.example.mymessenger.mContact;
 import com.example.mymessenger.mDialog;
+import com.example.mymessenger.mGlobal.IntegerMutable;
 import com.example.mymessenger.mMessage;
 
 import java.util.ArrayList;
@@ -25,47 +30,50 @@ public abstract class MessageService {
 
     public static final int MSGS_DOWNLOAD_COUNT = 20;
     public static final int DLGS_DOWNLOAD_COUNT = 20;
+    public static final int CNTS_REQUEST_ACCUM_TIME = 1000;
+
+    protected final static Handler handler; //Для отложенного запроса данных о пользователях
 
     protected MyApplication msApp;
-    protected mContact self_contact;
-    private mDialog active_dlg;
-    protected Map<String, mContact> contacts;
-    protected boolean authorised = false;
-    protected String service_name = "service_name";
-    protected int service_type;
+    protected mContact msSelfContact;
+    protected mDialog msActiveDialog;
+    protected Map<String, mContact> msContacts;
+    protected String msServiceName;
+
+    protected boolean accum_cnt_handler_isRunning = false;
+    protected List<mContact> msAccumCnts;
+
+    protected boolean msAuthorised = false;
+    protected int msServiceType;
 
     protected boolean dl_all_dlgs_downloaded = false; //Все диалоги загружены из сети
-    protected mDialog dl_current_dlg; //При загрузке сообщений для одного диалога, показывает что все загружены
     protected boolean dl_all_msgs_downloaded = true;
     protected boolean dl_all_new_msgs_downloaded = false;
     protected int dlgs_thread_count = 0; //Количество потоков, загружающих диалоги в данных момент
     protected Map<mDialog, IntegerMutable> msgs_thread_count; //Количество потоков, загружающих сообщения для определённого диалога в данных момент
     protected SharedPreferences sPref;
 
-    List<mDialog> return_dialogs;
-    List<mMessage> return_msgs;
 
-    class IntegerMutable {
-        public int value;
-
-        public IntegerMutable(int i) {
-            this.value = i;
-        }
-
-        @Override
-        public boolean equals(Object that){
-            if(that instanceof IntegerMutable){
-                IntegerMutable toCompare = (IntegerMutable) that;
-                return this.value == toCompare.value;
-            }
-            return false;
-        }
+    static {
+        handler = new Handler();
     }
 
-    protected MessageService(MyApplication app){
+    protected MessageService(MyApplication app, int ser_type, int ser_name_id){
         this.msApp = app;
-        contacts = new HashMap<String, mContact>();
+        msContacts = new HashMap<String, mContact>();
         msgs_thread_count = new HashMap<mDialog, IntegerMutable>(); //индикаторы загрузки сообщений для диалогов
+
+        msAccumCnts = new ArrayList<mContact>();
+
+
+        msServiceName = msApp.getString(ser_name_id);
+        msServiceType = ser_type;
+
+        sPref = app.getSharedPreferences(String.valueOf(msServiceType), Context.MODE_PRIVATE); //загрузка конфигов
+
+        msSelfContact = new mContact(sPref.getString("active_account", ""));
+
+        setupEmoji();
     }
 
 
@@ -78,24 +86,37 @@ public abstract class MessageService {
 	 * 5. Если все загруженные данные - новые, то продолжить обновление пока количество обновлённых данных не достигнет количества данных в бд
 	 *  * При дополнительной загрузке данных для обновления данные не возвращаются, только обновляется бд
 	 */
-    protected abstract void getMessagesFromDB(mDialog dlg, int count, int offset, AsyncTaskCompleteListener<List<mMessage>> cb);
-    protected abstract void getMessagesFromNet(mDialog dlg, int count, int offset, AsyncTaskCompleteListener<List<mMessage>> cb);
 
-    protected abstract void getDialogsFromDB(int count, int offset, AsyncTaskCompleteListener<List<mDialog>> cb);
-    protected abstract void getDialogsFromNet(int count, int offset, AsyncTaskCompleteListener<List<mDialog>> cb);
+    // Подготовить сервис для работы
+    public abstract void setup(AsyncTaskCompleteListener<MessageService> asms);
 
-    public abstract void requestContactData(mContact cnt);
+    //Инициализация, после авторизации
+    public abstract void init();
+
+    // Удалить сервис
+    public abstract void unsetup();
+
+    // Запросить список контактов - не кешируется в бд, абстрактный
     public abstract void requestContacts(int offset, int count, AsyncTaskCompleteListener<List<mContact>> cb);
-    public abstract void requestMarkAsReaded(mMessage msg, mDialog dlg);
 
-    public abstract void requestNewMessagesRunnable(AsyncTaskCompleteListener<RunnableAdvanced<?>> cb); //Запросить алгоритм для отслеживания новых сообщений
-    public abstract void setup(AsyncTaskCompleteListener<MessageService> asms); //Подготовить сервис для работы
-    public abstract void init(); //Инициализация, после авторизации
-    public abstract void unsetup(); //Удалить сервис
-    public abstract long[][] getEmojiCodes();
-    public abstract int[] getEmojiGroupsIcons();
+    // Запросить данные контакта - контакт обновится, вызовутся триггеры контактов. Перед запросом контакты накапливаются CNTS_REQUEST_ACCUM_TIME миллисекунд
+    public final void requestContactData(mContact cnt){
+        msAccumCnts.add(cnt);
 
-    //Служебные функции
+        if(!accum_cnt_handler_isRunning){
+            accum_cnt_handler_isRunning = true;
+
+            handler.postDelayed(cnts_request_runnable, CNTS_REQUEST_ACCUM_TIME);
+        }
+    }
+
+    // Запросить данные контактов
+    public final void requestContactsData(List<mContact> cnts){
+        getContactsFromNet(cnts);
+        getContactsFromDB(cnts);
+    }
+
+    // Запросить список диалогов
     public final void requestDialogs(int count, int offset, AsyncTaskCompleteListener<List<mDialog>> cb) {
         int dlgs_in_db = msApp.dbHelper.getDlgsCount(MessageService.this);
 
@@ -109,10 +130,12 @@ public abstract class MessageService {
         }
     }
 
+    // TODO: Пересмотреть
     public final void refreshDialogsFromNet(AsyncTaskCompleteListener<List<mDialog>> cb, int count) {
         msRefreshDlgsCb.addRefresh(cb, count);
     }
 
+    // Запросить список сообщений для диалога
     public final void requestMessages(mDialog dlg, int count, int offset, AsyncTaskCompleteListener<List<mMessage>> cb){
         int msgs_in_db = msApp.dbHelper.getMsgsCount(dlg, MessageService.this);
 
@@ -126,49 +149,87 @@ public abstract class MessageService {
         }
     }
 
+    // TODO: Пересмотреть
     public final void refreshMessagesFromNet(mDialog dlg, AsyncTaskCompleteListener<List<mMessage>> cb, int count) {
         msRefreshMsgsCb.addRefresh(dlg, cb, count);
     }
 
-
-    public final String getServiceName() {
-        return service_name;
-    }
-
-    public final int getServiceType() {
-        return service_type;
-    }
-
-    public final mDialog getActiveDialog() {
-        return active_dlg;
-    }
-
-    public final mContact getMyContact() {
-        return self_contact;
-    }
-
+    // Получить контакт, создастся, обновится
+    // TODO: Периодически обновлять
     public final mContact getContact(String address) {
-        mContact cnt = contacts.get(address);
+        mContact cnt = msContacts.get(address);
 
         if(cnt == null){
             cnt = new mContact(address);
-
             requestContactData(cnt);
-
-            contacts.put(address, cnt);
+            msContacts.put(address, cnt);
         }
 
         return cnt;
     }
 
+    // Получить диалог для общения с контактом
+    public final mDialog getDialog(mContact cnt) {
+        // Есть ли в базе? - Загрузить : Создасть. Обновить
+        mDialog dlg = msApp.dbHelper.getDlg(cnt.address, this);
+
+        if(dlg == null){
+            dlg = new mDialog(cnt);
+            msApp.dbHelper.insertDlg(dlg, this);
+            refreshMessagesFromNet(dlg, null, 0);
+        }
+
+        return dlg;
+    }
+
+    // Отправка сообщения
+    public abstract boolean sendMessage(String address, String text);
+
+    // TODO: Переработать, создать механизм проверки успешности передачи данных через интернет перед сохранением в бд
+    public abstract void requestMarkAsReaded(mMessage msg, mDialog dlg);
+
+    // Запросить алгоритм для отслеживания новых сообщений
+    // TODO: Организовать работу в UpdateService через ThreadPool
+    public abstract void requestNewMessagesRunnable(AsyncTaskCompleteListener<RunnableAdvanced<?>> cb);
+
+
+
+
+
+    public final String getServiceName() {
+        return msServiceName;
+    }
+
+    public final int getServiceType() {
+        return msServiceType;
+    }
+
+    public final mDialog getActiveDialog() {
+        return msActiveDialog;
+    }
+
+    public final mContact getMyContact() {
+        return msSelfContact;
+    }
+
+
+    public final void setActiveDialog(mDialog dlg) {
+        msActiveDialog = dlg;
+        msApp.sPref.edit().putInt("active_dialog", msApp.dbHelper.getDlgId(dlg, this)).commit();
+    }
+
+
+    // TODO: Пересмотреть
     public final boolean isAllMsgsDownloaded() {
         return dl_all_msgs_downloaded;
     }
 
+    // Есть ли потоки, загружающие диалоги
     public final boolean isLoadingDlgs() {
         return dlgs_thread_count > 0;
     }
 
+    // Загружаются ли сообщения для данного диалога
     public final boolean isLoadingMsgsForDlg(mDialog dlg) {
         IntegerMutable count = msgs_thread_count.get(dlg);
         if(count == null)return false;
@@ -179,26 +240,53 @@ public abstract class MessageService {
         return true;
     }
 
-    public final void refresh() { //сбросить все индикаторы завершения загрузок
-        dl_all_dlgs_downloaded = false;
-    }
 
 
-    public final void setActiveDialog(mDialog dlg) {
-        active_dlg = dlg;
-        msApp.sPref.edit().putInt("active_dialog", msApp.dbHelper.getDlgId(dlg, this)).commit();
-    }
 
-    //отправка сообщения
-    public abstract boolean sendMessage(String address, String text);
 
-    //функции для интерфейса
+
+
+    // Функции для интерфейса
     public abstract String[] getStringsForMainViewMenu();
     public abstract void MainViewMenu_click(int which, Context context);
 
 
 
-    protected void updateMsgsThreadCount(mDialog dlg, int count){
+
+
+
+
+    // Загрузка данных контактов из бд, выполняется асинхронно, без cb
+    protected final void getContactsFromDB(List<mContact> cnts){
+        new load_cnts_from_db_async().execute(cnts);
+    }
+
+    // Загрузка данных контактов из интернета, после завершения должно проверятся msAccumCnts
+    protected abstract void getContactsFromNet(final List<mContact> cnts);
+
+    // Загрузка сообщений из бд, выполняется асинхронно
+    protected final void getMessagesFromDB(mDialog dlg, int count, int offset, AsyncTaskCompleteListener<List<mMessage>> cb){
+        // Обновление информации о количестве потоков загрузки
+        updateMsgsThreadCount(dlg, 1);
+
+        new load_msgs_from_db_async(cb, dlg).execute(count, offset);
+    }
+
+    // Загрузка сообщений из интернета
+    protected abstract void getMessagesFromNet(mDialog dlg, int count, int offset, AsyncTaskCompleteListener<List<mMessage>> cb);
+
+    // Загрузка диалогов из бд, выполняется асинхронно
+    protected final void getDialogsFromDB(int count, int offset, AsyncTaskCompleteListener<List<mDialog>> cb){
+        // Обновление информации о количестве потоков загрузки
+        dlgs_thread_count += 1;
+        new load_dlgs_from_db_async(cb).execute(count, offset);
+    }
+
+    // Загрузка диалогов из интернета
+    protected abstract void getDialogsFromNet(int count, int offset, AsyncTaskCompleteListener<List<mDialog>> cb);
+
+    // Обновить информацию о потоках загрузки сообщений
+    protected final void updateMsgsThreadCount(mDialog dlg, int count){
         IntegerMutable lm_count = msgs_thread_count.get(dlg);
         if(lm_count == null){
             lm_count = new IntegerMutable(count);
@@ -206,6 +294,124 @@ public abstract class MessageService {
         }
         else lm_count.value += count;
     }
+
+
+
+    protected final class load_cnts_from_db_async extends AsyncTask<List<mContact>, Void, Void> {
+        //private AsyncTaskCompleteListener<List<mContact>> callback;
+
+        /*public load_cnts_from_db_async(AsyncTaskCompleteListener<List<mContact>> cb) {
+            this.callback = cb;
+        }*/
+
+        /*
+        protected void onPostExecute(Void result) {
+            if(callback != null)callback.onTaskComplete(result);
+        }*/
+
+        @Override
+        protected Void doInBackground(List<mContact>... params) {
+            load_cnts_from_db(params[0]);
+            return null;
+        }
+    }
+
+    protected final class load_dlgs_from_db_async extends AsyncTask<Integer, Void, List<mDialog>> {
+        private AsyncTaskCompleteListener<List<mDialog>> callback;
+
+        public load_dlgs_from_db_async(AsyncTaskCompleteListener<List<mDialog>> cb) {
+            this.callback = cb;
+        }
+
+        protected void onPostExecute(List<mDialog> result) {
+            dlgs_thread_count--;
+            if(callback != null)callback.onTaskComplete(result);
+        }
+
+        @Override
+        protected List<mDialog> doInBackground(Integer... params) {
+            return load_dialogs_from_db(params[0], params[1]);
+        }
+    }
+
+    protected final class load_msgs_from_db_async extends AsyncTask<Integer, Void, List<mMessage>> {
+        private AsyncTaskCompleteListener<List<mMessage>> callback;
+        private mDialog dlg;
+
+        public load_msgs_from_db_async(AsyncTaskCompleteListener<List<mMessage>> cb, mDialog dialog) {
+            this.callback = cb;
+            this.dlg = dialog;
+        }
+
+        protected void onPostExecute(List<mMessage> result) {
+            updateMsgsThreadCount(dlg, -1);
+            if(callback != null)callback.onTaskComplete(result);
+        }
+
+        @Override
+        protected List<mMessage> doInBackground(Integer... params) {
+            return load_msgs_from_db(dlg, params[0], params[1]);
+        }
+    }
+
+    protected final Runnable cnts_request_runnable = new Runnable(){
+
+        @Override
+        public void run() {
+            List<mContact> cnt_temp = new ArrayList<mContact>(msAccumCnts);
+
+            if (cnt_temp.size() == 0) {
+                Log.e("cnts_request_runnable", "error");
+            }
+
+            msAccumCnts.clear();
+
+            requestContactsData(cnt_temp);
+        }
+    };
+
+
+
+
+    // Загрузка контактов из бд
+    protected void load_cnts_from_db(List<mContact> cnts){
+        msApp.dbHelper.loadCnts(cnts, MessageService.this);
+    }
+
+    // Загрузка диалогов из бд
+    protected List<mDialog> load_dialogs_from_db(int count, int offset){
+        return msApp.dbHelper.loadDlgs(this, count, offset);
+    }
+
+    // Загрузка сообщений из бд
+    protected List<mMessage> load_msgs_from_db(mDialog dlg, int count, int offset){
+        List<mMessage> result = msApp.dbHelper.loadMsgs(this, dlg, count, offset);
+
+        return result;
+    }
+
+
+
+
+
+
+
+    // TODO: Что это, зачем это?
+    public final void refresh() { //сбросить все индикаторы завершения загрузок
+        dl_all_dlgs_downloaded = false;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
 
     protected class msUpdateDlgsDB_cb implements AsyncTaskCompleteListener<List<mDialog>>{
         AsyncTaskCompleteListener<List<mDialog>> cb;
@@ -515,22 +721,36 @@ public abstract class MessageService {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
     // Emoji
+    public abstract long[][] getEmojiCodes();
     public abstract String getEmojiUrl(long code);
+    public abstract int[] getEmojiGroupsIcons();
 
-
-    public mDialog getDialog(mContact cnt) {
-        // TODO Есть ли в базе? - Загрузить : Создасть. Обновить
-        mDialog dlg = msApp.dbHelper.getDlg(cnt.address, this);
-
-        if(dlg == null){
-            dlg = new mDialog(cnt);
-            msApp.dbHelper.insertDlg(dlg, this);
-            refreshMessagesFromNet(dlg, null, 0);
+    public void setupEmoji(){
+        for(long[] group : getEmojiCodes()){
+            for(long code : group){
+                String scode = ChatMessageFormatter.long_to_hex_string(code);
+                String res_url = getEmojiUrl(code);
+                String ccode = ChatMessageFormatter.string_from_hex_string(scode);
+                ChatMessageFormatter.addPattern(getServiceType(), res_url, ccode);
+            }
         }
-
-        return dlg;
     }
+
+
+
 
 
 

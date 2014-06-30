@@ -34,4 +34,10 @@
         <item>India</item>
     </string-array>
 
+
+    <!-- Services names -->
+    <string name="service_name_all">All</string>
+    <string name="service_name_sms">Sms</string>
+    <string name="service_name_vk">Vkontakte</string>
+
 </resources>

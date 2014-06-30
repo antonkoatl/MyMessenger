@@ -47,4 +47,21 @@ public class mGlobal {
         return "";
     }
 
+    public static class IntegerMutable {
+        public int value;
+
+        public IntegerMutable(int i) {
+            this.value = i;
+        }
+
+        @Override
+        public boolean equals(Object that){
+            if(that instanceof IntegerMutable){
+                IntegerMutable toCompare = (IntegerMutable) that;
+                return this.value == toCompare.value;
+            }
+            return false;
+        }
+    }
+
 }

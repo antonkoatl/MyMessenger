@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+
+    <!-- Services names -->
+    <string name="service_name_all">Все</string>
+    <string name="service_name_sms">Смс</string>
+    <string name="service_name_vk">Вконтакте</string>
+</resources>
