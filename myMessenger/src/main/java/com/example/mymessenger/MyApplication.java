@@ -91,14 +91,8 @@ public class MyApplication extends Application {
         }
 
         active_service = sPref.getInt("active_service", 0);
-        if(active_service != 0 && getService(active_service) != null){
-            MessageService ms = getService(active_service);
-            int dialog_id = sPref.getInt("active_dialog", 0);
-            if(dialog_id > 0){
-                mDialog dlg = dbHelper.getDlgById(dialog_id, getActiveService());
-                if(dlg != null)ms.setActiveDialog(dlg);
-            }
-        }
+
+        setupServices();
 
         //Запуск сервиса обновлений        
         Intent intent1 = new Intent(this, UpdateService.class);
@@ -258,8 +252,6 @@ public class MyApplication extends Application {
 
                 @Override
                 public void onTaskComplete(MessageService ms) {
-                    ms.init();
-
                     String usingservices = "";
                     for(MessageService mst : myMsgServices){
                         usingservices += String.valueOf(mst.getServiceType()) + ",";
@@ -316,12 +308,6 @@ public class MyApplication extends Application {
         ed.commit();
 
         myMsgServices.remove(ms);
-    }
-
-    public void initServices() {
-        for(MessageService ms : myMsgServices){
-            ms.init();
-        }
     }
 
     public void refreshDialogsFromNet(AsyncTaskCompleteListener<List<mDialog>> cb, int count) {
@@ -384,6 +370,11 @@ public class MyApplication extends Application {
             dbHelper.insertMsg(msg, my_table_name, dlg_key);
             return true;
         }
+    }
+
+    public void setupServices() {
+        for(MessageService ms : myMsgServices)
+            ms.setup(null);
     }
 
     public interface AsyncTaskCompleteListenerMsg{

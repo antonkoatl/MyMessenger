@@ -6,6 +6,7 @@ import com.example.mymessenger.AsyncTaskCompleteListener;
 import com.vk.sdk.api.VKError;
 import com.vk.sdk.api.VKRequest;
 import com.vk.sdk.api.VKRequest.VKRequestListener;
+import com.vk.sdk.api.VKResponse;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,6 +22,10 @@ public abstract class VKRequestListenerWithCallback<T> extends VKRequestListener
         this.vk = vk;
     }
 
+    @Override
+    public void onComplete(VKResponse response) {
+        Log.d("VKRequestListener", response.request.methodName +  " :: onComplete");
+    }
 
     @Override
     public void onError(VKError error) {

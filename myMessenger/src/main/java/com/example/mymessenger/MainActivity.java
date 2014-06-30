@@ -49,7 +49,7 @@ public class MainActivity extends SherlockFragmentActivity {
         getSupportActionBar().setHomeButtonEnabled(true);
         app = (MyApplication) getApplicationContext();
         
-        app.initServices();
+
         
         pagerAdapter = new MyPagerAdapter(getSupportFragmentManager(), this);
         mViewPager = (ViewPager) findViewById(R.id.pager);

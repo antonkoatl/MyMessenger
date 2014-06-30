@@ -66,4 +66,16 @@ public class mContact implements Parcelable, Comparable<mContact> {
 	public int compareTo(mContact another) {
 		return address.compareTo(another.address);
 	}
+
+    public void update(mContact result) {
+        this.address = result.address;
+        this.name = result.name;
+        this.icon_100_url = result.icon_100_url;
+
+        clearCached();
+    }
+
+    public void clearCached(){
+        icon_100 = null;
+    }
 }

@@ -37,7 +37,7 @@ public class Sms extends MessageService {
     public Sms(MyApplication app) {
         super(app, SMS, R.string.service_name_sms);
 
-        SharedPreferences sPref = app.getSharedPreferences(msServiceName, Context.MODE_PRIVATE); //загрузка конфигов
+
 
         mSentIntent = PendingIntent.getBroadcast(app.getApplicationContext(), 0, new Intent("CTS_SMS_SEND_ACTION"),
                 PendingIntent.FLAG_ONE_SHOT);
@@ -50,8 +50,19 @@ public class Sms extends MessageService {
     }
 
     @Override
-    public void setup(AsyncTaskCompleteListener<MessageService> asms) {
+    protected void logout_from_net() {
 
+    }
+
+    @Override
+    public void authorize(Context context) {
+
+    }
+
+    @Override
+    protected void requestAccountInfoFromNet(AsyncTaskCompleteListener<mContact> cb) {
+        mContact cnt = new mContact("");
+        cnt.name = "NOWAYTOGETTHIS";
     }
 
     @Override
@@ -174,7 +185,7 @@ public class Sms extends MessageService {
             } else break;
         }
 
-        if(return_msgs.size() == 0)dl_all_msgs_downloaded = true;
+        //if(return_msgs.size() == 0)dl_all_msgs_downloaded = true;
 
         cursor.close();
         return return_msgs;
@@ -395,11 +406,6 @@ public class Sms extends MessageService {
 
     }
 
-    @Override
-    public void init() {
-        // TODO Auto-generated method stub
-
-    }
 
     @Override
     public void unsetup() {

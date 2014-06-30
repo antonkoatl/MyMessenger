@@ -1,11 +1,13 @@
 package com.example.mymessenger.services;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.AsyncTask;
 import android.os.Handler;
+import android.os.HandlerThread;
 import android.text.format.Time;
 import android.util.Log;
 
@@ -14,6 +16,7 @@ import com.example.mymessenger.ChatMessageFormatter;
 import com.example.mymessenger.DBHelper;
 import com.example.mymessenger.MyApplication;
 import com.example.mymessenger.RunnableAdvanced;
+import com.example.mymessenger.UpdateService;
 import com.example.mymessenger.mContact;
 import com.example.mymessenger.mDialog;
 import com.example.mymessenger.mGlobal.IntegerMutable;
@@ -32,7 +35,7 @@ public abstract class MessageService {
     public static final int DLGS_DOWNLOAD_COUNT = 20;
     public static final int CNTS_REQUEST_ACCUM_TIME = 1000;
 
-    protected final static Handler handler; //Для отложенного запроса данных о пользователях
+    protected final static Handler msHandler; //Для отложенного запроса данных о пользователях
 
     protected MyApplication msApp;
     protected mContact msSelfContact;
@@ -40,25 +43,28 @@ public abstract class MessageService {
     protected Map<String, mContact> msContacts;
     protected String msServiceName;
 
-    protected boolean accum_cnt_handler_isRunning = false;
+    protected boolean ms_accum_cnt_handler_isRunning = false;
     protected List<mContact> msAccumCnts;
 
     protected boolean msAuthorised = false;
+    protected boolean msAuthorisationFinished = false;
     protected int msServiceType;
 
-    protected boolean dl_all_dlgs_downloaded = false; //Все диалоги загружены из сети
-    protected boolean dl_all_msgs_downloaded = true;
-    protected boolean dl_all_new_msgs_downloaded = false;
+    private boolean dl_all_dlgs_downloaded = false; //Все диалоги загружены из сети
+    private boolean dl_all_msgs_downloaded = true;
     protected int dlgs_thread_count = 0; //Количество потоков, загружающих диалоги в данных момент
     protected Map<mDialog, IntegerMutable> msgs_thread_count; //Количество потоков, загружающих сообщения для определённого диалога в данных момент
     protected SharedPreferences sPref;
 
+    boolean msIsSetupFinished = true;
+    protected int msSetupStage;
+    protected AsyncTaskCompleteListener<MessageService> cbms_for_setup = null;
 
     static {
-        handler = new Handler();
+        msHandler = new Handler();
     }
 
-    protected MessageService(MyApplication app, int ser_type, int ser_name_id){
+    protected MessageService(MyApplication app, int ser_type, int ser_name_id) {
         this.msApp = app;
         msContacts = new HashMap<String, mContact>();
         msgs_thread_count = new HashMap<mDialog, IntegerMutable>(); //индикаторы загрузки сообщений для диалогов
@@ -87,40 +93,78 @@ public abstract class MessageService {
 	 *  * При дополнительной загрузке данных для обновления данные не возвращаются, только обновляется бд
 	 */
 
-    // Подготовить сервис для работы
-    public abstract void setup(AsyncTaskCompleteListener<MessageService> asms);
+    public abstract void authorize(Context context);
 
-    //Инициализация, после авторизации
-    public abstract void init();
+    // Логаут
+    public void logout() {
+        msAuthorised = false;
+    }
+
+    // Подготовить сервис для работы
+    public final /**/void setup(AsyncTaskCompleteListener<MessageService> asms) {
+        msIsSetupFinished = false;
+        msSetupStage = 1;
+        cbms_for_setup = asms;
+        setupStages();
+    }
 
     // Удалить сервис
     public abstract void unsetup();
+
+    // Обновить информацию об аккаунте
+    public void requestAccountInfo() {
+        requestAccountInfoFromNet(self_contact_cb);
+    }
 
     // Запросить список контактов - не кешируется в бд, абстрактный
     public abstract void requestContacts(int offset, int count, AsyncTaskCompleteListener<List<mContact>> cb);
 
     // Запросить данные контакта - контакт обновится, вызовутся триггеры контактов. Перед запросом контакты накапливаются CNTS_REQUEST_ACCUM_TIME миллисекунд
-    public final void requestContactData(mContact cnt){
+    public final void requestContactData(mContact cnt) {
         msAccumCnts.add(cnt);
 
-        if(!accum_cnt_handler_isRunning){
-            accum_cnt_handler_isRunning = true;
+        if (!ms_accum_cnt_handler_isRunning) {
+            ms_accum_cnt_handler_isRunning = true;
 
-            handler.postDelayed(cnts_request_runnable, CNTS_REQUEST_ACCUM_TIME);
+            msHandler.postDelayed(cnts_request_runnable, CNTS_REQUEST_ACCUM_TIME);
         }
     }
 
     // Запросить данные контактов
-    public final void requestContactsData(List<mContact> cnts){
-        getContactsFromNet(cnts);
+    public final void requestContactsData(List<mContact> cnts) {
         getContactsFromDB(cnts);
+        getContactsFromNet(cnts);
+    }
+
+    // Запросить активный диалог. Загружается из памяти, если нет - из интернета последний
+    public void requestActiveDlg() {
+        //if(getActiveDialog() != null)return;
+        int dialog_id = sPref.getInt("active_dialog", 0);
+        if(dialog_id > 0){
+            mDialog dlg = msApp.dbHelper.getDlgById(dialog_id, this);
+            if(dlg != null){
+                setActiveDialog(dlg);
+                return;
+            }
+        }
+
+        final AsyncTaskCompleteListener<List<mDialog>> acb = new AsyncTaskCompleteListener<List<mDialog>>(){
+
+            @Override
+            public void onTaskComplete(List<mDialog> result) {
+                if(result.size() > 0)setActiveDialog(result.get(0));
+            }
+
+        };
+
+        requestDialogs(1, 0, acb);
     }
 
     // Запросить список диалогов
     public final void requestDialogs(int count, int offset, AsyncTaskCompleteListener<List<mDialog>> cb) {
         int dlgs_in_db = msApp.dbHelper.getDlgsCount(MessageService.this);
 
-        if(offset + count < dlgs_in_db){
+        if (offset + count < dlgs_in_db) {
             getDialogsFromDB(count, offset, cb);
             refreshDialogsFromNet(cb, 0);
         } else {
@@ -136,10 +180,10 @@ public abstract class MessageService {
     }
 
     // Запросить список сообщений для диалога
-    public final void requestMessages(mDialog dlg, int count, int offset, AsyncTaskCompleteListener<List<mMessage>> cb){
+    public final void requestMessages(mDialog dlg, int count, int offset, AsyncTaskCompleteListener<List<mMessage>> cb) {
         int msgs_in_db = msApp.dbHelper.getMsgsCount(dlg, MessageService.this);
 
-        if(offset + count < msgs_in_db){
+        if (offset + count < msgs_in_db) {
             getMessagesFromDB(dlg, count, offset, cb);
             refreshMessagesFromNet(dlg, cb, 0);
         } else {
@@ -159,7 +203,7 @@ public abstract class MessageService {
     public final mContact getContact(String address) {
         mContact cnt = msContacts.get(address);
 
-        if(cnt == null){
+        if (cnt == null) {
             cnt = new mContact(address);
             requestContactData(cnt);
             msContacts.put(address, cnt);
@@ -173,7 +217,7 @@ public abstract class MessageService {
         // Есть ли в базе? - Загрузить : Создасть. Обновить
         mDialog dlg = msApp.dbHelper.getDlg(cnt.address, this);
 
-        if(dlg == null){
+        if (dlg == null) {
             dlg = new mDialog(cnt);
             msApp.dbHelper.insertDlg(dlg, this);
             refreshMessagesFromNet(dlg, null, 0);
@@ -191,9 +235,6 @@ public abstract class MessageService {
     // Запросить алгоритм для отслеживания новых сообщений
     // TODO: Организовать работу в UpdateService через ThreadPool
     public abstract void requestNewMessagesRunnable(AsyncTaskCompleteListener<RunnableAdvanced<?>> cb);
-
-
-
 
 
     public final String getServiceName() {
@@ -232,8 +273,8 @@ public abstract class MessageService {
     // Загружаются ли сообщения для данного диалога
     public final boolean isLoadingMsgsForDlg(mDialog dlg) {
         IntegerMutable count = msgs_thread_count.get(dlg);
-        if(count == null)return false;
-        if(count.value == 0){
+        if (count == null) return false;
+        if (count.value == 0) {
             msgs_thread_count.remove(dlg);
             return false;
         }
@@ -241,13 +282,9 @@ public abstract class MessageService {
     }
 
 
-
-
-
-
-
     // Функции для интерфейса
     public abstract String[] getStringsForMainViewMenu();
+
     public abstract void MainViewMenu_click(int which, Context context);
 
 
@@ -256,16 +293,38 @@ public abstract class MessageService {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    // Получение информации о текущем аккауте
+    protected abstract void requestAccountInfoFromNet(final AsyncTaskCompleteListener<mContact> cb);
+
     // Загрузка данных контактов из бд, выполняется асинхронно, без cb
-    protected final void getContactsFromDB(List<mContact> cnts){
-        new load_cnts_from_db_async().execute(cnts);
+    protected final void getContactsFromDB(final List<mContact> cnts) {
+        msHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                load_cnts_from_db(cnts);
+            }
+        });
     }
 
-    // Загрузка данных контактов из интернета, после завершения должно проверятся msAccumCnts
+    // Загрузка данных контактов из интернета, после завершения должно проверятся msAccumCnts. Если что то обновилось - вызываться триггеры
     protected abstract void getContactsFromNet(final List<mContact> cnts);
 
     // Загрузка сообщений из бд, выполняется асинхронно
-    protected final void getMessagesFromDB(mDialog dlg, int count, int offset, AsyncTaskCompleteListener<List<mMessage>> cb){
+    protected final void getMessagesFromDB(mDialog dlg, int count, int offset, AsyncTaskCompleteListener<List<mMessage>> cb) {
         // Обновление информации о количестве потоков загрузки
         updateMsgsThreadCount(dlg, 1);
 
@@ -276,7 +335,7 @@ public abstract class MessageService {
     protected abstract void getMessagesFromNet(mDialog dlg, int count, int offset, AsyncTaskCompleteListener<List<mMessage>> cb);
 
     // Загрузка диалогов из бд, выполняется асинхронно
-    protected final void getDialogsFromDB(int count, int offset, AsyncTaskCompleteListener<List<mDialog>> cb){
+    protected final void getDialogsFromDB(int count, int offset, AsyncTaskCompleteListener<List<mDialog>> cb) {
         // Обновление информации о количестве потоков загрузки
         dlgs_thread_count += 1;
         new load_dlgs_from_db_async(cb).execute(count, offset);
@@ -286,34 +345,12 @@ public abstract class MessageService {
     protected abstract void getDialogsFromNet(int count, int offset, AsyncTaskCompleteListener<List<mDialog>> cb);
 
     // Обновить информацию о потоках загрузки сообщений
-    protected final void updateMsgsThreadCount(mDialog dlg, int count){
+    protected final void updateMsgsThreadCount(mDialog dlg, int count) {
         IntegerMutable lm_count = msgs_thread_count.get(dlg);
-        if(lm_count == null){
+        if (lm_count == null) {
             lm_count = new IntegerMutable(count);
             msgs_thread_count.put(dlg, lm_count);
-        }
-        else lm_count.value += count;
-    }
-
-
-
-    protected final class load_cnts_from_db_async extends AsyncTask<List<mContact>, Void, Void> {
-        //private AsyncTaskCompleteListener<List<mContact>> callback;
-
-        /*public load_cnts_from_db_async(AsyncTaskCompleteListener<List<mContact>> cb) {
-            this.callback = cb;
-        }*/
-
-        /*
-        protected void onPostExecute(Void result) {
-            if(callback != null)callback.onTaskComplete(result);
-        }*/
-
-        @Override
-        protected Void doInBackground(List<mContact>... params) {
-            load_cnts_from_db(params[0]);
-            return null;
-        }
+        } else lm_count.value += count;
     }
 
     protected final class load_dlgs_from_db_async extends AsyncTask<Integer, Void, List<mDialog>> {
@@ -325,7 +362,7 @@ public abstract class MessageService {
 
         protected void onPostExecute(List<mDialog> result) {
             dlgs_thread_count--;
-            if(callback != null)callback.onTaskComplete(result);
+            if (callback != null) callback.onTaskComplete(result);
         }
 
         @Override
@@ -345,7 +382,7 @@ public abstract class MessageService {
 
         protected void onPostExecute(List<mMessage> result) {
             updateMsgsThreadCount(dlg, -1);
-            if(callback != null)callback.onTaskComplete(result);
+            if (callback != null) callback.onTaskComplete(result);
         }
 
         @Override
@@ -354,7 +391,7 @@ public abstract class MessageService {
         }
     }
 
-    protected final Runnable cnts_request_runnable = new Runnable(){
+    protected final Runnable cnts_request_runnable = new Runnable() {
 
         @Override
         public void run() {
@@ -370,25 +407,62 @@ public abstract class MessageService {
         }
     };
 
-
-
+    // Логаут
+    protected abstract void logout_from_net();
 
     // Загрузка контактов из бд
-    protected void load_cnts_from_db(List<mContact> cnts){
+    protected void load_cnts_from_db(List<mContact> cnts) {
         msApp.dbHelper.loadCnts(cnts, MessageService.this);
+        msApp.triggerCntsUpdaters();
     }
 
     // Загрузка диалогов из бд
-    protected List<mDialog> load_dialogs_from_db(int count, int offset){
+    protected List<mDialog> load_dialogs_from_db(int count, int offset) {
         return msApp.dbHelper.loadDlgs(this, count, offset);
     }
 
     // Загрузка сообщений из бд
-    protected List<mMessage> load_msgs_from_db(mDialog dlg, int count, int offset){
+    protected List<mMessage> load_msgs_from_db(mDialog dlg, int count, int offset) {
         List<mMessage> result = msApp.dbHelper.loadMsgs(this, dlg, count, offset);
 
         return result;
     }
+
+    // Поэтапная настройка сервиса
+    protected void setupStages() {
+        switch (msSetupStage) {
+            case 1:
+                logout();
+                authorize(MyApplication.getMainActivity());
+                break;
+            case 2:
+                requestActiveDlg();
+                requestAccountInfo();
+                break;
+            case 3:
+                msApp.dbHelper.createTables(this);
+
+                // Обновления
+                Intent intent = new Intent(msApp.getApplicationContext(), UpdateService.class);
+                intent.putExtra("specific_service", getServiceType());
+                msApp.startService(intent);
+
+                msSetupStage++;
+                setupStages();
+                break;
+            case 4:
+                msIsSetupFinished = true;
+                if (cbms_for_setup != null) cbms_for_setup.onTaskComplete(this);
+                break;
+        }
+    }
+
+
+
+
+
+
+
 
 
 
@@ -402,18 +476,7 @@ public abstract class MessageService {
     }
 
 
-
-
-
-
-
-
-
-
-
-
-
-    protected class msUpdateDlgsDB_cb implements AsyncTaskCompleteListener<List<mDialog>>{
+    protected class msUpdateDlgsDB_cb implements AsyncTaskCompleteListener<List<mDialog>> {
         AsyncTaskCompleteListener<List<mDialog>> cb;
 
         public msUpdateDlgsDB_cb(AsyncTaskCompleteListener<List<mDialog>> cb) {
@@ -431,11 +494,11 @@ public abstract class MessageService {
                 String[] selectionArgs = {mdl.getParticipantsAddresses()};
                 Cursor c = db.query(my_table_name, null, selection, selectionArgs, null, null, null);
 
-                if(c.moveToFirst()){
+                if (c.moveToFirst()) {
                     Time last_time_in_db = new Time();
-                    last_time_in_db.set( c.getLong( c.getColumnIndex(DBHelper.colLastmsgtime)) );
+                    last_time_in_db.set(c.getLong(c.getColumnIndex(DBHelper.colLastmsgtime)));
 
-                    if(mdl.last_msg_time.after(last_time_in_db)){
+                    if (mdl.last_msg_time.after(last_time_in_db)) {
                         //update
                         int id = c.getInt(c.getColumnIndex(DBHelper.colId));
                         c.close();
@@ -458,14 +521,14 @@ public abstract class MessageService {
                 }
             }
 
-            if(cb != null){
+            if (cb != null) {
                 cb.onTaskComplete(dlgs);
             }
         }
 
     }
 
-    protected class msUpdateMsgsDB_cb implements AsyncTaskCompleteListener<List<mMessage>>{
+    protected class msUpdateMsgsDB_cb implements AsyncTaskCompleteListener<List<mMessage>> {
         AsyncTaskCompleteListener<List<mMessage>> cb;
         mDialog dlg;
 
@@ -479,7 +542,7 @@ public abstract class MessageService {
 
             result = msApp.update_db_msgs(result, MessageService.this, dlg);
 
-            if(cb != null){
+            if (cb != null) {
                 cb.onTaskComplete(result);
             }
         }
@@ -487,7 +550,7 @@ public abstract class MessageService {
     }
 
 
-    protected class msRefreshDlgs_cb implements AsyncTaskCompleteListener<List<mDialog>>{
+    protected class msRefreshDlgs_cb implements AsyncTaskCompleteListener<List<mDialog>> {
         int count;
         int max_count;
         int offset;
@@ -501,18 +564,18 @@ public abstract class MessageService {
             String my_table_name = msApp.dbHelper.getTableNameDlgs(MessageService.this);
             boolean all_new = true;
 
-            if(result.size() < count)dl_all_dlgs_downloaded = true;
+            if (result.size() < count) dl_all_dlgs_downloaded = true;
 
             for (mDialog mdl : result) {
                 String selection = DBHelper.colParticipants + " = ?";
                 String[] selectionArgs = {mdl.getParticipantsAddresses()};
                 Cursor c = db.query(my_table_name, null, selection, selectionArgs, null, null, null);
 
-                if(c.moveToFirst()){
+                if (c.moveToFirst()) {
                     Time last_time_in_db = new Time();
-                    last_time_in_db.set( c.getLong( c.getColumnIndex(DBHelper.colLastmsgtime)) );
+                    last_time_in_db.set(c.getLong(c.getColumnIndex(DBHelper.colLastmsgtime)));
 
-                    if(mdl.last_msg_time.after(last_time_in_db)){
+                    if (mdl.last_msg_time.after(last_time_in_db)) {
                         //update
                         int id = c.getInt(c.getColumnIndex(DBHelper.colId));
                         c.close();
@@ -536,16 +599,16 @@ public abstract class MessageService {
                 }
             }
 
-            if(all_new && result.size() > 0){
+            if (all_new && result.size() > 0) {
                 int dlgs_to_update = msApp.dbHelper.getDlgsCount(MessageService.this) - (offset + count);
-                if( max_count > 0 && (offset + dlgs_to_update) > max_count){
+                if (max_count > 0 && (offset + dlgs_to_update) > max_count) {
                     dlgs_to_update = max_count - offset;
                 }
 
-                if( dlgs_to_update > 0 ){
+                if (dlgs_to_update > 0) {
                     offset = offset + count;
 
-                    if(dlgs_to_update > DLGS_DOWNLOAD_COUNT){
+                    if (dlgs_to_update > DLGS_DOWNLOAD_COUNT) {
                         count = DLGS_DOWNLOAD_COUNT;
                     } else {
                         count = dlgs_to_update;
@@ -561,18 +624,18 @@ public abstract class MessageService {
 
         }
 
-        private void run_cbs(){
-            for(AsyncTaskCompleteListener<List<mDialog>> cb : update_cbs){
-                if(cb != null)cb.onTaskComplete(update_dlgs);
+        private void run_cbs() {
+            for (AsyncTaskCompleteListener<List<mDialog>> cb : update_cbs) {
+                if (cb != null) cb.onTaskComplete(update_dlgs);
             }
             update_cbs.clear();
             update_dlgs = new ArrayList<mDialog>();
             running = false;
         }
 
-        public void addRefresh(AsyncTaskCompleteListener<List<mDialog>> cb,	int count) {
+        public void addRefresh(AsyncTaskCompleteListener<List<mDialog>> cb, int count) {
             update_cbs.add(cb);
-            if(!running){
+            if (!running) {
                 running = true;
                 max_count = count;
                 this.count = DLGS_DOWNLOAD_COUNT;
@@ -583,8 +646,8 @@ public abstract class MessageService {
 
     };
 
-    protected class msRefreshMsgs_cb implements AsyncTaskCompleteListener<List<mMessage>>{
-        class Params{
+    protected class msRefreshMsgs_cb implements AsyncTaskCompleteListener<List<mMessage>> {
+        class Params {
             int count;
             int max_count;
             int offset;
@@ -605,18 +668,18 @@ public abstract class MessageService {
 
             Params cp = Psets.get(0);
 
-            if(result.size() < cp.count)dl_all_msgs_downloaded = true;
+            if (result.size() < cp.count) dl_all_msgs_downloaded = true;
             int dlg_key = msApp.dbHelper.getDlgId(cp.dlg, MessageService.this);
 
             for (mMessage msg : result) {
                 String selection = DBHelper.colDlgkey + " = ? AND " + DBHelper.colSendtime + " = ? AND " + DBHelper.colBody + " = ?";
-                String[] selectionArgs = { String.valueOf(dlg_key), String.valueOf(msg.sendTime.toMillis(false)), msg.text };
+                String[] selectionArgs = {String.valueOf(dlg_key), String.valueOf(msg.sendTime.toMillis(false)), msg.text};
                 Cursor c = db.query(my_table_name, null, selection, selectionArgs, null, null, null);
 
-                if(c.moveToFirst()){
-                    int  flags_in_db = c.getInt( c.getColumnIndex(DBHelper.colFlags) );
+                if (c.moveToFirst()) {
+                    int flags_in_db = c.getInt(c.getColumnIndex(DBHelper.colFlags));
 
-                    if(msg.flags != flags_in_db){
+                    if (msg.flags != flags_in_db) {
                         //update
                         int id = c.getInt(c.getColumnIndex(DBHelper.colId));
                         c.close();
@@ -640,15 +703,15 @@ public abstract class MessageService {
                 }
             }
 
-            if(all_new && result.size() > 0){
+            if (all_new && result.size() > 0) {
                 int msgs_to_update = msApp.dbHelper.getMsgsCount(dlg_key, MessageService.this) - (cp.offset + cp.count);
-                if( cp.max_count > 0 && (cp.offset + msgs_to_update) > cp.max_count){
+                if (cp.max_count > 0 && (cp.offset + msgs_to_update) > cp.max_count) {
                     msgs_to_update = cp.max_count - cp.offset;
                 }
 
-                cp.offset =  cp.offset + cp.count;
-                if( msgs_to_update > 0 ){
-                    if(msgs_to_update > MSGS_DOWNLOAD_COUNT){
+                cp.offset = cp.offset + cp.count;
+                if (msgs_to_update > 0) {
+                    if (msgs_to_update > MSGS_DOWNLOAD_COUNT) {
                         cp.count = MSGS_DOWNLOAD_COUNT;
                     } else {
                         cp.count = msgs_to_update;
@@ -664,13 +727,13 @@ public abstract class MessageService {
 
         }
 
-        private void run_cbs(){
+        private void run_cbs() {
             Params cp = Psets.remove(0);
-            for(AsyncTaskCompleteListener<List<mMessage>> cb : cp.update_cbs){
-                if(cb != null)cb.onTaskComplete(cp.update_msgs);
+            for (AsyncTaskCompleteListener<List<mMessage>> cb : cp.update_cbs) {
+                if (cb != null) cb.onTaskComplete(cp.update_msgs);
             }
 
-            if(Psets.size() == 0){
+            if (Psets.size() == 0) {
                 running = false;
             } else {
                 cp = Psets.get(0);
@@ -680,13 +743,13 @@ public abstract class MessageService {
 
         public void addRefresh(mDialog dlg, AsyncTaskCompleteListener<List<mMessage>> cb, int count) {
             Params np = null;
-            for(Params pp : Psets){
-                if(pp.dlg.equals(dlg)){
+            for (Params pp : Psets) {
+                if (pp.dlg.equals(dlg)) {
                     np = pp;
                     break;
                 }
             }
-            if(np == null){
+            if (np == null) {
                 np = new Params();
                 np.dlg = dlg;
                 np.max_count = count;
@@ -698,7 +761,7 @@ public abstract class MessageService {
                 np.update_cbs.add(cb);
             }
 
-            if(!running){
+            if (!running) {
                 running = true;
                 getMessagesFromNet(np.dlg, np.count, np.offset, this);
             }
@@ -706,8 +769,59 @@ public abstract class MessageService {
 
     };
 
+
+
     msRefreshDlgs_cb msRefreshDlgsCb = new msRefreshDlgs_cb();
     msRefreshMsgs_cb msRefreshMsgsCb = new msRefreshMsgs_cb();
+
+
+    AsyncTaskCompleteListener<mContact> self_contact_cb = new AsyncTaskCompleteListener<mContact>() {
+
+        @Override
+        public void onTaskComplete(mContact result) {
+            if (msSelfContact == null) msSelfContact = result;
+            else msSelfContact.update(result);
+
+            SharedPreferences.Editor ed = sPref.edit();
+            ed.putString("current_account", msSelfContact.address);
+            ed.commit();
+
+            if (!msIsSetupFinished) {
+                msSetupStage++;
+                setupStages();
+            }
+        }
+    };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
