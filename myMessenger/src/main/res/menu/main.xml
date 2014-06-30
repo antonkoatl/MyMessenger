@@ -1,0 +1,16 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+    
+    <item android:id="@+id/menuitem_addservice" android:title="@string/menuitem_addservice" android:showAsAction="never"></item>
+    <item android:id="@+id/menuitem_removeservice" android:title="@string/menuitem_removeservice" android:showAsAction="never"></item>
+    <item android:id="@+id/item4" android:title="@string/menu4" android:showAsAction="never"></item>
+    <item android:id="@+id/item5" android:title="@string/menu5" android:showAsAction="never"></item>
+    <item android:id="@+id/item6" android:title="@string/menu6" android:showAsAction="never"></item>
+    <item android:id="@+id/item7" android:title="@string/menu7" android:showAsAction="never"></item>
+    <item android:id="@+id/item8" android:title="@string/menu8" android:showAsAction="never"></item>
+    <item
+        android:id="@+id/item_selection1"
+        android:title="@string/menu8"
+        android:showAsAction="always"
+        android:actionLayout="@layout/action_sort" >
+    </item>
+</menu>
