@@ -8,6 +8,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.Message;
 import android.text.format.Time;
 import android.util.Log;
 
@@ -35,6 +36,8 @@ public abstract class MessageService {
     public static final int MSGS_DOWNLOAD_COUNT = 20;
     public static final int DLGS_DOWNLOAD_COUNT = 20;
     public static final int CNTS_REQUEST_ACCUM_TIME = 1000;
+
+    protected static final String PREFS_ACTIVE_ACCOUNT = "active_account";
 
     protected final static Handler msHandler; //Для отложенного запроса данных о пользователях
 
@@ -78,7 +81,7 @@ public abstract class MessageService {
 
         sPref = app.getSharedPreferences(String.valueOf(msServiceType), Context.MODE_PRIVATE); //загрузка конфигов
 
-        msSelfContact = new mContact(sPref.getString("active_account", ""));
+        msSelfContact = new mContact(sPref.getString(PREFS_ACTIVE_ACCOUNT, ""));
 
         setupEmoji();
     }
@@ -492,35 +495,25 @@ public abstract class MessageService {
             List<mDialog> dlgs = new ArrayList<mDialog>();
 
             for (mDialog mdl : result) {
-                String selection = DBHelper.colParticipants + " = ?";
-                String[] selectionArgs = {mdl.getParticipantsAddresses()};
-                Cursor c = db.query(my_table_name, null, selection, selectionArgs, null, null, null);
+                int dlg_key = msApp.dbHelper.getDlgId(mdl, MessageService.this);
 
-                if (c.moveToFirst()) {
-                    Time last_time_in_db = new Time();
-                    last_time_in_db.set(c.getLong(c.getColumnIndex(DBHelper.colLastmsgtime)));
-
-                    if (mdl.last_msg_time.after(last_time_in_db)) {
-                        //update
-                        int id = c.getInt(c.getColumnIndex(DBHelper.colId));
-                        c.close();
-
-                        msApp.dbHelper.updateDlg(id, mdl, MessageService.this);
-
+                if(dlg_key != 0){
+                    mDialog dlg_in_db = msApp.dbHelper.getDlgById(dlg_key, MessageService.this);
+                    if (mdl.last_msg_time.after(dlg_in_db.getLastMessageTime())) {
+                        // Update
+                        msApp.dbHelper.updateDlg(dlg_key, mdl, MessageService.this);
                         dlgs.add(mdl);
                     } else {
-                        //not update
-                        c.close();
+                        // Not Update
                         continue;
                     }
+
                 } else {
-                    //add
-                    c.close();
-
+                    // Add
                     msApp.dbHelper.insertDlg(mdl, MessageService.this);
-
                     dlgs.add(mdl);
                 }
+
             }
 
             if (cb != null) {
@@ -785,7 +778,7 @@ public abstract class MessageService {
             else msSelfContact.update(result);
 
             SharedPreferences.Editor ed = sPref.edit();
-            ed.putString("current_account", msSelfContact.address);
+            ed.putString(PREFS_ACTIVE_ACCOUNT, msSelfContact.address);
             ed.commit();
 
             if (!msIsSetupFinished) {
@@ -880,5 +873,27 @@ public abstract class MessageService {
         }
     }
 
+    protected boolean updateCntInDB(mContact cnt){
+        mContact cnt_in_db = msApp.dbHelper.getCnt(cnt.address, MessageService.this);
+
+        if(cnt_in_db != null){
+            //update
+            if(!cnt.name.equals( cnt_in_db.name )){
+                msApp.dbHelper.updateCnt(cnt, MessageService.this);
+                return true;
+            }
+            if(!cnt.icon_100_url.equals( cnt_in_db.icon_100_url )){
+                msApp.dbHelper.updateCnt(cnt, MessageService.this);
+                return true;
+            }
+
+        } else {
+            // add
+            msApp.dbHelper.insertCnt(cnt, MessageService.this);
+            return true;
+        }
+
+        return false;
+    }
 
 }

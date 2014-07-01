@@ -174,8 +174,7 @@ public class Vk extends MessageService {
                 Log.d("VKRequestListener", response.request.methodName +  " :: onComplete");
                 try {
                     JSONArray response_json = response.json.getJSONArray("response");
-                    SQLiteDatabase db = msApp.dbHelper.getWritableDatabase();
-                    String my_table_name = msApp.dbHelper.getTableNameCnts(Vk.this);
+
                     boolean updated = false;
 
                     for(int i = 0; i < response_json.length(); i++){
@@ -189,32 +188,9 @@ public class Vk extends MessageService {
                         String photo_100_url = item.getString("photo_100");
 
                         cnt.icon_100_url = photo_100_url;
-
                         cnt.name = name;
 
-
-
-                        String selection = DBHelper.colAddress + " = ?";
-                        String[] selectionArgs = {cnt.address};
-                        Cursor c = db.query(my_table_name, null, selection, selectionArgs, null, null, null);
-
-                        if(c.moveToFirst()){
-                            //update
-                            if(!cnt.name.equals(c.getString(c.getColumnIndex(DBHelper.colName)))){
-                                msApp.dbHelper.updateCnt(cnt, Vk.this);
-                                updated = true;
-                            }
-                            if(!cnt.icon_100_url.equals(c.getString(c.getColumnIndex(DBHelper.colIcon100url)))){
-                                msApp.dbHelper.updateCnt(cnt, Vk.this);
-                                updated = true;
-                            }
-
-                        } else {
-                            // add
-                            msApp.dbHelper.insertCnt(cnt, Vk.this);
-                            updated = true;
-                        }
-
+                        if(updateCntInDB(cnt) == true)updated = true;
                     }
 
 

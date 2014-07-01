@@ -4,11 +4,10 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
-import android.os.Bundle;
 import android.util.Log;
-import android.webkit.CookieSyncManager;
 
 import com.example.mymessenger.AsyncTaskCompleteListener;
+import com.example.mymessenger.MainActivity;
 import com.example.mymessenger.MyApplication;
 import com.example.mymessenger.R;
 import com.example.mymessenger.RunnableAdvanced;
@@ -16,48 +15,23 @@ import com.example.mymessenger.mContact;
 import com.example.mymessenger.mDialog;
 import com.example.mymessenger.mMessage;
 
+
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
-import twitter4j.AccountSettings;
-import twitter4j.AsyncTwitter;
-import twitter4j.AsyncTwitterFactory;
-import twitter4j.Category;
-import twitter4j.DirectMessage;
-import twitter4j.Friendship;
-import twitter4j.IDs;
-import twitter4j.Location;
-import twitter4j.OEmbed;
-import twitter4j.PagableResponseList;
 import twitter4j.Paging;
-import twitter4j.Place;
-import twitter4j.QueryResult;
-import twitter4j.RateLimitStatus;
-import twitter4j.Relationship;
 import twitter4j.ResponseList;
-import twitter4j.SavedSearch;
 import twitter4j.Status;
-import twitter4j.Trends;
 import twitter4j.Twitter;
-import twitter4j.TwitterAPIConfiguration;
 import twitter4j.TwitterAdapter;
 import twitter4j.TwitterException;
 import twitter4j.TwitterFactory;
 import twitter4j.TwitterListener;
 import twitter4j.TwitterMethod;
 import twitter4j.User;
-import twitter4j.UserList;
-import twitter4j.api.HelpResources;
 import twitter4j.auth.AccessToken;
-import twitter4j.auth.OAuth2Token;
 import twitter4j.auth.RequestToken;
 import twitter4j.conf.ConfigurationBuilder;
-
-import com.sugree.twitter.DialogError;
-import com.sugree.twitter.TwDialog;
-import com.sugree.twitter.Twitter.DialogListener;
-import com.sugree.twitter.TwitterError;
 
 public class msTwitter extends MessageService {
     public static final String CALLBACK_URI = "https://mymessenger.callback";
@@ -89,7 +63,7 @@ public class msTwitter extends MessageService {
 
         public void getRequestToken(){
             try {
-                mRequestToken = asyncTwitter.getOAuthRequestToken();
+                mRequestToken = mTwitter.getOAuthRequestToken();
                 auth_url = mRequestToken.getAuthorizationURL();
             } catch (TwitterException e) {
                 e.printStackTrace();
@@ -104,9 +78,11 @@ public class msTwitter extends MessageService {
 
         public void getAccessToken(String verifier){
             try {
-                at = asyncTwitter.getOAuthAccessToken(mRequestToken, verifier);
-                asyncTwitter = factory.getInstance(at);
+                at = mTwitter.getOAuthAccessToken(mRequestToken, verifier);
+                mTwitter = factory.getInstance(at);
                 Log.d("msTwitter", at.getTokenSecret());
+                sPref.edit().putString(ACCESS_TOKEN, at.getToken()).commit();
+                sPref.edit().putString(SECRET_TOKEN, at.getToken()).commit();
                 onAuthorize();
             } catch (TwitterException e) {
                 e.printStackTrace();
@@ -118,23 +94,9 @@ public class msTwitter extends MessageService {
     }
 
 
-    TwitterListener timelineListener = new TwitterAdapter() {
 
-        @Override
-        public void gotHomeTimeline(ResponseList<Status> statuses) {
-            for (Status status : statuses) {
-                Log.d("msTwitter", status.getUser().getName() + ":" + status.getText());
-            }
-        }
-
-        @Override
-        public void onException(TwitterException te, TwitterMethod method) {
-            Log.d("msTwitter", "exep");
-        }
-    };
-
-    AsyncTwitter asyncTwitter;
-    AsyncTwitterFactory factory;
+    Twitter mTwitter;
+    TwitterFactory factory;
 
     public msTwitter(MyApplication app) {
         super(app, TW, R.string.service_name_tw);
@@ -145,11 +107,24 @@ public class msTwitter extends MessageService {
                 .setOAuthConsumerKey("vnZ85Cl5BvVxdUaPSP9sDy8TG")
                 .setOAuthConsumerSecret("22fb2mPjzP7WoDr6TmSrubmF2svrQgG5Z6ZNmUfHWCKRmCrJRZ");
 
-        factory = new AsyncTwitterFactory((configurationBuilder.build()));
-        asyncTwitter = factory.getInstance();
+        String access_token = sPref.getString(ACCESS_TOKEN, null);
+        String access_token_secret = sPref.getString(SECRET_TOKEN, null);
 
-        //asyncTwitter.addListener(timelineListener);
-        //asyncTwitter.getHomeTimeline();
+        factory = new TwitterFactory((configurationBuilder.build()));
+        mTwitter = factory.getInstance();
+
+        if(access_token != null && access_token_secret != null){
+            AccessToken at = new AccessToken(access_token, access_token_secret);
+            //configurationBuilder.setOAuthAccessToken(access_token);
+            mTwitter.setOAuthAccessToken(at);
+            //configurationBuilder.setOAuthAccessTokenSecret(access_token_secret);
+            msAuthorised = true;
+        } else {
+            msAuthorised = false;
+        }
+
+        //mTwitter.addListener(timelineListener);
+        //mTwitter.getHomeTimeline();
 
 
 
@@ -189,6 +164,9 @@ public class msTwitter extends MessageService {
 
     @Override
     public void authorize(Context context) {
+        mTwitter = factory.getInstance();
+
+
         msAuthorised = false;
         if(msAuthorisationFinished) {
             msAuthorisationFinished = false;
@@ -202,6 +180,14 @@ public class msTwitter extends MessageService {
             });
         }
     }
+
+
+
+
+
+
+
+
 
     @Override
     public void unsetup() {
@@ -240,26 +226,54 @@ public class msTwitter extends MessageService {
 
     @Override
     protected void requestAccountInfoFromNet(final AsyncTaskCompleteListener<mContact> cb) {
-        try {
-            asyncTwitter.addListener(new TwitterAdapter() {
-                @Override
-                public void gotUserDetail(User user) {
-                    mContact cnt = new mContact(user.getScreenName());
-                    cnt.name = user.getName();
-                    cnt.icon_100_url = user.getProfileImageURL();
-                    if(cb != null)cb.onTaskComplete(cnt);
-                }
 
-            });
-            asyncTwitter.showUser(asyncTwitter.getId());
-        } catch (TwitterException e) {
-            e.printStackTrace();
-        }
+
+        Runnable r = new Runnable() {
+            @Override
+            public void run() {
+                User user = null;
+                try {
+                    user = mTwitter.showUser( mTwitter.getId() );
+                } catch (TwitterException e) {
+                    e.printStackTrace();
+                    return;
+                }
+                mContact cnt = new mContact(user.getScreenName());
+                cnt.name = user.getName();
+                cnt.icon_100_url = user.getProfileImageURL();
+                if (cb != null) cb.onTaskComplete(cnt);
+            }
+        };
+
+        MyApplication.handler1.post(r);
     }
 
     @Override
-    protected void getContactsFromNet(List<mContact> cnts) {
+    protected void getContactsFromNet(final List<mContact> cnts) {
+        Runnable r = new Runnable() {
+            @Override
+            public void run() {
+                for(mContact cnt : cnts) {
+                    User user = null;
+                    try {
+                        user = mTwitter.showUser(cnt.address);
+                    } catch (TwitterException e) {
+                        if(e.getMessage().equals("Received authentication challenge is null")){
+                            // not authorized
 
+                        }
+                        e.printStackTrace();
+                        continue;
+                    }
+                    cnt.name = user.getName();
+                    cnt.icon_100_url = user.getProfileImageURL();
+
+                    updateCntInDB(cnt);
+                }
+            }
+        };
+
+        MyApplication.handler1.post(r);
     }
 
     @Override
@@ -271,26 +285,37 @@ public class msTwitter extends MessageService {
     protected void getDialogsFromNet(final int count, final int offset, final AsyncTaskCompleteListener<List<mDialog>> cb) {
         dlgs_thread_count += 1;
 
-        asyncTwitter.addListener(new TwitterAdapter() {
+
+        Runnable r = new Runnable() {
             @Override
-            public void gotHomeTimeline(ResponseList<Status> statuses) {
+            public void run() {
+                int page = offset / count + 1;
+                ResponseList<Status> statuses;
+
+                try {
+                    statuses = mTwitter.getHomeTimeline(new Paging(page, count));
+                } catch (TwitterException e) {
+                    e.printStackTrace();
+                    return;
+                }
+
                 List<mDialog> dlgs = new ArrayList<mDialog>();
                 int i = 0;
                 for (Status status : statuses) {
-                    if(i < (offset % count)){
+                    if (i < (offset % count)) {
                         i++;
                         continue;
                     }
 
                     mDialog dlg = new mDialog();
 
-                    dlg.participants.add( getContact(status.getUser().getScreenName()) );
+                    dlg.chat_id = status.getId();
+                    dlg.participants.add(getContact(status.getUser().getScreenName()));
 
                     //dlg.title;
                     dlg.snippet = status.getText();
                     //dlg.snippet_out = item.getInt( "out" );
-                    long ms = status.getCreatedAt().getSeconds() * 1000;
-                    dlg.last_msg_time.set(ms);
+                    dlg.last_msg_time.set(status.getCreatedAt().getTime());
                     dlg.msg_service_type = MessageService.TW;
 
                     dlgs.add(dlg);
@@ -298,15 +323,26 @@ public class msTwitter extends MessageService {
                 }
 
                 dlgs_thread_count--;
-                if(cb != null) {
-                    cb.onTaskComplete(dlgs);
+                if (cb != null) {
+                    ((MainActivity) MyApplication.getMainActivity()).runOnUiThread(new Runnable() {
+                        List<mDialog> dlgs;
+
+                        Runnable setDlgs(List<mDialog> dlgs){
+                            this.dlgs = dlgs;
+                            return this;
+                        }
+
+                        @Override
+                        public void run() {
+                            cb.onTaskComplete(dlgs);
+                        }
+                    }.setDlgs(dlgs));
+
                 }
             }
+        };
 
-        });
-
-        int page = offset / count + 1;
-        asyncTwitter.getHomeTimeline(new Paging(page, count));
+        MyApplication.handler1.post(r);
     }
 
     @Override

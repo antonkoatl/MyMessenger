@@ -87,7 +87,11 @@ public class mDialog {
 	public boolean equals(Object o){
 		if(o instanceof mDialog){
 			mDialog toCompare = (mDialog) o;
-		    return this.participants.equals(toCompare.participants);
+            if(chat_id != 0){
+                return this.chat_id == toCompare.chat_id;
+            } else {
+                return this.participants.equals(toCompare.participants) && this.chat_id == toCompare.chat_id;
+            }
 		}
 		return false;
 	}

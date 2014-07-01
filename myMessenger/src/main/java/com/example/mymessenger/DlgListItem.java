@@ -3,6 +3,7 @@ package com.example.mymessenger;
 import android.content.Intent;
 import android.graphics.BitmapFactory;
 import android.text.Spannable;
+import android.util.DisplayMetrics;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -50,8 +51,9 @@ public class DlgListItem {
 				@Override
 				public void onDownloadComplete() {
 					BitmapFactory.Options options = new BitmapFactory.Options();
-					//options.inPreferredConfig = Bitmap.Config.ARGB_8888;
-					cnt.icon_100 = BitmapFactory.decodeFile(filepath);
+                    options.inDensity = DisplayMetrics.DENSITY_MEDIUM;
+                    options.inTargetDensity = MyApplication.context.getResources().getDisplayMetrics().densityDpi;
+					cnt.icon_100 = BitmapFactory.decodeFile(filepath, options);
 					iv.setImageBitmap( cnt.icon_100 );			
 				}
 				

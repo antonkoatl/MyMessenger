@@ -85,12 +85,10 @@ public class MyApplication extends Application {
         sPref = getSharedPreferences("MyPref", MODE_PRIVATE); //загрузка конфигов
 
         //загрузка сервисов
-        String using_services[] = sPref.getString("usingservices", "10,11").split(",");
+        String using_services[] = sPref.getString("usingservices", "10").split(",");
         for(String i : using_services){
-            if(i.equals( String.valueOf(MessageService.SMS) ))
-                addMsgService(new Sms(this));
-            if(i.equals( String.valueOf(MessageService.VK) ))
-                addMsgService(new Vk(this));
+            MessageService ms = createServiceByType(Integer.valueOf(i));
+            if(ms != null)addMsgService(ms);
         }
 
         active_service = sPref.getInt("active_service", 0);
@@ -238,9 +236,9 @@ public class MyApplication extends Application {
     public MessageService createServiceByType(int service_type){
         MessageService ms = null;
         switch(service_type){
-            case MessageService.SMS: ms = new Sms(this);
-            case MessageService.VK: ms = new Vk(this);
-            case MessageService.TW: ms = new msTwitter(this);
+            case MessageService.SMS: ms = new Sms(this); break;
+            case MessageService.VK: ms = new Vk(this); break;
+            case MessageService.TW: ms = new msTwitter(this); break;
         }
         return ms;
     }
@@ -263,11 +261,8 @@ public class MyApplication extends Application {
 
                 @Override
                 public void onTaskComplete(MessageService ms) {
-                    String usingservices = "";
-                    for(MessageService mst : myMsgServices){
-                        usingservices += String.valueOf(mst.getServiceType()) + ",";
-                    }
-                    usingservices += String.valueOf(ms.getServiceType());
+                    String usingservices = sPref.getString("usingservices", "10");
+                    usingservices += "," + String.valueOf(ms.getServiceType());
 
                     Editor ed = sPref.edit();
                     ed.putString("usingservices", usingservices);
@@ -279,7 +274,13 @@ public class MyApplication extends Application {
                     ListViewSimpleFragment fr2 = (ListViewSimpleFragment) ((MainActivity) getMainActivity()).pagerAdapter.getRegisteredFragment(1);
                     fr2.POSITION = FragmentPagerAdapter.POSITION_NONE;
 
-                    ((MainActivity) getMainActivity()).pagerAdapter.notifyDataSetChanged();
+                    ((MainActivity) getMainActivity()).runOnUiThread(new Runnable() {
+
+                        @Override
+                        public void run() {
+                            ((MainActivity) getMainActivity()).pagerAdapter.notifyDataSetChanged();
+                        }
+                    });
                 }
 
             };

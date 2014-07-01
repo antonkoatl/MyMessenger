@@ -25,10 +25,11 @@ android {
 dependencies {
     compile project(':vksdk_library')
     compile project(':twitter')
-
     compile 'com.actionbarsherlock:actionbarsherlock:4.4.0@aar'
     compile 'com.android.support:support-v4:19.1.+'
     compile 'org.twitter4j:twitter4j-core:+'
     compile 'org.twitter4j:twitter4j-stream:+'
     compile 'org.twitter4j:twitter4j-async:+'
+    compile files('C:/Users/Azteki/AndroidstudioProjects/MyMessenger/libs/temboo-android-sdk-1.76-core.jar')
+    compile files('C:/Users/Azteki/AndroidstudioProjects/MyMessenger/libs/Twitter-1.76.jar')
 }

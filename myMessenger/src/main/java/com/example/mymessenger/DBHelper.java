@@ -6,6 +6,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.net.Uri;
+import android.os.Message;
 import android.util.Log;
 
 import com.example.mymessenger.services.MessageService;
@@ -209,7 +210,7 @@ public class DBHelper extends SQLiteOpenHelper {
 		
 		db.execSQL("create table IF NOT EXISTS " + tn_dlgs + " ("
 		          + colId + " integer primary key autoincrement," 
-		          + colParticipants + " text unique,"
+		          + colParticipants + " text,"
 		          + colLastmsgtime + " integer,"
 		          + colSnippet + " text,"
 		          + colSnippetOut + " integer,"
@@ -533,5 +534,30 @@ public class DBHelper extends SQLiteOpenHelper {
 		return dlg;
 	}
 
-	
+
+    public mContact getCnt(String address, MessageService ms) {
+        String selection = colAddress + " = ?";
+        String[] selectionArgs = {address};
+        SQLiteDatabase db = getWritableDatabase();
+        String my_table_name = getTableNameCnts(ms);
+
+        Cursor c = db.query(my_table_name, null, selection, selectionArgs, null, null, null);
+
+        mContact cnt = null;
+
+        if(c.moveToFirst()){
+            cnt = loadCntFromCursor(c);
+        }
+
+        return cnt;
+    }
+
+    private mContact loadCntFromCursor(Cursor cursor) {
+        mContact cnt = new mContact(cursor.getString( cursor.getColumnIndex(colAddress) ) );
+
+        cnt.name = cursor.getString( cursor.getColumnIndex(colName) );
+        cnt.icon_100_url = cursor.getString( cursor.getColumnIndex(colIcon100url) );
+
+        return cnt;
+    }
 }
