@@ -8,8 +8,8 @@ public class mContact implements Parcelable, Comparable<mContact> {
 	public String address;
 	public String name;
 	public boolean online;
-	public Bitmap icon_100;
-	public String icon_100_url;
+	public Bitmap icon_50;
+	public String icon_50_url;
 	
 	public mContact(String address) {
 		this.address = address;
@@ -38,14 +38,14 @@ public class mContact implements Parcelable, Comparable<mContact> {
 		dest.writeString(address);
 		dest.writeString(name);
 		dest.writeBooleanArray(new boolean[]{online});
-		dest.writeParcelable(icon_100, flags);
+		dest.writeParcelable(icon_50, flags);
 	}
 	
 	public mContact(Parcel sour){
 		address = sour.readString();
 		name = sour.readString();
 		online = sour.createBooleanArray()[0];
-		icon_100 = (Bitmap) sour.readParcelable(Bitmap.class.getClassLoader());
+		icon_50 = (Bitmap) sour.readParcelable(Bitmap.class.getClassLoader());
 	}
 	
 	public static final Parcelable.Creator<mContact> CREATOR = new Parcelable.Creator<mContact>() { 
@@ -70,12 +70,12 @@ public class mContact implements Parcelable, Comparable<mContact> {
     public void update(mContact result) {
         this.address = result.address;
         this.name = result.name;
-        this.icon_100_url = result.icon_100_url;
+        this.icon_50_url = result.icon_50_url;
 
         clearCached();
     }
 
     public void clearCached(){
-        icon_100 = null;
+        icon_50 = null;
     }
 }

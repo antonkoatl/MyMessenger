@@ -77,7 +77,6 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
     public static ListViewSimpleFragment newInstance(int mode) {
         ListViewSimpleFragment fragmentFirst = new ListViewSimpleFragment();
         fragmentFirst.mode = mode;
-
         return fragmentFirst;
     }
 
@@ -86,6 +85,8 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
         super.onCreate(savedInstanceState);
         Log.d("ListViewSimpleFragment", "onCreate()");
         setHasOptionsMenu(true);
+        if(savedInstanceState != null)
+            mode = savedInstanceState.getInt("fragment_mode");
     }
 
     @Override
@@ -93,8 +94,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 
         rootView = null;
 
-        if(savedInstanceState != null)
-            mode = savedInstanceState.getInt("fragment_mode");
+
 
         if (mode == MESSAGES) {
             rootView = inflater.inflate(R.layout.msg_list, container, false);
@@ -221,6 +221,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 
             app.registerDlgsUpdater(async_complete_listener_dlg_update);
         }
+
         rootView.setOnTouchListener(this);
 
 

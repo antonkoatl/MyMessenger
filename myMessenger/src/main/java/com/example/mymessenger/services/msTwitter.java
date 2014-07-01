@@ -3,7 +3,6 @@ package com.example.mymessenger.services;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.os.AsyncTask;
 import android.util.Log;
 
 import com.example.mymessenger.AsyncTaskCompleteListener;
@@ -23,11 +22,8 @@ import twitter4j.Paging;
 import twitter4j.ResponseList;
 import twitter4j.Status;
 import twitter4j.Twitter;
-import twitter4j.TwitterAdapter;
 import twitter4j.TwitterException;
 import twitter4j.TwitterFactory;
-import twitter4j.TwitterListener;
-import twitter4j.TwitterMethod;
 import twitter4j.User;
 import twitter4j.auth.AccessToken;
 import twitter4j.auth.RequestToken;
@@ -82,7 +78,7 @@ public class msTwitter extends MessageService {
                 mTwitter = factory.getInstance(at);
                 Log.d("msTwitter", at.getTokenSecret());
                 sPref.edit().putString(ACCESS_TOKEN, at.getToken()).commit();
-                sPref.edit().putString(SECRET_TOKEN, at.getToken()).commit();
+                sPref.edit().putString(SECRET_TOKEN, at.getTokenSecret()).commit();
                 onAuthorize();
             } catch (TwitterException e) {
                 e.printStackTrace();
@@ -101,17 +97,19 @@ public class msTwitter extends MessageService {
     public msTwitter(MyApplication app) {
         super(app, TW, R.string.service_name_tw);
 
-
-
         ConfigurationBuilder configurationBuilder = new ConfigurationBuilder()
                 .setOAuthConsumerKey("vnZ85Cl5BvVxdUaPSP9sDy8TG")
                 .setOAuthConsumerSecret("22fb2mPjzP7WoDr6TmSrubmF2svrQgG5Z6ZNmUfHWCKRmCrJRZ");
 
-        String access_token = sPref.getString(ACCESS_TOKEN, null);
-        String access_token_secret = sPref.getString(SECRET_TOKEN, null);
-
         factory = new TwitterFactory((configurationBuilder.build()));
         mTwitter = factory.getInstance();
+
+    }
+
+    @Override
+    public void init(){
+        String access_token = sPref.getString(ACCESS_TOKEN, null);
+        String access_token_secret = sPref.getString(SECRET_TOKEN, null);
 
         if(access_token != null && access_token_secret != null){
             AccessToken at = new AccessToken(access_token, access_token_secret);
@@ -119,15 +117,12 @@ public class msTwitter extends MessageService {
             mTwitter.setOAuthAccessToken(at);
             //configurationBuilder.setOAuthAccessTokenSecret(access_token_secret);
             msAuthorised = true;
+
+            onInitFinish();
         } else {
             msAuthorised = false;
+            authorize(MyApplication.getMainActivity());
         }
-
-        //mTwitter.addListener(timelineListener);
-        //mTwitter.getHomeTimeline();
-
-
-
     }
 
 
@@ -159,13 +154,13 @@ public class msTwitter extends MessageService {
     @Override
     protected void onAuthorize(){
         super.onAuthorize();
+        if(!msIsInitFinished) onInitFinish();
         da = null;
     }
 
     @Override
     public void authorize(Context context) {
         mTwitter = factory.getInstance();
-
 
         msAuthorised = false;
         if(msAuthorisationFinished) {
@@ -240,7 +235,7 @@ public class msTwitter extends MessageService {
                 }
                 mContact cnt = new mContact(user.getScreenName());
                 cnt.name = user.getName();
-                cnt.icon_100_url = user.getProfileImageURL();
+                cnt.icon_50_url = user.getProfileImageURL();
                 if (cb != null) cb.onTaskComplete(cnt);
             }
         };
@@ -259,14 +254,18 @@ public class msTwitter extends MessageService {
                         user = mTwitter.showUser(cnt.address);
                     } catch (TwitterException e) {
                         if(e.getMessage().equals("Received authentication challenge is null")){
-                            // not authorized
+                            setNotAuthorised();
+
+                            if(MyApplication.getMainActivity() != null){
+                                authorize(MyApplication.getMainActivity());
+                            }
 
                         }
                         e.printStackTrace();
                         continue;
                     }
                     cnt.name = user.getName();
-                    cnt.icon_100_url = user.getProfileImageURL();
+                    cnt.icon_50_url = user.getProfileImageURL();
 
                     updateCntInDB(cnt);
                 }
@@ -295,6 +294,13 @@ public class msTwitter extends MessageService {
                 try {
                     statuses = mTwitter.getHomeTimeline(new Paging(page, count));
                 } catch (TwitterException e) {
+                    if(e.getMessage().equals("Received authentication challenge is null")){
+                        setNotAuthorised();
+
+                        if(MyApplication.getMainActivity() != null){
+                            authorize(MyApplication.getMainActivity());
+                        }
+                    }
                     e.printStackTrace();
                     return;
                 }

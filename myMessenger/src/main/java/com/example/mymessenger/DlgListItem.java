@@ -41,20 +41,21 @@ public class DlgListItem {
     	}
     	
     	ImageView iv = (ImageView) view.findViewById(R.id.dlgview_iconmain);
-    	if(dlg.participants.get(0).icon_100 != null){	    	
-	    	iv.setImageBitmap( dlg.participants.get(0).icon_100 );
-    	} else if(dlg.participants.get(0).icon_100_url != null){
-    		download_waiter tw = new download_waiter(dlg.participants.get(0).icon_100_url){
+    	if(dlg.participants.get(0).icon_50 != null){
+	    	iv.setImageBitmap( dlg.participants.get(0).icon_50);
+    	} else if(dlg.participants.get(0).icon_50_url != null){
+    		download_waiter tw = new download_waiter(dlg.participants.get(0).icon_50_url){
     			ImageView iv;
     			mContact cnt;
     			
 				@Override
 				public void onDownloadComplete() {
 					BitmapFactory.Options options = new BitmapFactory.Options();
-                    options.inDensity = DisplayMetrics.DENSITY_MEDIUM;
+                    options.inDensity = DisplayMetrics.DENSITY_LOW;
+                    options.inScaled = true;
                     options.inTargetDensity = MyApplication.context.getResources().getDisplayMetrics().densityDpi;
-					cnt.icon_100 = BitmapFactory.decodeFile(filepath, options);
-					iv.setImageBitmap( cnt.icon_100 );			
+					cnt.icon_50 = BitmapFactory.decodeFile(filepath, options);
+					iv.setImageBitmap( cnt.icon_50);
 				}
 				
 				public download_waiter setParams(ImageView iv, mContact cnt){
@@ -69,17 +70,17 @@ public class DlgListItem {
             app.dl_waiters.add(tw);
                        
             Intent intent = new Intent(view.getContext(), DownloadService.class);
-            intent.putExtra("url", dlg.participants.get(0).icon_100_url);
+            intent.putExtra("url", dlg.participants.get(0).icon_50_url);
             view.getContext().getApplicationContext().startService(intent);
     	}
     		
 		iv = (ImageView) view.findViewById(R.id.dlgview_dlgtexticon);
 	    if(dlg.snippet_out == 1){
 	    	mContact my_contact = app.getService(dlg.msg_service_type).getMyContact();
-	    	if(my_contact.icon_100 != null){	    	
-	    		iv.setImageBitmap( my_contact.icon_100 );
-	     	} else if(my_contact.icon_100_url != null){
-	     		download_waiter tw = new download_waiter(my_contact.icon_100_url){
+	    	if(my_contact.icon_50 != null){
+	    		iv.setImageBitmap( my_contact.icon_50);
+	     	} else if(my_contact.icon_50_url != null){
+	     		download_waiter tw = new download_waiter(my_contact.icon_50_url){
 	     			ImageView iv;
 	     			mContact cnt;
 	     			
@@ -87,8 +88,8 @@ public class DlgListItem {
 	 				public void onDownloadComplete() {
 	 					BitmapFactory.Options options = new BitmapFactory.Options();
 	 					//options.inPreferredConfig = Bitmap.Config.ARGB_8888;
-	 					cnt.icon_100 = BitmapFactory.decodeFile(filepath);
-	 					iv.setImageBitmap( cnt.icon_100 );			
+	 					cnt.icon_50 = BitmapFactory.decodeFile(filepath);
+	 					iv.setImageBitmap( cnt.icon_50);
 	 				}
 	 				
 	 				public download_waiter setParams(ImageView iv, mContact cnt){
@@ -103,7 +104,7 @@ public class DlgListItem {
 	             app.dl_waiters.add(tw);
 	             
 	             Intent intent = new Intent(view.getContext(), DownloadService.class);
-	             intent.putExtra("url", my_contact.icon_100_url);
+	             intent.putExtra("url", my_contact.icon_50_url);
 	             view.getContext().getApplicationContext().startService(intent);
 	     	} 
 	    } else {

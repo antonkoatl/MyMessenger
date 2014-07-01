@@ -25,12 +25,13 @@ public class MyPagerAdapter extends FragmentPagerAdapter {
     public Fragment getItem(int position) {
         switch (position) {
         case 0:
-            return new ServicesMenuFragment();
+            registeredFragments.put(position, new ServicesMenuFragment()); break;
         case 1:
-            return ListViewSimpleFragment.newInstance(ListViewSimpleFragment.DIALOGS);
+            registeredFragments.put(position, ListViewSimpleFragment.newInstance(ListViewSimpleFragment.DIALOGS)); break;
         default:
-            return ListViewSimpleFragment.newInstance(ListViewSimpleFragment.MESSAGES);
+            registeredFragments.put(position, ListViewSimpleFragment.newInstance(ListViewSimpleFragment.MESSAGES)); break;
         }
+        return registeredFragments.get(position);
     }
 
 	@Override

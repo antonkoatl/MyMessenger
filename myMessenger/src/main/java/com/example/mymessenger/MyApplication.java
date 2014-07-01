@@ -88,7 +88,10 @@ public class MyApplication extends Application {
         String using_services[] = sPref.getString("usingservices", "10").split(",");
         for(String i : using_services){
             MessageService ms = createServiceByType(Integer.valueOf(i));
-            if(ms != null)addMsgService(ms);
+            if(ms != null){
+                addMsgService(ms);
+                ms.init();
+            }
         }
 
         active_service = sPref.getInt("active_service", 0);
@@ -257,20 +260,18 @@ public class MyApplication extends Application {
             MessageService ms = createServiceByType(service_type);
             addMsgService(ms);
 
+            String usingservices = sPref.getString("usingservices", "10");
+            usingservices += "," + String.valueOf(ms.getServiceType());
+            Editor ed = sPref.edit();
+            ed.putString("usingservices", usingservices);
+            ed.commit();
+
+            ((MainActivity) getMainActivity()).pagerAdapter.recreateFragment(0);
+
             AsyncTaskCompleteListener<MessageService> asms = new AsyncTaskCompleteListener<MessageService>(){
 
                 @Override
                 public void onTaskComplete(MessageService ms) {
-                    String usingservices = sPref.getString("usingservices", "10");
-                    usingservices += "," + String.valueOf(ms.getServiceType());
-
-                    Editor ed = sPref.edit();
-                    ed.putString("usingservices", usingservices);
-                    ed.commit();
-
-                    ServicesMenuFragment fr = (ServicesMenuFragment) ((MainActivity) getMainActivity()).pagerAdapter.getRegisteredFragment(0);
-                    fr.POSITION = FragmentPagerAdapter.POSITION_NONE;
-
                     ListViewSimpleFragment fr2 = (ListViewSimpleFragment) ((MainActivity) getMainActivity()).pagerAdapter.getRegisteredFragment(1);
                     fr2.POSITION = FragmentPagerAdapter.POSITION_NONE;
 
@@ -308,10 +309,12 @@ public class MyApplication extends Application {
 
         String usingservices = "";
         for(MessageService mst : myMsgServices){
-            usingservices += String.valueOf(mst.getServiceType()) + ",";
+            if(usingservices.length() == 0) {
+                usingservices += String.valueOf(mst.getServiceType());
+            } else {
+                usingservices += "," + String.valueOf(mst.getServiceType());
+            }
         }
-        usingservices = usingservices.replace(String.valueOf(service_type) + ",", "");
-        usingservices = usingservices.substring(0, usingservices.length() - 1);
 
         Editor ed = sPref.edit();
         ed.putString("usingservices", usingservices);

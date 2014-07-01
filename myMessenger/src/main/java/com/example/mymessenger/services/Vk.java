@@ -1,17 +1,13 @@
 package com.example.mymessenger.services;
 
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.graphics.BitmapFactory;
 import android.util.Log;
 
 import com.example.mymessenger.ActivityTwo;
 import com.example.mymessenger.AsyncTaskCompleteListener;
-import com.example.mymessenger.DBHelper;
 import com.example.mymessenger.DownloadService;
 import com.example.mymessenger.MainActivity;
 import com.example.mymessenger.MsgReceiver;
@@ -62,13 +58,8 @@ public class Vk extends MessageService {
     public Vk(MyApplication app) {
         super(app, VK, R.string.service_name_vk);
 
-
-
         //Инициализация VkSdk
-        //VKUIHelper.onResume((Activity) this.context);
         VKSdk.initialize(sdkListener, "4161005", VKAccessToken.tokenFromSharedPreferences(this.msApp.getApplicationContext(), sTokenKey));
-        //VKSdk.authorize(sMyScope, false, true);
-        //VKUIHelper.onDestroy((Activity) this.context);
     }
 
 
@@ -137,7 +128,7 @@ public class Vk extends MessageService {
                         name += " " + item.getString("last_name");
 
                         String photo_100_url = item.getString("photo_100");
-                        cnt.icon_100_url = photo_100_url;
+                        cnt.icon_50_url = photo_100_url;
                         cnt.name = name;
 
                         cb.onTaskComplete(cnt);
@@ -162,7 +153,7 @@ public class Vk extends MessageService {
             uids += "," + cnts.get(i).address;
         }
 
-        VKRequest request = new VKRequest("users.get", VKParameters.from(VKApiConst.USER_IDS, uids, VKApiConst.FIELDS, "photo_100"));
+        VKRequest request = new VKRequest("users.get", VKParameters.from(VKApiConst.USER_IDS, uids, VKApiConst.FIELDS, "photo_50"));
         request.secure = false;
         VKParameters preparedParameters = request.getPreparedParameters();
 
@@ -185,9 +176,9 @@ public class Vk extends MessageService {
                         String name = item.getString("first_name");
                         name += " " + item.getString("last_name");
 
-                        String photo_100_url = item.getString("photo_100");
+                        String photo_50_url = item.getString("photo_50");
 
-                        cnt.icon_100_url = photo_100_url;
+                        cnt.icon_50_url = photo_50_url;
                         cnt.name = name;
 
                         if(updateCntInDB(cnt) == true)updated = true;
@@ -323,7 +314,7 @@ public class Vk extends MessageService {
 
                                 @Override
                                 public void onDownloadComplete() {
-                                    cnt.icon_100 = BitmapFactory.decodeFile(filepath);
+                                    cnt.icon_50 = BitmapFactory.decodeFile(filepath);
                                 }
 
                                 public download_waiter setParams(mContact cnt){
@@ -585,9 +576,9 @@ public class Vk extends MessageService {
         public void onAccessDenied(VKError authorizationError) {
             msAuthorisationFinished = true;
             Log.d("VKSdkListener", "onAccessDenied" );
-            new AlertDialog.Builder(msApp.getApplicationContext())
+            /*new AlertDialog.Builder(msApp.getApplicationContext())
                     .setMessage(authorizationError.errorMessage)
-                    .show();
+                    .show();*/
         }
 
         @Override
@@ -607,6 +598,8 @@ public class Vk extends MessageService {
     @Override
     protected void onAuthorize(){
         super.onAuthorize();
+
+        if(!msIsInitFinished) onInitFinish();
         execRequestsWaitingForAuth();
     }
 

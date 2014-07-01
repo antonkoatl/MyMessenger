@@ -52,9 +52,9 @@ public class MyContactsAdapter extends BaseAdapter {
         TextView textLabel = (TextView) view.findViewById(R.id.cntview_cntname);
         textLabel.setText( cnt.getName() );
 
-        if(cnt.icon_100 != null){
+        if(cnt.icon_50 != null){
             ImageView iv = (ImageView) view.findViewById(R.id.cntview_iconmain);
-            iv.setImageBitmap( cnt.icon_100 );
+            iv.setImageBitmap( cnt.icon_50);
         }
 
         //Log.d("MyDialogsAdapter", data.size() + " : " + position + " : " + dlg.getParticipantsNames());

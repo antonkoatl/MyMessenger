@@ -7,14 +7,13 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.AsyncTask;
 import android.os.Handler;
-import android.os.HandlerThread;
-import android.os.Message;
 import android.text.format.Time;
 import android.util.Log;
 
 import com.example.mymessenger.AsyncTaskCompleteListener;
 import com.example.mymessenger.ChatMessageFormatter;
 import com.example.mymessenger.DBHelper;
+import com.example.mymessenger.MainActivity;
 import com.example.mymessenger.MyApplication;
 import com.example.mymessenger.RunnableAdvanced;
 import com.example.mymessenger.UpdateService;
@@ -22,6 +21,7 @@ import com.example.mymessenger.mContact;
 import com.example.mymessenger.mDialog;
 import com.example.mymessenger.mGlobal.IntegerMutable;
 import com.example.mymessenger.mMessage;
+import com.example.mymessenger.ui.ServicesMenuFragment;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -64,6 +64,14 @@ public abstract class MessageService {
     protected int msSetupStage;
     protected AsyncTaskCompleteListener<MessageService> cbms_for_setup = null;
 
+    /*
+         Контакт активного пользователь
+         Авторизация
+         Обновление сообщений
+     */
+    boolean msIsInitFinished = false;
+
+
     static {
         msHandler = new Handler();
     }
@@ -84,6 +92,10 @@ public abstract class MessageService {
         msSelfContact = new mContact(sPref.getString(PREFS_ACTIVE_ACCOUNT, ""));
 
         setupEmoji();
+    }
+
+    public void init(){
+        onInitFinish();
     }
 
 
@@ -137,7 +149,7 @@ public abstract class MessageService {
     // Запросить данные контактов
     public final void requestContactsData(List<mContact> cnts) {
         getContactsFromDB(cnts);
-        getContactsFromNet(cnts);
+        if(isOnline()) getContactsFromNet(cnts);
     }
 
     // Запросить активный диалог. Загружается из памяти, если нет - из интернета последний
@@ -171,11 +183,14 @@ public abstract class MessageService {
 
         if (offset + count < dlgs_in_db) {
             getDialogsFromDB(count, offset, cb);
-            refreshDialogsFromNet(cb, 0);
+            if(isOnline()) refreshDialogsFromNet(cb, 0);
         } else {
             getDialogsFromDB(count, offset, cb);
-            msUpdateDlgsDB_cb up_cb = new msUpdateDlgsDB_cb(cb);
-            getDialogsFromNet(count, offset, up_cb);
+            if(isOnline()) {
+                msUpdateDlgsDB_cb up_cb = new msUpdateDlgsDB_cb(cb);
+                getDialogsFromNet(count, offset, up_cb);
+            }
+
         }
     }
 
@@ -190,11 +205,14 @@ public abstract class MessageService {
 
         if (offset + count < msgs_in_db) {
             getMessagesFromDB(dlg, count, offset, cb);
-            refreshMessagesFromNet(dlg, cb, 0);
+            if(isOnline()) refreshMessagesFromNet(dlg, cb, 0);
         } else {
             getMessagesFromDB(dlg, count, offset, cb);
-            msUpdateMsgsDB_cb up_cb = new msUpdateMsgsDB_cb(dlg, cb);
-            getMessagesFromNet(dlg, count, offset, up_cb);
+            if(isOnline()) {
+                msUpdateMsgsDB_cb up_cb = new msUpdateMsgsDB_cb(dlg, cb);
+                getMessagesFromNet(dlg, count, offset, up_cb);
+            }
+
         }
     }
 
@@ -356,6 +374,10 @@ public abstract class MessageService {
             lm_count = new IntegerMutable(count);
             msgs_thread_count.put(dlg, lm_count);
         } else lm_count.value += count;
+    }
+
+    public boolean isLoading() {
+        return !(msIsSetupFinished && msIsInitFinished);
     }
 
     protected final class load_dlgs_from_db_async extends AsyncTask<Integer, Void, List<mDialog>> {
@@ -873,6 +895,19 @@ public abstract class MessageService {
         }
     }
 
+    protected void onInitFinish(){
+        msIsInitFinished = true;
+        setLoading(isLoading());
+    }
+
+    public void setLoading(boolean fl){
+        if(MyApplication.getMainActivity() != null) {
+            ServicesMenuFragment fr = (ServicesMenuFragment) ((MainActivity) MyApplication.getMainActivity()).pagerAdapter.getRegisteredFragment(0);
+            if(fr != null)
+                fr.setServiceLoading(this, fl);
+        }
+    }
+
     protected boolean updateCntInDB(mContact cnt){
         mContact cnt_in_db = msApp.dbHelper.getCnt(cnt.address, MessageService.this);
 
@@ -882,7 +917,7 @@ public abstract class MessageService {
                 msApp.dbHelper.updateCnt(cnt, MessageService.this);
                 return true;
             }
-            if(!cnt.icon_100_url.equals( cnt_in_db.icon_100_url )){
+            if(!cnt.icon_50_url.equals( cnt_in_db.icon_50_url)){
                 msApp.dbHelper.updateCnt(cnt, MessageService.this);
                 return true;
             }
@@ -894,6 +929,14 @@ public abstract class MessageService {
         }
 
         return false;
+    }
+
+    protected void setNotAuthorised(){
+        msAuthorised = false;
+    }
+
+    public boolean isOnline(){
+        return msAuthorised && msIsInitFinished && msIsSetupFinished;
     }
 
 }

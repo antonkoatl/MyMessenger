@@ -17,6 +17,7 @@ import android.view.View.OnTouchListener;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.example.mymessenger.MainActivity;
@@ -65,55 +66,12 @@ public class ServicesMenuFragment extends Fragment implements OnClickListener, O
         	TextView service_delete = (TextView) button_view.findViewById(R.id.service_delete);
         	service_delete.setVisibility(View.INVISIBLE);
         	service_delete.setId( getTextviewDelIdMainScreen(ser.getServiceType()) );
-        	
-        	/*
-        	
-        	RelativeLayout relativeLayout = new RelativeLayout(getActivity());
-        	
-        	// Defining the RelativeLayout layout parameters.
-            // In this case I want to fill its parent
-            RelativeLayout.LayoutParams rlp = new RelativeLayout.LayoutParams(
-                    RelativeLayout.LayoutParams.FILL_PARENT,
-                    RelativeLayout.LayoutParams.FILL_PARENT);
-            
-            relativeLayout.setLayoutParams(rlp);
-            
-        	Button b = new Button(getActivity());
-            b.setText(ser.getServiceName());
-            b.setId( getButtonIdMainScreen(ser.getServiceType()) );
-            
-            RelativeLayout.LayoutParams lpb = new RelativeLayout.LayoutParams(
-                    RelativeLayout.LayoutParams.FILL_PARENT,
-                    RelativeLayout.LayoutParams.WRAP_CONTENT);
-            b.setLayoutParams(lpb);
-            
-            b.setOnClickListener(this);
-            //ll_list.addView(b);
-            registerForContextMenu(b);
-            
-            relativeLayout.addView(b);
-            
-            TextView tv = new TextView(getActivity());
-            tv.setText("Delete");
-            
-         // Defining the layout parameters of the TextView
-            RelativeLayout.LayoutParams lpt = new RelativeLayout.LayoutParams(
-                    RelativeLayout.LayoutParams.WRAP_CONTENT,
-                    RelativeLayout.LayoutParams.WRAP_CONTENT);
-            lpt.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
-            lpt.addRule(RelativeLayout.ALIGN_BASELINE, b.getId());
-            lpt.setMargins(0, 0, (int) convertDpToPixel(8), 0);
-            
-            
-         // Setting the parameters on the TextView
-            tv.setLayoutParams(lpt);
-            tv.setVisibility(View.INVISIBLE);
-            tv.setId( getTextviewDelIdMainScreen(ser.getServiceType()) );
-            
-            relativeLayout.addView(tv);
-            
-            ll_list.addView(relativeLayout);
-            */
+
+            ProgressBar prog_bar = (ProgressBar) button_view.findViewById(R.id.service_loading);
+            if(ser.isLoading()) prog_bar.setVisibility(View.VISIBLE);
+            else prog_bar.setVisibility(View.INVISIBLE);
+            prog_bar.setId( getProgbarIdMainScreen(ser.getServiceType() ));
+
         	ll_list.addView(button_view);
             Log.d("myLogs", "Service button added: " + ser.getServiceName());
         }
@@ -130,6 +88,9 @@ public class ServicesMenuFragment extends Fragment implements OnClickListener, O
 		case MessageService.VK :
 			res += 1;
 			break;
+        case MessageService.TW :
+            res += 2;
+            break;
 		}
 		return res;
 	}
@@ -143,9 +104,28 @@ public class ServicesMenuFragment extends Fragment implements OnClickListener, O
 		case MessageService.VK :
 			res += 1;
 			break;
-		}
+        case MessageService.TW :
+            res += 2;
+            break;
+        }
 		return res;
 	}
+
+    private int getProgbarIdMainScreen(int type) {
+        int res = 3000;
+        switch(type){
+            case MessageService.SMS :
+                res += 0;
+                break;
+            case MessageService.VK :
+                res += 1;
+                break;
+            case MessageService.TW :
+                res += 2;
+                break;
+        }
+        return res;
+    }
 	
 	private MessageService getServiceFromButtonId(int id) {
 		switch(id){
@@ -153,6 +133,8 @@ public class ServicesMenuFragment extends Fragment implements OnClickListener, O
 				return ((MyApplication) getActivity().getApplication()).getService( MessageService.SMS );
 			case 1000+1 :
 				return ((MyApplication) getActivity().getApplication()).getService( MessageService.VK );
+            case 1000+2 :
+                return ((MyApplication) getActivity().getApplication()).getService( MessageService.TW );
 			default :
 				return null;
 		}
@@ -257,4 +239,12 @@ public class ServicesMenuFragment extends Fragment implements OnClickListener, O
 		return false;
 	}
 
+    public void setServiceLoading(MessageService ms, boolean fl) {
+        View view = getView();
+        ProgressBar prog_bar = (ProgressBar) view.findViewById( getProgbarIdMainScreen(ms.getServiceType()) );
+        if(fl)
+            prog_bar.setVisibility(View.VISIBLE);
+        else
+            prog_bar.setVisibility(View.INVISIBLE);
+    }
 }

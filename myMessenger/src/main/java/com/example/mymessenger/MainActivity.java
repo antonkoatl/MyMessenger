@@ -40,7 +40,6 @@ public class MainActivity extends SherlockFragmentActivity {
         super.onCreate(savedInstanceState);
         app.setMainActivity(this);
 
-
         Intent intent = getIntent();
         boolean notification_clicked_msg = intent.getBooleanExtra("notification_clicked_msg", false);
         
@@ -109,7 +108,7 @@ public class MainActivity extends SherlockFragmentActivity {
     @Override 
 	protected void onDestroy() { 
 		super.onDestroy();
-		app.setMainActivity(null);
+		//app.setMainActivity(null);
 		Log.d("MainActivity", "onDestroy");
 		VKUIHelper.onDestroy(this);
 	} 
@@ -243,20 +242,22 @@ public class MainActivity extends SherlockFragmentActivity {
     
     
     
-    
-   	
+
+
     private MessageService getServiceFromButtonId(int id) {
 		switch(id){
 			case 1000+0 :
 				return app.getService( MessageService.SMS );
 			case 1000+1 :
 				return app.getService( MessageService.VK );
+            case 1000+2 :
+                return app.getService( MessageService.TW );
 			default :
 				return null;
 		}
 	}
-	
-	
+
+
 
 
 	protected Dialog onCreateDialog(int id) {

@@ -6,7 +6,6 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.net.Uri;
-import android.os.Message;
 import android.util.Log;
 
 import com.example.mymessenger.services.MessageService;
@@ -37,7 +36,7 @@ public class DBHelper extends SQLiteOpenHelper {
 	//contact
 	public static final String colAddress = "address";
 	public static final String colName = "name";
-	public static final String colIcon100url = "icon_100_url";
+	public static final String colIcon50url = "icon_50_url";
 	
 	
 	MyApplication app;
@@ -222,7 +221,7 @@ public class DBHelper extends SQLiteOpenHelper {
 		          + colId + " integer primary key autoincrement," 
 		          + colAddress + " text unique,"
 		          + colName + " text,"
-		          + colIcon100url + " text" + ");");
+		          + colIcon50url + " text" + ");");
 		
 		db.execSQL("CREATE TRIGGER IF NOT EXISTS tg_dlg_" + tn_msgs
 				  + " Before INSERT ON " + tn_msgs
@@ -402,7 +401,7 @@ public class DBHelper extends SQLiteOpenHelper {
 		ContentValues cv = new ContentValues();
 		cv.put(colAddress, cnt.address);
 		cv.put(colName, cnt.name);
-		cv.put(colIcon100url, cnt.icon_100_url);
+		cv.put(colIcon50url, cnt.icon_50_url);
 		
 		SQLiteDatabase db = getWritableDatabase();
 		db.insert(table_name, null, cv);		
@@ -414,7 +413,7 @@ public class DBHelper extends SQLiteOpenHelper {
 		ContentValues cv = new ContentValues();
 		//cv.put(colParticipants, dlg.getParticipantsAddresses());
 		cv.put(colName, cnt.name);
-		cv.put(colIcon100url, cnt.icon_100_url);
+		cv.put(colIcon50url, cnt.icon_50_url);
 		
 		getWritableDatabase().update(table_name, cv, colAddress + " = " + cnt.address, null);
 		
@@ -429,7 +428,7 @@ public class DBHelper extends SQLiteOpenHelper {
 		
 		if(cursor.moveToFirst()){
 			cnt.name = cursor.getString( cursor.getColumnIndex(colName) );
-			cnt.icon_100_url = cursor.getString( cursor.getColumnIndex(colIcon100url) );
+			cnt.icon_50_url = cursor.getString( cursor.getColumnIndex(colIcon50url) );
 		}
 		cursor.close();
 	}
@@ -444,7 +443,7 @@ public class DBHelper extends SQLiteOpenHelper {
 
             if(cursor.moveToFirst()){
                 cnt.name = cursor.getString( cursor.getColumnIndex(colName) );
-                cnt.icon_100_url = cursor.getString( cursor.getColumnIndex(colIcon100url) );
+                cnt.icon_50_url = cursor.getString( cursor.getColumnIndex(colIcon50url) );
             }
 
             cursor.close();
@@ -556,7 +555,7 @@ public class DBHelper extends SQLiteOpenHelper {
         mContact cnt = new mContact(cursor.getString( cursor.getColumnIndex(colAddress) ) );
 
         cnt.name = cursor.getString( cursor.getColumnIndex(colName) );
-        cnt.icon_100_url = cursor.getString( cursor.getColumnIndex(colIcon100url) );
+        cnt.icon_50_url = cursor.getString( cursor.getColumnIndex(colIcon50url) );
 
         return cnt;
     }
