@@ -40,8 +40,9 @@ public class SelectServiceActivity extends Activity {
 	            boolean added = false;
 	            Intent intent = new Intent();
 	            switch(position){
-	            case 0:	intent.putExtra("service_type", MessageService.SMS); added = true;
-	            case 1:	intent.putExtra("service_type", MessageService.VK); added = true;
+	                case 0:	intent.putExtra("service_type", MessageService.SMS); added = true;
+	                case 1:	intent.putExtra("service_type", MessageService.VK); added = true;
+                    case 2:	intent.putExtra("service_type", MessageService.TW); added = true;
 	            }
 	            if(added)setResult(RESULT_ADDED, intent);
 	            else setResult(RESULT_NOT_ADDED, intent);

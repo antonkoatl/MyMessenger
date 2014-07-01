@@ -30,6 +30,7 @@ import java.util.Map;
 public abstract class MessageService {
     public static final int SMS = 10;
     public static final int VK = 11;
+    public static final int TW = 12;
 
     public static final int MSGS_DOWNLOAD_COUNT = 20;
     public static final int DLGS_DOWNLOAD_COUNT = 20;
@@ -47,7 +48,7 @@ public abstract class MessageService {
     protected List<mContact> msAccumCnts;
 
     protected boolean msAuthorised = false;
-    protected boolean msAuthorisationFinished = false;
+    protected boolean msAuthorisationFinished = true;
     protected int msServiceType;
 
     private boolean dl_all_dlgs_downloaded = false; //Все диалоги загружены из сети
@@ -162,6 +163,7 @@ public abstract class MessageService {
 
     // Запросить список диалогов
     public final void requestDialogs(int count, int offset, AsyncTaskCompleteListener<List<mDialog>> cb) {
+        if(!msIsSetupFinished)return; // TODO: отложить, тоже самое для авторизации
         int dlgs_in_db = msApp.dbHelper.getDlgsCount(MessageService.this);
 
         if (offset + count < dlgs_in_db) {
@@ -436,11 +438,11 @@ public abstract class MessageService {
                 authorize(MyApplication.getMainActivity());
                 break;
             case 2:
-                requestActiveDlg();
                 requestAccountInfo();
                 break;
             case 3:
                 msApp.dbHelper.createTables(this);
+                requestActiveDlg();
 
                 // Обновления
                 Intent intent = new Intent(msApp.getApplicationContext(), UpdateService.class);
@@ -869,6 +871,14 @@ public abstract class MessageService {
 
 
 
+    protected void onAuthorize(){
+        msAuthorisationFinished = true;
+        msAuthorised = true;
+        if(!msIsSetupFinished){
+            msSetupStage++;
+            setupStages();
+        }
+    }
 
 
 }

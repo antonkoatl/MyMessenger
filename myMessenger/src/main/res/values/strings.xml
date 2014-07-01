@@ -39,5 +39,6 @@
     <string name="service_name_all">All</string>
     <string name="service_name_sms">Sms</string>
     <string name="service_name_vk">Vkontakte</string>
+    <string name="service_name_tw">Twitter</string>
 
 </resources>

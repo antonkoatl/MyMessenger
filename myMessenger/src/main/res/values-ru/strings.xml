@@ -6,4 +6,5 @@
     <string name="service_name_all">Все</string>
     <string name="service_name_sms">Смс</string>
     <string name="service_name_vk">Вконтакте</string>
+    <string name="service_name_tw">Твиттер</string>
 </resources>

@@ -151,7 +151,7 @@ public class ChatMessageFormatter {
 			new DownloadFilesTask(cb, size).execute(url_path, MyApplication.context.getCacheDir().toString());
 		} else {
 	    	final Drawable d = getDrawableFromFile(output, size);
-	    	MyApplication.getMainActivity().runOnUiThread(new Runnable() {
+	    	if(MyApplication.getMainActivity() != null)MyApplication.getMainActivity().runOnUiThread(new Runnable() {
 				@Override
 				public void run() {
 					cb.onTaskComplete( d ); //On Ui Thread

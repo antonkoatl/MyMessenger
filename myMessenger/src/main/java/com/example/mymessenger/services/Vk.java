@@ -618,22 +618,21 @@ public class Vk extends MessageService {
         public void onReceiveNewToken(VKAccessToken newToken) {
             Log.d("VKSdkListener", "onReceiveNewToken " + newToken.accessToken + " :: " + sTokenKey + " :: " + VKSdk.getAccessToken().accessToken);
             newToken.saveTokenToSharedPreferences(msApp.getApplicationContext(), sTokenKey);
-            msAuthorisationFinished = true;
-            msAuthorised = true;
-            if(!msIsSetupFinished){
-                msSetupStage++;
-                setupStages();
-            }
-            execRequestsWaitingForAuth();
+            onAuthorize();
         }
 
         @Override
         public void onAcceptUserToken(VKAccessToken token) {
             Log.d("VKSdkListener", "onAcceptUserToken" );
-            msAuthorised = true;
-            execRequestsWaitingForAuth();
+            onAuthorize();
         }
     };
+
+    @Override
+    protected void onAuthorize(){
+        super.onAuthorize();
+        execRequestsWaitingForAuth();
+    }
 
     public void HandleApiError(VKError error){
         Log.d("HandleApiError", String.valueOf(error.apiError.errorCode) + " :: " + error.apiError.errorMessage + " :: " + error.apiError.requestParams.toString());

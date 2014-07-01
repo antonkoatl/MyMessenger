@@ -11,11 +11,13 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.Message;
 import android.support.v4.app.FragmentPagerAdapter;
 
 import com.example.mymessenger.services.MessageService;
 import com.example.mymessenger.services.Sms;
 import com.example.mymessenger.services.Vk;
+import com.example.mymessenger.services.msTwitter;
 import com.example.mymessenger.ui.ListViewSimpleFragment;
 import com.example.mymessenger.ui.ServicesMenuFragment;
 
@@ -30,6 +32,7 @@ public class MyApplication extends Application {
     PendingIntent pi;
     public SharedPreferences sPref;
 
+
     public List<AsyncTaskCompleteListener<Void>> cnts_updaters;
     public List<AsyncTaskCompleteListener<List<mDialog>>> dlgs_updaters;
     public List<AsyncTaskCompleteListenerMsg> msg_updaters;
@@ -43,7 +46,7 @@ public class MyApplication extends Application {
     private static Activity mMainActivity = null;
 
     static HandlerThread thread1 = new HandlerThread("MsgListHandlerThread");
-    static Handler handler1 = null;
+    static public Handler handler1 = null;
 
     public int active_user_action = 0;
     public static final int UA_SERVICES_MENU = 1;
@@ -82,7 +85,7 @@ public class MyApplication extends Application {
         sPref = getSharedPreferences("MyPref", MODE_PRIVATE); //загрузка конфигов
 
         //загрузка сервисов
-        String using_services[] = sPref.getString("usingservices", "10").split(",");
+        String using_services[] = sPref.getString("usingservices", "10,11").split(",");
         for(String i : using_services){
             if(i.equals( String.valueOf(MessageService.SMS) ))
                 addMsgService(new Sms(this));
@@ -92,11 +95,12 @@ public class MyApplication extends Application {
 
         active_service = sPref.getInt("active_service", 0);
 
-        setupServices();
+        //setupServices();
 
         //Запуск сервиса обновлений        
         Intent intent1 = new Intent(this, UpdateService.class);
         startService(intent1);
+
     }
 
     public void addMsgService(MessageService mServive){
@@ -231,6 +235,16 @@ public class MyApplication extends Application {
         }
     }
 
+    public MessageService createServiceByType(int service_type){
+        MessageService ms = null;
+        switch(service_type){
+            case MessageService.SMS: ms = new Sms(this);
+            case MessageService.VK: ms = new Vk(this);
+            case MessageService.TW: ms = new msTwitter(this);
+        }
+        return ms;
+    }
+
     public boolean newService(int service_type) {
         boolean isExist = false;
 
@@ -242,11 +256,8 @@ public class MyApplication extends Application {
         }
 
         if(!isExist){
-            MessageService ms = null;
-            switch(service_type){
-                case MessageService.SMS: ms = new Sms(this);
-                case MessageService.VK: ms = new Vk(this);
-            }
+            MessageService ms = createServiceByType(service_type);
+            addMsgService(ms);
 
             AsyncTaskCompleteListener<MessageService> asms = new AsyncTaskCompleteListener<MessageService>(){
 
@@ -261,8 +272,6 @@ public class MyApplication extends Application {
                     Editor ed = sPref.edit();
                     ed.putString("usingservices", usingservices);
                     ed.commit();
-
-                    addMsgService(ms);
 
                     ServicesMenuFragment fr = (ServicesMenuFragment) ((MainActivity) getMainActivity()).pagerAdapter.getRegisteredFragment(0);
                     fr.POSITION = FragmentPagerAdapter.POSITION_NONE;

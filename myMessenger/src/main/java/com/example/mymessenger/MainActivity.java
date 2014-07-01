@@ -19,6 +19,7 @@ import com.actionbarsherlock.app.SherlockFragmentActivity;
 import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.MenuItem;
 import com.example.mymessenger.services.MessageService;
+import com.example.mymessenger.services.msTwitter;
 import com.example.mymessenger.ui.ListViewSimpleFragment;
 import com.example.mymessenger.ui.ServicesMenuFragment;
 import com.vk.sdk.VKUIHelper;
@@ -39,6 +40,7 @@ public class MainActivity extends SherlockFragmentActivity {
         super.onCreate(savedInstanceState);
         app.setMainActivity(this);
 
+
         Intent intent = getIntent();
         boolean notification_clicked_msg = intent.getBooleanExtra("notification_clicked_msg", false);
         
@@ -58,8 +60,8 @@ public class MainActivity extends SherlockFragmentActivity {
         if(notification_clicked_msg){
         	mMessage msg = (mMessage) intent.getParcelableExtra("msg");
         	app.setActiveService(msg.msg_service);
-        	MessageService ms = app.getActiveService();
-        	
+            MessageService ms = app.getActiveService();
+
         	mDialog dlg = new mDialog();        	
         	dlg.participants.add( msg.respondent );			
         	dlg.snippet = msg.text;
@@ -90,7 +92,7 @@ public class MainActivity extends SherlockFragmentActivity {
 		super.onResume();
 		Log.d("MainActivity", "onResume");
 		VKUIHelper.onResume(this);
-	} 
+	}
 
     @Override
     protected void onPause() {
@@ -175,6 +177,7 @@ public class MainActivity extends SherlockFragmentActivity {
                 if(ser_name.equals(getString(R.string.service_name_all))) ser_type = 0;
                 if(ser_name.equals(getString(R.string.service_name_sms))) ser_type = MessageService.SMS;
                 if(ser_name.equals(getString(R.string.service_name_vk))) ser_type = MessageService.VK;
+                if(ser_name.equals(getString(R.string.service_name_tw))) ser_type = MessageService.TW;
                 ListViewSimpleFragment fr = (ListViewSimpleFragment) pagerAdapter.getRegisteredFragment(1);
                 fr.setSelectedService(ser_type);
             }
@@ -283,7 +286,9 @@ public class MainActivity extends SherlockFragmentActivity {
 	@Override 
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		super.onActivityResult(requestCode, resultCode, data);
-		VKUIHelper.onActivityResult(this, requestCode, resultCode, data); 
+		VKUIHelper.onActivityResult(this, requestCode, resultCode, data);
+        if(app.getService(MessageService.TW) != null)
+            ((msTwitter) app.getService(MessageService.TW)).authOnActivityResult(this, requestCode, resultCode, data);
 		
 		if(requestCode == SelectServiceActivity.REQUEST_CODE){
 			if(resultCode == SelectServiceActivity.RESULT_ADDED){

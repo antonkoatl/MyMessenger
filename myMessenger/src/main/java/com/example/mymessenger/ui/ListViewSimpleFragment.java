@@ -193,6 +193,8 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 
             selected_service_for_dialogs = app.sPref.getInt("selected_service_for_dialogs", 0);
 
+            if(app.getService(selected_service_for_dialogs) == null) selected_service_for_dialogs = 0;
+
             if(selected_service_for_dialogs == 0) {
                 app.requestDialogs(20, 0, async_complete_listener_dlg);
             } else {

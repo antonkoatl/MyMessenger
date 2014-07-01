@@ -16,10 +16,19 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
         }
     }
+
+    packagingOptions {
+        exclude 'META-INF/LICENSE.txt'
+    }
 }
 
 dependencies {
     compile project(':vksdk_library')
+    compile project(':twitter')
+
     compile 'com.actionbarsherlock:actionbarsherlock:4.4.0@aar'
     compile 'com.android.support:support-v4:19.1.+'
+    compile 'org.twitter4j:twitter4j-core:+'
+    compile 'org.twitter4j:twitter4j-stream:+'
+    compile 'org.twitter4j:twitter4j-async:+'
 }

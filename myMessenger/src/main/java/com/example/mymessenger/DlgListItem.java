@@ -124,8 +124,8 @@ public class DlgListItem {
 		public void run() {
 			final TextView textLabel = (TextView) view.findViewById(R.id.dlgview_dlgtext);
 			snippet_spannable_cache = ChatMessageFormatter.getSmiledText(view.getContext(), dlg.snippet, dlg.getMsgServiceType(), textLabel.getLineHeight());
-			
-			app.getMainActivity().runOnUiThread(new Runnable() {
+
+            view.post(new Runnable() {
 			     @Override
 			     public void run() {
 			    	 textLabel.setText( snippet_spannable_cache );

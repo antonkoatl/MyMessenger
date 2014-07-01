@@ -52,6 +52,7 @@
         </receiver>
         <service android:name="DownloadService"></service>
         <activity android:name="SelectServiceActivity"></activity>
+        <activity android:name=".services.SimpleOpenAuthActivity"></activity>
     </application>
 
 </manifest>
