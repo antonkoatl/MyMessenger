@@ -139,18 +139,18 @@ public class Vk extends MessageService {
                 }
             }
 
-
-
         };
 
         request.executeWithListener(rl);
     };
 
     @Override
-    protected void getContactsFromNet(final List<mContact> cnts) {
-        String uids = cnts.get(0).address;
-        for(int i = 1; i < cnts.size(); i++){
-            uids += "," + cnts.get(i).address;
+    protected void getContactsFromNet(final CntsDownloadsRequest req) {
+        req.onStarted();
+
+        String uids = req.cnts.get(0).address;
+        for(int i = 1; i < req.cnts.size(); i++){
+            uids += "," + req.cnts.get(i).address;
         }
 
         VKRequest request = new VKRequest("users.get", VKParameters.from(VKApiConst.USER_IDS, uids, VKApiConst.FIELDS, "photo_50"));
@@ -171,7 +171,7 @@ public class Vk extends MessageService {
                     for(int i = 0; i < response_json.length(); i++){
                         JSONObject item = response_json.getJSONObject(i);
 
-                        mContact cnt = cnts.get(i);
+                        mContact cnt = req.cnts.get(i);
 
                         String name = item.getString("first_name");
                         name += " " + item.getString("last_name");
@@ -184,11 +184,8 @@ public class Vk extends MessageService {
                         if(updateCntInDB(cnt) == true)updated = true;
                     }
 
+                    req.onFinished(updated);
 
-                    if(msAccumCnts.size() > 0) msHandler.postDelayed(cnts_request_runnable, 500);
-                    else ms_accum_cnt_handler_isRunning = false;
-
-                    if(updated)msApp.triggerCntsUpdaters();
 
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -387,18 +384,18 @@ public class Vk extends MessageService {
     }
 
     @Override
-    protected void getDialogsFromNet(int count, int offset, AsyncTaskCompleteListener<List<mDialog>> cb) {
+    protected void getDialogsFromNet(final DlgsDownloadsRequest req) {
         // Обновление информации о количестве потоков загрузки
-        dlgs_thread_count += 1;
+        req.onStarted();
 
         // Скачивание из интернета
-        VKRequest request = new VKRequest("messages.getDialogs", VKParameters.from(VKApiConst.COUNT, String.valueOf(count),
-                VKApiConst.OFFSET, String.valueOf(offset),
+        VKRequest request = new VKRequest("messages.getDialogs", VKParameters.from(VKApiConst.COUNT, String.valueOf(req.count),
+                VKApiConst.OFFSET, String.valueOf(req.offset),
                 VKApiConst.FIELDS, "first_name,last_name,photo_50"));
         request.secure = false;
         VKParameters preparedParameters = request.getPreparedParameters();
 
-        VKRequestListener rl = new VKRequestListenerWithCallback<List<mDialog>>(cb, Vk.this) {
+        VKRequestListener rl = new VKRequestListenerWithCallback<List<mDialog>>(req.cb, Vk.this) {
 
             @Override
             public void onComplete(VKResponse response) {
@@ -435,10 +432,7 @@ public class Vk extends MessageService {
                         dlgs.add(mdl);
                     }
 
-                    dlgs_thread_count--;
-                    if(callback != null) {
-                        callback.onTaskComplete(dlgs);
-                    }
+                    req.onFinished(dlgs);
 
 
                 } catch (JSONException e) {
@@ -461,22 +455,23 @@ public class Vk extends MessageService {
     }
 
     @Override
-    protected void getMessagesFromNet(mDialog dlg, int count, int offset, AsyncTaskCompleteListener<List<mMessage>> cb) {
+    protected void getMessagesFromNet(final MsgsDownloadsRequest req) {
         // Обновление информации о количестве потоков загрузки
-        updateMsgsThreadCount(dlg, 1);
+        req.onStarted();
+
         VKRequest request;
 
-        if(dlg.chat_id == 0){
-            request = new VKRequest("messages.getHistory", VKParameters.from(VKApiConst.COUNT, String.valueOf(count),
-                    VKApiConst.OFFSET, String.valueOf(offset), VKApiConst.USER_ID, dlg.getParticipants()));
+        if(req.dlg.chat_id == 0){
+            request = new VKRequest("messages.getHistory", VKParameters.from(VKApiConst.COUNT, String.valueOf(req.count),
+                    VKApiConst.OFFSET, String.valueOf(req.offset), VKApiConst.USER_ID, req.dlg.getParticipants()));
         } else {
-            request = new VKRequest("messages.getHistory", VKParameters.from(VKApiConst.COUNT, String.valueOf(count),
-                    VKApiConst.OFFSET, String.valueOf(offset), "chat_id", String.valueOf(dlg.chat_id)));
+            request = new VKRequest("messages.getHistory", VKParameters.from(VKApiConst.COUNT, String.valueOf(req.count),
+                    VKApiConst.OFFSET, String.valueOf(req.offset), "chat_id", String.valueOf(req.dlg.chat_id)));
         }
         request.secure = false;
         VKParameters preparedParameters = request.getPreparedParameters();
 
-        VKRequestListener rl = new VKRequestListenerWithCallback<List<mMessage>>(cb, Vk.this) {
+        VKRequestListener rl = new VKRequestListenerWithCallback<List<mMessage>>(req.cb, Vk.this) {
             @Override
             public void onComplete(VKResponse response) {
                 Log.d("VKRequestListener", response.request.methodName +  " :: onComplete");
@@ -506,12 +501,9 @@ public class Vk extends MessageService {
                     }
 
 
-                    updateMsgsThreadCount(dlg, -1);
-
                     Log.d("requestMessages", "onTaskComplete - net :: " + String.valueOf(isLoadingMsgsForDlg(dlg)));
-                    if(callback != null){
-                        callback.onTaskComplete(msgs);
-                    }
+                    req.onFinished(msgs);
+
 
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -520,28 +512,21 @@ public class Vk extends MessageService {
 
         };
 
-        ((VKRequestListenerWithCallback<List<mMessage>>) rl).setParams(dlg);
+        ((VKRequestListenerWithCallback<List<mMessage>>) rl).setParams(req.dlg);
         request.executeWithListener(rl);
 
     }
 
-    @Override
-    public long[][] getEmojiCodes() {
-        return emoji;
-    }
 
     @Override
     public String getEmojiUrl(long code){
-        return "http://vk.com/images/emoji/" + mGlobal.LongToHexStr(code) + ".png";
+        char[] chars = Character.toChars((int) code);
+        String res = "";
+        for(char c : chars){
+            res += String.format("%X", (int) c);
+        }
+        return "http://vk.com/images/emoji/" + res + ".png";
     }
-
-    @Override
-    public int[] getEmojiGroupsIcons() {
-        return emoji_group_icons;
-    }
-
-
-
 
 
 

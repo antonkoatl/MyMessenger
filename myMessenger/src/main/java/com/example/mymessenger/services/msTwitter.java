@@ -3,6 +3,7 @@ package com.example.mymessenger.services;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.util.Log;
 
 import com.example.mymessenger.AsyncTaskCompleteListener;
@@ -12,6 +13,7 @@ import com.example.mymessenger.R;
 import com.example.mymessenger.RunnableAdvanced;
 import com.example.mymessenger.mContact;
 import com.example.mymessenger.mDialog;
+import com.example.mymessenger.mGlobal;
 import com.example.mymessenger.mMessage;
 
 
@@ -244,31 +246,26 @@ public class msTwitter extends MessageService {
     }
 
     @Override
-    protected void getContactsFromNet(final List<mContact> cnts) {
+    protected void getContactsFromNet(final CntsDownloadsRequest req) {
+        req.onStarted();
         Runnable r = new Runnable() {
             @Override
             public void run() {
-                for(mContact cnt : cnts) {
+                boolean updated = false;
+                for(mContact cnt : req.cnts) {
                     User user = null;
                     try {
                         user = mTwitter.showUser(cnt.address);
                     } catch (TwitterException e) {
-                        if(e.getMessage().equals("Received authentication challenge is null")){
-                            setNotAuthorised();
-
-                            if(MyApplication.getMainActivity() != null){
-                                authorize(MyApplication.getMainActivity());
-                            }
-
-                        }
-                        e.printStackTrace();
+                        handleTwitterException(e, this, req);
                         continue;
                     }
                     cnt.name = user.getName();
                     cnt.icon_50_url = user.getProfileImageURL();
 
-                    updateCntInDB(cnt);
+                    if(updateCntInDB(cnt) == true)updated = true;
                 }
+                req.onFinished(updated);
             }
         };
 
@@ -276,39 +273,74 @@ public class msTwitter extends MessageService {
     }
 
     @Override
-    protected void getMessagesFromNet(mDialog dlg, int count, int offset, AsyncTaskCompleteListener<List<mMessage>> cb) {
-
-    }
-
-    @Override
-    protected void getDialogsFromNet(final int count, final int offset, final AsyncTaskCompleteListener<List<mDialog>> cb) {
-        dlgs_thread_count += 1;
-
+    protected void getMessagesFromNet(final MsgsDownloadsRequest req) {
+        req.onStarted();
 
         Runnable r = new Runnable() {
             @Override
             public void run() {
-                int page = offset / count + 1;
+                int page = req.offset / req.count + 1;
                 ResponseList<Status> statuses;
 
                 try {
-                    statuses = mTwitter.getHomeTimeline(new Paging(page, count));
+                    statuses = mTwitter.getUserTimeline(req.dlg.participants.get(0).address, new Paging(page, req.count));
                 } catch (TwitterException e) {
-                    if(e.getMessage().equals("Received authentication challenge is null")){
-                        setNotAuthorised();
+                    handleTwitterException(e, this, req);
+                    return;
+                }
 
-                        if(MyApplication.getMainActivity() != null){
-                            authorize(MyApplication.getMainActivity());
-                        }
+                List<mMessage> msgs = new ArrayList<mMessage>();
+
+                int i = 0;
+                for (Status status : statuses) {
+                    if (i < (req.offset % req.count)) {
+                        i++;
+                        continue;
                     }
-                    e.printStackTrace();
+
+                    msgs.add( get_msg_from_status(status) );
+                }
+
+                req.onFinished(msgs);
+            }
+        };
+
+        MyApplication.handler1.post(r);
+    }
+
+    private mMessage get_msg_from_status(Status status){
+        mMessage msg = new mMessage();
+
+        msg.respondent = getContact( status.getUser().getScreenName() );
+        msg.text = status.getText();
+        msg.sendTime.set( status.getCreatedAt().getTime() );
+        msg.id = String.valueOf( status.getId() );
+        msg.msg_service = getServiceType();
+
+        return  msg;
+    }
+
+    @Override
+    protected void getDialogsFromNet(final DlgsDownloadsRequest req) {
+        req.onStarted();
+
+        Runnable r = new Runnable() {
+            @Override
+            public void run() {
+                int page = req.offset / req.count + 1;
+                ResponseList<Status> statuses;
+
+                try {
+                    statuses = mTwitter.getHomeTimeline(new Paging(page, req.count));
+                } catch (TwitterException e) {
+                    handleTwitterException(e, this, req);
                     return;
                 }
 
                 List<mDialog> dlgs = new ArrayList<mDialog>();
                 int i = 0;
                 for (Status status : statuses) {
-                    if (i < (offset % count)) {
+                    if (i < (req.offset % req.count)) {
                         i++;
                         continue;
                     }
@@ -328,27 +360,23 @@ public class msTwitter extends MessageService {
                     //Log.d("msTwitter", status.getUser().getName() + ":" + status.getText());
                 }
 
-                dlgs_thread_count--;
-                if (cb != null) {
-                    ((MainActivity) MyApplication.getMainActivity()).runOnUiThread(new Runnable() {
-                        List<mDialog> dlgs;
-
-                        Runnable setDlgs(List<mDialog> dlgs){
-                            this.dlgs = dlgs;
-                            return this;
-                        }
-
-                        @Override
-                        public void run() {
-                            cb.onTaskComplete(dlgs);
-                        }
-                    }.setDlgs(dlgs));
-
-                }
+                req.onFinished(dlgs);
             }
         };
 
         MyApplication.handler1.post(r);
+    }
+
+    private void handleTwitterException(TwitterException e, Runnable runnable, DownloadsRequest req) {
+        if(e.getMessage().equals("Received authentication challenge is null")){
+            setNotAuthorised();
+            if(MyApplication.getMainActivity() != null){
+                authorize(MyApplication.getMainActivity());
+            }
+        } else {
+            req.onError();
+        }
+        e.printStackTrace();
     }
 
     @Override
@@ -356,18 +384,19 @@ public class msTwitter extends MessageService {
 
     }
 
-    @Override
-    public long[][] getEmojiCodes() {
-        return new long[0][];
-    }
+
+
+
+
+
+
+
+
+
 
     @Override
     public String getEmojiUrl(long code) {
-        return null;
+        return "https://abs.twimg.com/emoji/v1/72x72/" + mGlobal.LongToHexStr32nozero(code) + ".png";
     }
 
-    @Override
-    public int[] getEmojiGroupsIcons() {
-        return new int[0];
-    }
 }

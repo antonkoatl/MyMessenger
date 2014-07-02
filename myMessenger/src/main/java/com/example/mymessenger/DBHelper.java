@@ -6,6 +6,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.net.Uri;
+import android.text.format.Time;
 import android.util.Log;
 
 import com.example.mymessenger.services.MessageService;
@@ -558,5 +559,29 @@ public class DBHelper extends SQLiteOpenHelper {
         cnt.icon_50_url = cursor.getString( cursor.getColumnIndex(colIcon50url) );
 
         return cnt;
+    }
+
+    public List<mDialog> updateDlgs(List<mDialog> dlgs, MessageService ms) {
+        List<mDialog> dlgs_updated = new ArrayList<mDialog>();
+        for (mDialog dlg : dlgs) {
+            int dlg_key = getDlgId(dlg, ms);
+
+            if (dlg_key != 0) {
+                mDialog dlg_in_db = getDlgById(dlg_key, ms);
+
+                if (dlg.last_msg_time.after(dlg_in_db.getLastMessageTime())) {
+                    //update
+                    updateDlg(dlg_key, dlg, ms);
+                    dlgs_updated.add(dlg);
+                } else {
+                    continue;
+                }
+            } else {
+                //add
+                insertDlg(dlg, ms);
+                dlgs_updated.add(dlg);
+            }
+        }
+        return dlgs_updated;
     }
 }

@@ -8,6 +8,8 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.example.mymessenger.services.MessageService;
+
 public class DlgListItem {
 	MyApplication app;
 	public mDialog dlg;

@@ -359,7 +359,7 @@ public class Sms extends MessageService {
     }
 
     @Override
-    protected void getContactsFromNet(List<mContact> cnts) {
+    protected void getContactsFromNet(CntsDownloadsRequest req) {
 
     }
 
@@ -420,27 +420,13 @@ public class Sms extends MessageService {
     }
 
 
-    public static long[][] emoji;
-    public static int[] emoji_group_icons = new int[]{};
-    static {
-        emoji = new long[0][];
-    }
-
-
     @Override
-    public long[][] getEmojiCodes() {
-        return emoji;
-    }
-
-
-
-    @Override
-    protected void getDialogsFromNet(int count, int offset,	AsyncTaskCompleteListener<List<mDialog>> cb) {
+    protected void getDialogsFromNet(DlgsDownloadsRequest req) {
 
     }
 
     @Override
-    protected void getMessagesFromNet(mDialog dlg, int count, int offset, AsyncTaskCompleteListener<List<mMessage>> cb) {
+    protected void getMessagesFromNet(MsgsDownloadsRequest req) {
 
     }
 

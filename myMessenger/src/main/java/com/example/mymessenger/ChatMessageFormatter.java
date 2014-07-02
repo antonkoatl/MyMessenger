@@ -12,6 +12,8 @@ import android.text.Spannable.Factory;
 import android.text.style.ImageSpan;
 import android.util.DisplayMetrics;
 
+import com.example.mymessenger.services.MessageService;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -27,7 +29,7 @@ import java.util.regex.Pattern;
 public class ChatMessageFormatter {
 	private static final Factory spannableFactory = Spannable.Factory.getInstance();
 
-	private static final Map< Integer, Map<Pattern, String> > emoticons = new HashMap< Integer, Map<Pattern, String> >();
+	private static final Map<Pattern, Long> emoticons = new HashMap<Pattern, Long>();
 
 
 	public int substring_hex_to_int(String code, int start, int end){
@@ -61,20 +63,13 @@ public class ChatMessageFormatter {
 		return "";
 	}
 	
-	public static void addPattern(int ser_type, String resource, String smile){
-		Map<Pattern, String> map = emoticons.get(ser_type);
-		if(map == null){
-			map = new HashMap<Pattern, String>();
-			emoticons.put(ser_type, map);
-		}
-		
-		map.put(Pattern.compile(Pattern.quote(smile)), resource);
+	public static void addPattern(long resource, String smile){
+        emoticons.put(Pattern.compile(Pattern.quote(smile)), resource);
 	}
 		
-	public static boolean addSmiles(Context context, Spannable spannable, int ser_type, int line_height) throws MalformedURLException, IOException {
+	public static boolean addSmiles(Context context, Spannable spannable, int service_type, int line_height) throws MalformedURLException, IOException {
 	    boolean hasChanges = false;
-	    if(emoticons.get(ser_type) == null)return hasChanges;
-	    for (Entry<Pattern, String> entry : emoticons.get(ser_type).entrySet()) {
+	    for (Entry<Pattern, Long> entry : emoticons.entrySet()) {
 	        Matcher matcher = entry.getKey().matcher(spannable);
 	        while (matcher.find()) {
 	            boolean set = true;
@@ -111,7 +106,9 @@ public class ChatMessageFormatter {
 						}
                 		
                 	}.setParams(spannable, matcher.start(), matcher.end());
-	                getDownload(entry.getValue(), cb);
+
+                    MessageService ms = ((MyApplication) context.getApplicationContext()).getService(service_type);
+	                getDownload( ms.getEmojiUrl( entry.getValue() ), cb, line_height);
 	                
 	                
 	                
@@ -131,10 +128,10 @@ public class ChatMessageFormatter {
 	    return hasChanges;
 	}
 
-	public static Spannable getSmiledText(Context context, CharSequence text, int ser_type, int line_height) {
+	public static Spannable getSmiledText(Context context, CharSequence text, int service_type, int line_height) {
 	    Spannable spannable = spannableFactory.newSpannable(text);
 	    try {
-			addSmiles(context, spannable, ser_type, line_height);
+			addSmiles(context, spannable, service_type, line_height);
 		} catch (MalformedURLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

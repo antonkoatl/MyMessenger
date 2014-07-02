@@ -47,6 +47,10 @@ public class mGlobal {
         return "";
     }
 
+    public static String LongToHexStr32nozero(long code) {
+        return String.format("%x", code);
+    }
+
     public static class IntegerMutable {
         public int value;
 
