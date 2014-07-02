@@ -122,6 +122,10 @@ public class MainActivity extends SherlockFragmentActivity {
             	return;
             }
     	}
+        if(mViewPager.getCurrentItem() == 1){
+            mViewPager.setCurrentItem(0);
+            return;
+        }
     	if(mViewPager.getCurrentItem() == 2){
     		ListViewSimpleFragment fr = (ListViewSimpleFragment) pagerAdapter.getRegisteredFragment(2);
     		if (fr.emojiPopup.isShowing()) {
@@ -199,7 +203,18 @@ public class MainActivity extends SherlockFragmentActivity {
         }
         if(mViewPager.getCurrentItem() == 1) {
             menu.findItem(R.id.item_selection1).setVisible(true);
+
             Spinner spinner = (Spinner) menu.findItem(R.id.item_selection1).getActionView();
+
+            // TODO: не пересоздавать каждый раз, обновлять по мере надобности
+            List<String> choices = new ArrayList<String>();
+            choices.add(getString(R.string.service_name_all));
+            for(MessageService ms : app.myMsgServices){
+                choices.add(ms.getServiceName());
+            }
+            ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,android.R.layout.simple_spinner_item, choices);
+            spinner.setAdapter(adapter);
+
             int selected_service_for_dialogs = app.sPref.getInt("selected_service_for_dialogs", 0);
             String saved = null;
             if(selected_service_for_dialogs == 0){
@@ -209,7 +224,6 @@ public class MainActivity extends SherlockFragmentActivity {
             }
 
             if(saved != null){
-                ArrayAdapter<String> adapter = (ArrayAdapter<String>) spinner.getAdapter();
                 spinner.setSelection( adapter.getPosition(saved) );
             }
 

@@ -108,7 +108,9 @@ public class ChatMessageFormatter {
                 	}.setParams(spannable, matcher.start(), matcher.end());
 
                     MessageService ms = ((MyApplication) context.getApplicationContext()).getService(service_type);
-	                getDownload( ms.getEmojiUrl( entry.getValue() ), cb, line_height);
+                    if(ms != null) {
+                        getDownload(ms.getEmojiUrl(entry.getValue()), cb, line_height);
+                    }
 	                
 	                
 	                

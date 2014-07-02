@@ -306,6 +306,7 @@ public class MyApplication extends Application {
         if(ms == null)return;
 
         ms.unsetup();
+        myMsgServices.remove(ms);
 
         String usingservices = "";
         for(MessageService mst : myMsgServices){
@@ -320,7 +321,7 @@ public class MyApplication extends Application {
         ed.putString("usingservices", usingservices);
         ed.commit();
 
-        myMsgServices.remove(ms);
+
     }
 
     public void refreshDialogsFromNet(AsyncTaskCompleteListener<List<mDialog>> cb, int count) {

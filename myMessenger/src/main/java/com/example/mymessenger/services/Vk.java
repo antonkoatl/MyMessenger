@@ -244,7 +244,12 @@ public class Vk extends MessageService {
 
     @Override
     public String[] getStringsForMainViewMenu() {
-        String data[] = {getActiveDialog().getParticipantsNames(), "New message", "All messages", "Status", "Wall", "Friend Wall", "News"};
+        // TODO: всегда должен быть активный диалог
+        String data[] = {"---", "New message", "All messages", "Status", "Wall", "Friend Wall", "News"};
+        if(getActiveDialog() != null){
+            data[0] = getActiveDialog().getParticipantsNames();
+        }
+
 
         return data;
     }
@@ -254,18 +259,13 @@ public class Vk extends MessageService {
         Intent intent;
         switch(which) {
             case 0:
-                if(getActiveDialog() != null){
-                    ((MainActivity) MyApplication.getMainActivity()).mViewPager.setCurrentItem(2);
-                }
+                openActiveDlg();
                 break;
             case 1:
-                intent = new Intent(con, ActivityTwo.class);
-                intent.putExtra("mode", "contacts");
-                intent.putExtra("msg_service", getServiceType());
-                msApp.getMainActivity().startActivityForResult(intent, ActivityTwo.REQUEST_CODE);
+                openContacts(con);
                 break;
             case 2:
-                ((MainActivity) MyApplication.getMainActivity()).mViewPager.setCurrentItem(1);
+                openDialogs();
                 break;
         }
     }

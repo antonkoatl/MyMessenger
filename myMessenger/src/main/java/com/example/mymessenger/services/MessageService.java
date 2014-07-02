@@ -10,6 +10,7 @@ import android.os.Handler;
 import android.text.format.Time;
 import android.util.Log;
 
+import com.example.mymessenger.ActivityTwo;
 import com.example.mymessenger.AsyncTaskCompleteListener;
 import com.example.mymessenger.ChatMessageFormatter;
 import com.example.mymessenger.DBHelper;
@@ -1056,5 +1057,26 @@ public abstract class MessageService {
 
 
 
+
+    // Общие действия для меню
+    protected void openActiveDlg(){
+        if(getActiveDialog() != null){
+            msApp.setActiveService(getServiceType());
+            ((MainActivity) MyApplication.getMainActivity()).mViewPager.setCurrentItem(2);
+        }
+    }
+
+    protected void openContacts(Context context){
+        Intent intent = new Intent(context, ActivityTwo.class);
+        intent.putExtra("mode", "contacts");
+        intent.putExtra("msg_service", getServiceType());
+        msApp.getMainActivity().startActivityForResult(intent, ActivityTwo.REQUEST_CODE);
+    }
+
+    protected void openDialogs(){
+        msApp.sPref.edit().putInt("selected_service_for_dialogs", getServiceType());
+        ((MainActivity) MyApplication.getMainActivity()).pagerAdapter.recreateFragment(1);
+        ((MainActivity) MyApplication.getMainActivity()).mViewPager.setCurrentItem(1);
+    }
 
 }

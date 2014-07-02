@@ -322,7 +322,7 @@ public class Sms extends MessageService {
     @Override
     public String[] getStringsForMainViewMenu() {
         String data[] = {"---", "New message", "All messages"};
-        List<mDialog> t = load_dialogs_from_db(0, 1);
+        List<mDialog> t = load_dialogs_from_db(1, 0);
         if(t.size() > 0){
             setActiveDialog(t.get(0));
             data[0] = t.get(0).getParticipantsNames();
@@ -337,23 +337,13 @@ public class Sms extends MessageService {
         Intent intent;
         switch(which) {
             case 0:
-                if(getActiveDialog() != null){
-                    intent = new Intent(con, ActivityTwo.class);
-                    intent.putExtra("mode", "messages");
-                    con.startActivity(intent);
-                }
+                openActiveDlg();
                 break;
             case 1:
-                if(getActiveDialog() != null){
-                    intent = new Intent(con, ActivityTwo.class);
-                    intent.putExtra("mode", "contacts");
-                    con.startActivity(intent);
-                }
+                openContacts(con);
                 break;
             case 2:
-                intent = new Intent(con, ActivityTwo.class);
-                intent.putExtra("mode", "dialogs");
-                con.startActivity(intent);
+                openDialogs();
                 break;
         }
     }
