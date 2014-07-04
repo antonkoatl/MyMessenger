@@ -1,6 +1,12 @@
 package com.example.mymessenger;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.ColorFilter;
+import android.graphics.Paint;
+import android.graphics.Rect;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.StateListDrawable;
@@ -68,6 +74,119 @@ public class EmojiView extends LinearLayout {
 	private Context context;
 
 
+    private Map<Long, Bitmap> bmps;
+    private Map<Long, EmojiDrawable> dl_bmps;
+
+
+    private static Paint placeholderPaint;
+    private static Paint emojidrawablePaint;
+
+    static {
+        placeholderPaint = new Paint();
+        placeholderPaint.setColor(1426063360);
+        emojidrawablePaint = new Paint();
+        emojidrawablePaint.setFilterBitmap(true);
+    }
+
+    public class EmojiDrawable extends Drawable {
+
+
+        Bitmap bmp;
+        long eid;
+        int page;
+
+        public EmojiDrawable(long eid) {
+            this.eid = eid;
+        }
+
+        public void draw(Canvas canvas) {
+            if (!bmps.containsKey(eid)) {
+                canvas.drawRect(getBounds(), placeholderPaint);
+                if(!dl_bmps.containsKey(eid)){
+                    RunnableGetEmojiItem r = new RunnableGetEmojiItem(eid);
+                    dl_bmps.put(eid, this);
+                    MyApplication.handler1.post(r);
+                } else {
+                    dl_bmps.put(eid, this);
+                }
+
+
+            } else {
+                if(bmp == null) {
+                    bmp = bmps.get(eid);
+                }
+                Rect b = copyBounds();
+                /*
+                int cX = b.centerX();
+                int cY = b.centerY();
+
+                if (this.customSize > 0) {
+                    b.left = cX - Math.min(this.fullSize ? bigImgSize : drawImgSize, this.customSize) / 2;
+                    b.right = Math.min(this.fullSize ? bigImgSize : drawImgSize, this.customSize) / 2 + cX;
+                    b.top = cY - Math.min(this.fullSize ? bigImgSize : drawImgSize, this.customSize) / 2;
+                    b.bottom = Math.min(this.fullSize ? bigImgSize : drawImgSize, this.customSize) / 2 + cY;
+                } else {
+                    b.left = cX - (this.fullSize ? bigImgSize : drawImgSize) / 2;
+                    b.right = (this.fullSize ? bigImgSize : drawImgSize) / 2 + cX;
+                    b.top = cY - (this.fullSize ? bigImgSize : drawImgSize) / 2;
+                    b.bottom = (this.fullSize ? bigImgSize : drawImgSize) / 2 + cY;
+                }*/
+                canvas.drawBitmap(this.bmp, null, b, emojidrawablePaint);
+            }
+        }
+
+        public int getOpacity() {
+            return 0;
+        }
+
+        public void setAlpha(int alpha) {
+        }
+
+        @Override
+        public void setColorFilter(ColorFilter cf) {
+
+        }
+
+    }
+
+    class RunnableGetEmojiItem implements Runnable{
+        int position;
+        long data;
+
+        RunnableGetEmojiItem(long data){
+            this.data = data;
+        }
+
+        @Override
+        public void run() {
+
+            AsyncTaskCompleteListener<Bitmap> cbcf = new AsyncTaskCompleteListener<Bitmap>(){
+                @Override
+                public void onTaskComplete(Bitmap result) {
+                    if(result == null){
+                        result = Bitmap.createBitmap( mGlobal.scale(16), mGlobal.scale(16), Bitmap.Config.ARGB_8888);
+                        Canvas cv = new Canvas(result);
+                        String text = ChatMessageFormatter.charsFromLong(data);
+                        Paint paint = new Paint();
+                        paint.setTextSize(16);
+                        paint.setColor(Color.BLACK);
+                        paint.setTextAlign(Paint.Align.LEFT);
+                        float baseline = (int) (-paint.ascent() + 0.5f);
+                        cv.drawText(text, 0, baseline, paint);
+                    }
+                    bmps.put(data, result);
+                    EmojiDrawable ed = dl_bmps.remove(data);
+                    ed.invalidateSelf();
+                }
+
+            };
+
+            ChatMessageFormatter.getDownloadB(ms.getEmojiUrl(data), cbcf, mGlobal.scale(30), ms);
+        }
+
+    };
+
+
     private class EmojiGridAdapter extends BaseAdapter {
         long[] data;
         Drawable[] data2;
@@ -99,39 +218,7 @@ public class EmojiView extends LinearLayout {
             return data[position];
         }
 
-        class RunnableGetEmojiItem implements Runnable{
-        	ImageView iv;
-        	int position;
-        	boolean valid = true;
-        	
-        	RunnableGetEmojiItem(ImageView iv, int position){
-        		this.iv = iv;
-        		this.position = position;
-        	}
-        	
-			@Override
-			public void run() {
 
-			    AsyncTaskCompleteListener<Drawable> cbcf = new AsyncTaskCompleteListener<Drawable>(){
-					@Override
-					public void onTaskComplete(Drawable result) {
-						if(valid){
-							iv.setImageDrawable(result);
-							runners.remove(iv);
-						}
-					}
-			    	
-			    };
-			    
-				ChatMessageFormatter.getDownload(ms.getEmojiUrl( EmojiGridAdapter.this.data[position] ), cbcf, mGlobal.scale(30));
-				
-			}
-
-			public void makeInvalid() {
-				valid = false;
-			}
-        	
-        };
         
         Map<ImageView, Runnable> runners = new HashMap<ImageView, Runnable>();
         
@@ -145,7 +232,11 @@ public class EmojiView extends LinearLayout {
                 iv.setOnClickListener(new OnClickListener() {
                     public void onClick(View v) {
                         if (EmojiView.this.listener != null) {
-                        	EmojiView.this.listener.onEmojiSelected(EmojiView.this.convert(((Long) v.getTag()).longValue()));
+                        	//EmojiView.this.listener.onEmojiSelected(EmojiView.this.convert(((Long) v.getTag()).longValue()));
+                            EmojiView.this.listener.onEmojiSelected(
+                                    ChatMessageFormatter.charsFromLong((Long) v.getTag())
+                            );
+
                         }
                         EmojiView.this.addToRecent(((Long) v.getTag()).longValue());
                     }
@@ -155,16 +246,9 @@ public class EmojiView extends LinearLayout {
             }
             
             iv.setTag(Long.valueOf(this.data[position]));
-            iv.setImageDrawable(null);
-            
-            if(runners.containsKey(iv)){
-            	RunnableGetEmojiItem r = (RunnableGetEmojiItem) runners.get(iv);
-            	r.makeInvalid();            	
-            }
-            
-            RunnableGetEmojiItem r = new RunnableGetEmojiItem(iv, position);
-            runners.put(iv, r);
-            MyApplication.handler1.post(r);
+            iv.setPadding(5, 5, 5, 5);
+            iv.setImageDrawable(new EmojiDrawable(this.data[position]));
+
             return iv;
         }
     }
@@ -221,6 +305,8 @@ public class EmojiView extends LinearLayout {
         this.views = new ArrayList();
         this.adapters = new ArrayList();
         this.ms = ms;
+        this.bmps = new HashMap<Long, Bitmap>();
+        this.dl_bmps = new HashMap<Long, EmojiDrawable>();
 
         this.icons = new int[ms.getEmojiGroupsIcons().length + 1];
         icons[0] = R.drawable.ic_emoji_recent;

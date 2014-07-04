@@ -422,13 +422,17 @@ public class Sms extends MessageService {
 
     @Override
     public int[] getEmojiGroupsIcons() {
-        return emoji_group_icons;
+        return new int[0];
     }
 
     @Override
     public String getEmojiUrl(long code) {
-        // TODO Auto-generated method stub
         return null;
+    }
+
+    @Override
+    public long[][] getEmojiCodes(){
+        return new long[0][0];
     }
 
 

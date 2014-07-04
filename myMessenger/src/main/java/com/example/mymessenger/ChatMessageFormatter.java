@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
+import android.os.Message;
 import android.os.SystemClock;
 import android.text.Spannable;
 import android.text.Spannable.Factory;
@@ -109,7 +110,8 @@ public class ChatMessageFormatter {
 
                     MessageService ms = ((MyApplication) context.getApplicationContext()).getService(service_type);
                     if(ms != null) {
-                        getDownload(ms.getEmojiUrl(entry.getValue()), cb, line_height);
+                        String eurl = ms.getEmojiUrl(entry.getValue());
+                        if(eurl != null)getDownload(eurl, cb, line_height, ms);
                     }
 	                
 	                
@@ -144,10 +146,10 @@ public class ChatMessageFormatter {
 	    return spannable;
 	}
 	
-	public static void getDownload(String url_path, final AsyncTaskCompleteListener<Drawable> cb, int size){
-		String output = isFileDownloaded(url_path);
+	public static void getDownload(String url_path, final AsyncTaskCompleteListener<Drawable> cb, int size, MessageService ms){
+		String output = isFileDownloaded(url_path, ms);
 		if(output == null){
-			new DownloadFilesTask(cb, size).execute(url_path, MyApplication.context.getCacheDir().toString());
+			new DownloadFilesTask(cb, size, ms).execute(url_path, MyApplication.context.getCacheDir().toString());
 		} else {
 	    	final Drawable d = getDrawableFromFile(output, size);
 	    	if(MyApplication.getMainActivity() != null)MyApplication.getMainActivity().runOnUiThread(new Runnable() {
@@ -159,17 +161,35 @@ public class ChatMessageFormatter {
 	    	
 		}		
 	}
+
+
 	
-	public static void getDownload(String url_path, final AsyncTaskCompleteListener<Drawable> cb){
-		getDownload(url_path, cb, 0);
+	public static void getDownload(String url_path, final AsyncTaskCompleteListener<Drawable> cb, MessageService ms){
+		getDownload(url_path, cb, 0, ms);
 	}
+
+    public static void getDownloadB(String url_path, final AsyncTaskCompleteListener<Bitmap> cb, int size, MessageService ms){
+        String output = isFileDownloaded(url_path, ms);
+        if(output == null){
+            new DownloadFilesTaskB(cb, size, ms).execute(url_path, MyApplication.context.getCacheDir().toString());
+        } else {
+            final Bitmap b = getBitmapFromFile(output, size);
+            if(MyApplication.getMainActivity() != null)MyApplication.getMainActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    cb.onTaskComplete( b ); //On Ui Thread
+                }
+            });
+
+        }
+    }
 	
 
 	
-	public static String isFileDownloaded(String url_path){
+	public static String isFileDownloaded(String url_path, MessageService ms){
 		String fileName = url_path.substring( url_path.lastIndexOf('/')+1, url_path.length() );
-		File output = new File(MyApplication.context.getCacheDir() + File.separator + DownloadService.DIR_SD, fileName);
-		File output_dir = new File(MyApplication.context.getCacheDir() + File.separator + DownloadService.DIR_SD);
+		File output = new File(MyApplication.context.getCacheDir() + File.separator + MessageService.getCacheFolder(ms.getServiceType()), fileName);
+		File output_dir = new File(MyApplication.context.getCacheDir() + File.separator + MessageService.getCacheFolder(ms.getServiceType()));
 	    if(!output_dir.exists()) output_dir.mkdirs();
 	    
 	    if (output.exists()) {
@@ -182,6 +202,44 @@ public class ChatMessageFormatter {
 	public static Drawable getDrawableFromFile(String file_path){
 		return getDrawableFromFile(file_path, 0);
 	}
+
+    public static Bitmap getBitmapFromFile(String file_path, int size){
+        long tstart = SystemClock.currentThreadTimeMillis();
+        long ttemp = SystemClock.currentThreadTimeMillis();
+        long t1 = 0;
+        long t2 = 0;
+        long t3 = 0;
+        long t4 = 0;
+        long t5 = 0;
+
+        t1 = SystemClock.currentThreadTimeMillis() - ttemp;
+        ttemp = SystemClock.currentThreadTimeMillis();
+
+        if(file_path == null)return null;
+        BitmapFactory.Options options = new BitmapFactory.Options();
+
+        options.inDensity = DisplayMetrics.DENSITY_MEDIUM;
+        options.inTargetDensity = MyApplication.context.getResources().getDisplayMetrics().densityDpi;
+        options.inScaled = true;
+
+        t2 = SystemClock.currentThreadTimeMillis() - ttemp;
+        ttemp = SystemClock.currentThreadTimeMillis();
+
+        Bitmap b = BitmapFactory.decodeFile( file_path, options );
+        t3 = SystemClock.currentThreadTimeMillis() - ttemp;
+        ttemp = SystemClock.currentThreadTimeMillis();
+        if(b == null){
+            return null;
+        }
+
+        if(size > 0){
+            b = Bitmap.createScaledBitmap(b, size, size, true);
+        }
+        t4 = SystemClock.currentThreadTimeMillis() - ttemp;
+        ttemp = SystemClock.currentThreadTimeMillis();
+
+        return b;
+    }
 	
 	public static Drawable getDrawableFromFile(String file_path, int size){
 		long tstart = SystemClock.currentThreadTimeMillis();
@@ -232,15 +290,18 @@ public class ChatMessageFormatter {
 	public static class DownloadFilesTask extends AsyncTask<String, Void, Drawable>{
 		AsyncTaskCompleteListener<Drawable> cb;
 		int size;
+        MessageService ms;
 		
-		DownloadFilesTask(AsyncTaskCompleteListener<Drawable> cb){
+		DownloadFilesTask(AsyncTaskCompleteListener<Drawable> cb, MessageService ms){
 			this.cb = cb;
 			this.size = 0;
+            this.ms = ms;
 		}
 		
-		DownloadFilesTask(AsyncTaskCompleteListener<Drawable> cb, int size){
+		DownloadFilesTask(AsyncTaskCompleteListener<Drawable> cb, int size, MessageService ms){
 			this.cb = cb;
 			this.size = size;
+            this.ms = ms;
 		}
 		
 		@Override
@@ -260,7 +321,7 @@ public class ChatMessageFormatter {
 		
 		public String getCachedFile(String url_path, String cache_dir){
 			String fileName = url_path.substring( url_path.lastIndexOf('/')+1, url_path.length() );
-			File output = new File(cache_dir + File.separator + DownloadService.DIR_SD, fileName);
+			File output = new File(cache_dir + File.separator + MessageService.getCacheFolder(ms.getServiceType()), fileName);
 			
 			boolean failed = false;
 		    InputStream stream = null;
@@ -299,4 +360,89 @@ public class ChatMessageFormatter {
 			else return output.getPath();
 		}
 	};
+
+    public static class DownloadFilesTaskB extends AsyncTask<String, Void, Bitmap>{
+        AsyncTaskCompleteListener<Bitmap> cb;
+        int size;
+        MessageService ms;
+
+        DownloadFilesTaskB(AsyncTaskCompleteListener<Bitmap> cb){
+            this.cb = cb;
+            this.size = 0;
+            this.ms = ms;
+        }
+
+        DownloadFilesTaskB(AsyncTaskCompleteListener<Bitmap> cb, int size, MessageService ms){
+            this.cb = cb;
+            this.size = size;
+            this.ms = ms;
+        }
+
+        @Override
+        protected Bitmap doInBackground(String... arg0) {
+            String url_path = arg0[0];
+            String cache_dir = arg0[1];
+
+            String ss = getCachedFile(url_path, cache_dir, ms);
+            return getBitmapFromFile(ss, size);
+
+
+        }
+
+        protected void onPostExecute(Bitmap result) {
+            cb.onTaskComplete(result);
+        }
+
+        public String getCachedFile(String url_path, String cache_dir, MessageService ms){
+            String fileName = url_path.substring( url_path.lastIndexOf('/')+1, url_path.length() );
+            File output = new File(cache_dir + File.separator + MessageService.getCacheFolder(ms.getServiceType()), fileName);
+
+            boolean failed = false;
+            InputStream stream = null;
+            FileOutputStream fos = null;
+            try {
+                URL url = new URL(url_path);
+                stream = url.openConnection().getInputStream();
+                //InputStreamReader reader = new InputStreamReader(stream);
+                fos = new FileOutputStream(output.getPath());
+                final byte[] buffer = new byte[1024];
+                int next = -1;
+                while ((next = stream.read(buffer)) != -1) {
+                    fos.write(buffer, 0, next);
+                }
+                // successfully finished
+            } catch (Exception e) {
+                e.printStackTrace();
+                failed = true;
+            } finally {
+                if (stream != null) {
+                    try {
+                        stream.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+                if (fos != null) {
+                    try {
+                        fos.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+            if(failed)return null;
+            else return output.getPath();
+        }
+    };
+
+    public static String charsFromLong(long code){
+        String ccode;
+        try {
+            ccode = String.valueOf(Character.toChars((int) code));
+        } catch (IllegalArgumentException e) { // For 0..9
+            ccode = String.valueOf(Character.toChars((int) (code / 0x10000)));
+            ccode += String.valueOf(Character.toChars((int) (code % 0x10000)));
+        }
+        return ccode;
+    }
 }

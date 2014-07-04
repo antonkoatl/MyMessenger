@@ -72,7 +72,7 @@ public class EmojiPopup {
             public void onEmojiSelected(String s) {
                 EditText edit = (EditText) EmojiPopup.this.contentView.findViewById(R.id.msg_entertext);
                 int pos = edit.getSelectionEnd();
-                CharSequence em = ChatMessageFormatter.getSmiledText(context, s, ms.getServiceType(), 0);
+                CharSequence em = ChatMessageFormatter.getSmiledText(context, s, ms.getServiceType(), edit.getLineHeight());
                 edit.setText(edit.getText().insert(pos, em));
                 pos += em.length();
                 edit.setSelection(pos, pos);

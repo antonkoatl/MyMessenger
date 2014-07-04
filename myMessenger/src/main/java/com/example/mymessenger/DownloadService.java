@@ -3,6 +3,8 @@ package com.example.mymessenger;
 import android.app.IntentService;
 import android.content.Intent;
 
+import com.example.mymessenger.services.MessageService;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -11,8 +13,7 @@ import java.net.URL;
 
 public class DownloadService extends IntentService {
 	public static final String NOTIFICATION_FINISHED = "com.mymessenger.downloader.finished";
-	final static String DIR_SD = "MyMessangerDownloadedFiles";
-	
+
 	public DownloadService() {
 		super("Downloader");
 	}
@@ -20,12 +21,13 @@ public class DownloadService extends IntentService {
 	@Override
 	protected void onHandleIntent(Intent intent) {
 		String url_path = intent.getStringExtra("url");
+        int ser_type = intent.getIntExtra("ser_type", 0);
 		
 		String fileName = url_path.substring( url_path.lastIndexOf('/')+1, url_path.length() );
 		
 		
 		
-		File output = new File(getCacheDir() + File.separator + DIR_SD, fileName);
+		File output = new File(getCacheDir() + File.separator + MessageService.getCacheFolder(ser_type), fileName);
 
         // проверяем доступность SD
 	    /*if (!Environment.getExternalStorageState().equals(
@@ -36,7 +38,7 @@ public class DownloadService extends IntentService {
 	    	output = new File(Environment.getExternalStorageDirectory() + "/" + DIR_SD, fileName);
 	    } */
 		
-	    File output_dir = new File(getCacheDir() + File.separator + DIR_SD);
+	    File output_dir = new File(getCacheDir() + File.separator + MessageService.getCacheFolder(ser_type));
 	    if(!output_dir.exists()) output_dir.mkdirs();
 	    
 	    if (output.exists()) {
@@ -93,6 +95,7 @@ public class DownloadService extends IntentService {
 	    sendBroadcast(intent);
 	}
 
+    /*
 	public String getCachedFile(String url_path){
 		String fileName = url_path.substring( url_path.lastIndexOf('/')+1, url_path.length() );
 		File output = new File(getCacheDir() + File.separator + DIR_SD, fileName);
@@ -136,5 +139,5 @@ public class DownloadService extends IntentService {
 		}
 		    
 		return output.getPath();
-	}
+	}*/
 }

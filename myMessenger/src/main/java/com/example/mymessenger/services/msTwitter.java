@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.util.Log;
 
 import com.example.mymessenger.AsyncTaskCompleteListener;
@@ -46,6 +48,10 @@ public class msTwitter extends MessageService {
     static final String URL_TWITTER_OAUTH_TOKEN = "oauth_token";
 
     public static final int TWITTER_REQUEST_CODE = 1012;
+
+    // Очень долго проходят запросы, отдельный поток для этого:
+    protected Handler handler1; //Для отложенного запроса данных о пользователях
+    protected HandlerThread thread1 = new HandlerThread("MessageServiceThread");
 
 
     class double_auth {
@@ -98,6 +104,9 @@ public class msTwitter extends MessageService {
 
     public msTwitter(MyApplication app) {
         super(app, TW, R.string.service_name_tw);
+
+        thread1.start();
+        handler1 = new Handler(thread1.getLooper());
 
         ConfigurationBuilder configurationBuilder = new ConfigurationBuilder()
                 .setOAuthConsumerKey("vnZ85Cl5BvVxdUaPSP9sDy8TG")
@@ -242,7 +251,8 @@ public class msTwitter extends MessageService {
             }
         };
 
-        MyApplication.handler1.post(r);
+        //MyApplication.handler1.post(r);
+        handler1.post(r);
     }
 
     @Override
@@ -269,7 +279,8 @@ public class msTwitter extends MessageService {
             }
         };
 
-        MyApplication.handler1.post(r);
+        //MyApplication.handler1.post(r);
+        handler1.post(r);
     }
 
     @Override
@@ -305,7 +316,8 @@ public class msTwitter extends MessageService {
             }
         };
 
-        MyApplication.handler1.post(r);
+        //MyApplication.handler1.post(r);
+        handler1.post(r);
     }
 
     private mMessage get_msg_from_status(Status status){
@@ -364,7 +376,8 @@ public class msTwitter extends MessageService {
             }
         };
 
-        MyApplication.handler1.post(r);
+        //MyApplication.handler1.post(r);
+        handler1.post(r);
     }
 
     private void handleTwitterException(TwitterException e, Runnable runnable, DownloadsRequest req) {
@@ -396,7 +409,13 @@ public class msTwitter extends MessageService {
 
     @Override
     public String getEmojiUrl(long code) {
-        return "https://abs.twimg.com/emoji/v1/72x72/" + mGlobal.LongToHexStr32nozero(code) + ".png";
+        String scode = mGlobal.LongToHexStr32nozero(code);
+        if( code == 0x3020e3 || code == 0x3120e3 || code == 0x3220e3 || code == 0x3320e3 || code == 0x3420e3 ||
+                code == 0x3520e3 || code == 0x3620e3 || code == 0x3720e3 || code == 0x3820e3 || code == 0x3920e3 || code == 0x2320e3){
+            scode = scode.substring(0, 2) + "-" + scode.substring(2);
+        }
+
+        return "https://abs.twimg.com/emoji/v1/72x72/" + scode + ".png";
     }
 
 }
