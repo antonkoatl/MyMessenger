@@ -99,4 +99,12 @@ public class mMessage implements Parcelable {
 	public boolean isOut(boolean b) {
 		return getFlag(OUT);
 	}
+
+    public void setReaded(boolean b) {
+        setFlag(READED, b);
+    }
+
+    public boolean isReaded() {
+        return getFlag(READED);
+    }
 }

@@ -8,7 +8,6 @@ import android.database.sqlite.SQLiteDatabase;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.text.format.Time;
 import android.util.Log;
 
 import com.example.mymessenger.ActivityTwo;
@@ -45,6 +44,7 @@ public abstract class MessageService {
     protected final static Handler msHandler; //Для отложенного запроса данных о пользователях
     protected final static HandlerThread msThread = new HandlerThread("MessageServiceThread");
 
+
     protected MyApplication msApp;
     protected mContact msSelfContact;
     protected mDialog msActiveDialog;
@@ -68,6 +68,8 @@ public abstract class MessageService {
     protected int msSetupStage;
     protected AsyncTaskCompleteListener<MessageService> cbms_for_setup = null;
 
+    public MSDBHelper msDBHelper;
+
     /*
          Контакт активного пользователь
          Авторизация
@@ -83,6 +85,7 @@ public abstract class MessageService {
 
     protected MessageService(MyApplication app, int ser_type, int ser_name_id) {
         this.msApp = app;
+        setupDBHelper();
         msContacts = new HashMap<String, mContact>();
         msgs_thread_count = new HashMap<mDialog, IntegerMutable>(); //индикаторы загрузки сообщений для диалогов
 
@@ -97,6 +100,10 @@ public abstract class MessageService {
         msSelfContact = new mContact(sPref.getString(PREFS_ACTIVE_ACCOUNT, ""));
 
         setupEmoji();
+    }
+
+    protected void setupDBHelper(){
+        msDBHelper = new MSDBHelper(this);
     }
 
     public void init(){
@@ -153,7 +160,7 @@ public abstract class MessageService {
 
     // Запросить данные контактов
     public final void requestContactsData(List<mContact> cnts) {
-        getContactsFromDB(cnts);
+        msDBHelper.getContactsFromDB(cnts);
         if(isOnline()) getContactsFromNet(new CntsDownloadsRequest(cnts));
     }
 
@@ -187,10 +194,10 @@ public abstract class MessageService {
         int dlgs_in_db = msApp.dbHelper.getDlgsCount(MessageService.this);
 
         if (offset + count < dlgs_in_db) {
-            getDialogsFromDB(count, offset, cb);
+            msDBHelper.getDialogsFromDB(count, offset, cb);
             if(isOnline()) refreshDialogsFromNet(cb, 0);
         } else {
-            getDialogsFromDB(count, offset, cb);
+            msDBHelper.getDialogsFromDB(count, offset, cb);
             if(isOnline()) {
                 msUpdateDlgsDB_cb up_cb = new msUpdateDlgsDB_cb(cb);
                 getDialogsFromNet(new DlgsDownloadsRequest(count, offset, up_cb));
@@ -209,10 +216,10 @@ public abstract class MessageService {
         int msgs_in_db = msApp.dbHelper.getMsgsCount(dlg, MessageService.this);
 
         if (offset + count < msgs_in_db) {
-            getMessagesFromDB(dlg, count, offset, cb);
+            msDBHelper.getMessagesFromDB(dlg, count, offset, cb);
             if(isOnline()) refreshMessagesFromNet(dlg, cb, 0);
         } else {
-            getMessagesFromDB(dlg, count, offset, cb);
+            msDBHelper.getMessagesFromDB(dlg, count, offset, cb);
             if(isOnline()) {
                 msUpdateMsgsDB_cb up_cb = new msUpdateMsgsDB_cb(dlg, cb);
                 getMessagesFromNet(new MsgsDownloadsRequest(dlg, count, offset, up_cb));
@@ -338,36 +345,19 @@ public abstract class MessageService {
     // Получение информации о текущем аккауте
     protected abstract void requestAccountInfoFromNet(final AsyncTaskCompleteListener<mContact> cb);
 
-    // Загрузка данных контактов из бд, выполняется асинхронно, без cb
-    protected final void getContactsFromDB(final List<mContact> cnts) {
-        msHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                load_cnts_from_db(cnts);
-            }
-        });
-    }
+
+
 
     // Загрузка данных контактов из интернета, после завершения должно проверятся msAccumCnts. Если что то обновилось - вызываться триггеры
     protected abstract void getContactsFromNet(final CntsDownloadsRequest req);
 
     // Загрузка сообщений из бд, выполняется асинхронно
-    protected final void getMessagesFromDB(mDialog dlg, int count, int offset, AsyncTaskCompleteListener<List<mMessage>> cb) {
-        // Обновление информации о количестве потоков загрузки
-        updateMsgsThreadCount(dlg, 1);
 
-        new load_msgs_from_db_async(cb, dlg).execute(count, offset);
-    }
 
     // Загрузка сообщений из интернета
     protected abstract void getMessagesFromNet(MsgsDownloadsRequest req);
 
-    // Загрузка диалогов из бд, выполняется асинхронно
-    protected final void getDialogsFromDB(int count, int offset, AsyncTaskCompleteListener<List<mDialog>> cb) {
-        // Обновление информации о количестве потоков загрузки
-        dlgs_thread_count += 1;
-        new load_dlgs_from_db_async(cb).execute(count, offset);
-    }
+
 
     // Загрузка диалогов из интернета
     protected abstract void getDialogsFromNet(DlgsDownloadsRequest req);
@@ -385,43 +375,9 @@ public abstract class MessageService {
         return !(msIsSetupFinished && msIsInitFinished);
     }
 
-    protected final class load_dlgs_from_db_async extends AsyncTask<Integer, Void, List<mDialog>> {
-        private AsyncTaskCompleteListener<List<mDialog>> callback;
 
-        public load_dlgs_from_db_async(AsyncTaskCompleteListener<List<mDialog>> cb) {
-            this.callback = cb;
-        }
 
-        protected void onPostExecute(List<mDialog> result) {
-            dlgs_thread_count--;
-            if (callback != null) callback.onTaskComplete(result);
-        }
 
-        @Override
-        protected List<mDialog> doInBackground(Integer... params) {
-            return load_dialogs_from_db(params[0], params[1]);
-        }
-    }
-
-    protected final class load_msgs_from_db_async extends AsyncTask<Integer, Void, List<mMessage>> {
-        private AsyncTaskCompleteListener<List<mMessage>> callback;
-        private mDialog dlg;
-
-        public load_msgs_from_db_async(AsyncTaskCompleteListener<List<mMessage>> cb, mDialog dialog) {
-            this.callback = cb;
-            this.dlg = dialog;
-        }
-
-        protected void onPostExecute(List<mMessage> result) {
-            updateMsgsThreadCount(dlg, -1);
-            if (callback != null) callback.onTaskComplete(result);
-        }
-
-        @Override
-        protected List<mMessage> doInBackground(Integer... params) {
-            return load_msgs_from_db(dlg, params[0], params[1]);
-        }
-    }
 
     protected final Runnable cnts_request_runnable = new Runnable() {
 
@@ -442,23 +398,11 @@ public abstract class MessageService {
     // Логаут
     protected abstract void logout_from_net();
 
-    // Загрузка контактов из бд
-    protected void load_cnts_from_db(List<mContact> cnts) {
-        msApp.dbHelper.loadCnts(cnts, MessageService.this);
-        msApp.triggerCntsUpdaters();
-    }
 
-    // Загрузка диалогов из бд
-    protected List<mDialog> load_dialogs_from_db(int count, int offset) {
-        return msApp.dbHelper.loadDlgs(this, count, offset);
-    }
 
-    // Загрузка сообщений из бд
-    protected List<mMessage> load_msgs_from_db(mDialog dlg, int count, int offset) {
-        List<mMessage> result = msApp.dbHelper.loadMsgs(this, dlg, count, offset);
 
-        return result;
-    }
+
+
 
     // Поэтапная настройка сервиса
     protected void setupStages() {
@@ -904,28 +848,7 @@ public abstract class MessageService {
         }
     }
 
-    protected boolean updateCntInDB(mContact cnt){
-        mContact cnt_in_db = msApp.dbHelper.getCnt(cnt.address, MessageService.this);
 
-        if(cnt_in_db != null){
-            //update
-            if(!cnt.name.equals( cnt_in_db.name )){
-                msApp.dbHelper.updateCnt(cnt, MessageService.this);
-                return true;
-            }
-            if(!cnt.icon_50_url.equals( cnt_in_db.icon_50_url)){
-                msApp.dbHelper.updateCnt(cnt, MessageService.this);
-                return true;
-            }
-
-        } else {
-            // add
-            msApp.dbHelper.insertCnt(cnt, MessageService.this);
-            return true;
-        }
-
-        return false;
-    }
 
     protected void setNotAuthorised(){
         msAuthorised = false;
@@ -1091,17 +1014,7 @@ public abstract class MessageService {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
+    // Static functions
 
 
     public static String getCacheFolder(int ser_type){

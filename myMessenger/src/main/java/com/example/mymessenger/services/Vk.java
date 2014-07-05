@@ -182,7 +182,7 @@ public class Vk extends MessageService {
                         cnt.icon_50_url = photo_50_url;
                         cnt.name = name;
 
-                        if(updateCntInDB(cnt) == true)updated = true;
+                        if(msDBHelper.updateCntInDB(cnt) == true)updated = true;
                     }
 
                     req.onFinished(updated);
@@ -726,7 +726,7 @@ public class Vk extends MessageService {
                         String text = item.getString(6);
                         JSONObject attachments = item.getJSONObject(7);
 
-                        if(attachments.has("from")){ //chat, skip
+                        if(attachments.has("from")){ //chat
                             long chat_id = Long.valueOf(from_id) - 2000000000; //hint
                             mMessage msg = new mMessage();
                             msg.respondent = getContact( attachments.getString("from") );

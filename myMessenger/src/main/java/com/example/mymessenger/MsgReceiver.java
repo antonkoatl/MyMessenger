@@ -9,6 +9,8 @@ import android.content.Intent;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
+import com.example.mymessenger.services.MessageService;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,26 +29,12 @@ public class MsgReceiver extends BroadcastReceiver {
 		app = (MyApplication) context.getApplicationContext();
 		
 		if(intent.getAction().equals(ACTION_RECEIVE)){
-			mMessage msg = (mMessage) intent.getParcelableExtra("msg");			
-
-			
+			mMessage msg = (mMessage) intent.getParcelableExtra("msg");
+            MessageService ms = app.getService(msg.msg_service);
 			long chat_id = intent.getLongExtra("chat_id", 0);
-			
-			mDialog dlg;
-			if(chat_id != 0){
-				int dlg_key = app.dbHelper.getDlgIdOrCreate(chat_id, app.getService(msg.msg_service));
-				dlg = app.update_db_dlg(msg, dlg_key);
-			}
-			else{
-				int dlg_key = app.dbHelper.getDlgIdOrCreate(msg.respondent.address, app.getService(msg.msg_service));
-				dlg = app.update_db_dlg(msg, dlg_key);
-			}
-			
-			app.update_db_msg(msg, dlg);
-			List<mDialog> dlgs = new ArrayList<mDialog>();
-			dlgs.add(dlg);
-			app.triggerDlgsUpdaters(dlgs);
-			app.triggerMsgUpdaters(msg, dlg);
+
+            ms.msDBHelper.updateMsgInDB(msg, chat_id);
+
 			if(!msg.getFlag(mMessage.OUT)){
 				if(app.getUA() != app.UA_MSGS_LIST && app.getUA() != app.UA_DLGS_LIST)
 					createInfoNotification(context, msg, chat_id);
@@ -60,29 +48,25 @@ public class MsgReceiver extends BroadcastReceiver {
 			int flags = intent.getIntExtra("msg_flags", 0);
 			int mode = intent.getIntExtra("msg_mode", 0);
 			int service_type = intent.getIntExtra("service_type", 0);
-			
-			mMessage msg = app.dbHelper.getMsgByMsgId(msg_id, app.getService(service_type));
+
+            MessageService ms = app.getService(service_type);
+            mMessage msg = ms.msDBHelper.getMsgByIdFromDB(msg_id);
 			
 			if(msg != null){
 				if(mode == UPDATE_REPLACE){
-					msg.setFlag(mMessage.READED, (flags & 1) != 1); //Обратное значение для READED
-					msg.setFlag(mMessage.OUT, (flags & 2) == 2);
+                    msg.setReaded((flags & 1) != 1); //Обратное значение для READED
+					msg.setOut((flags & 2) == 2);
 				}
 				if(mode == UPDATE_INSTALL){
-					if( (flags & 1) == 1 )msg.setFlag(mMessage.READED, false);
-					if( (flags & 2) == 2 )msg.setFlag(mMessage.OUT, true);
+				    if( (flags & 1) == 1 )msg.setReaded(false);
+					if( (flags & 2) == 2 )msg.setOut(true);
 				}
 				if(mode == UPDATE_RESET){
-					if( (flags & 1) == 1 )msg.setFlag(mMessage.READED, true);
-					if( (flags & 2) == 2 )msg.setFlag(mMessage.OUT, false);
+					if( (flags & 1) == 1 )msg.setReaded(true);
+					if( (flags & 2) == 2 )msg.setOut(false);
 				}
 				
-
-				//int dlg_key = app.dbHelper.getDlgId(msg.respondent.address, app.getService(msg.msg_service));
-				int dlg_key = app.dbHelper.getDlgIdByMsgId(msg_id, app.getService(service_type));
-				mDialog dlg = app.update_db_dlg(msg, dlg_key);
-				app.update_db_msg(msg, dlg);
-				app.triggerMsgUpdaters(msg, dlg);
+                ms.msDBHelper.updateMsgInDBById(msg, msg_id);
 				Log.d("MsgReceiver", "Msg updated: " + msg.text);
 			}
 			

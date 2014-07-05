@@ -273,7 +273,7 @@ public class msTwitter extends MessageService {
                     cnt.name = user.getName();
                     cnt.icon_50_url = user.getProfileImageURL();
 
-                    if(updateCntInDB(cnt) == true)updated = true;
+                    if(msDBHelper.updateCntInDB(cnt) == true)updated = true;
                 }
                 req.onFinished(updated);
             }

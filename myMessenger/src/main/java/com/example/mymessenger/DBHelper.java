@@ -461,6 +461,17 @@ public class DBHelper extends SQLiteOpenHelper {
 		
 		getWritableDatabase().update(table_name, cv, "_id=" + id, null);
 	}
+
+    public void updateMsgById(int msg_id, mMessage msg, MessageService ms) {
+        String table_name = getTableNameMsgs(ms);
+
+        ContentValues cv = new ContentValues();
+        //cv.put(colParticipants, dlg.getParticipantsAddresses());
+        cv.put(colFlags, msg.flags);
+
+        String args[] = {String.valueOf(msg_id)};
+        getWritableDatabase().update(table_name, cv, colMsgId + "=?", args);
+    }
 	
 	public mMessage getMsgByMsgId(int message_id, MessageService ms){
 		mMessage msg = null;
