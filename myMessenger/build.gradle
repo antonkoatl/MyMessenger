@@ -30,6 +30,4 @@ dependencies {
     compile 'org.twitter4j:twitter4j-core:+'
     compile 'org.twitter4j:twitter4j-stream:+'
     compile 'org.twitter4j:twitter4j-async:+'
-    compile files('C:/Users/Azteki/AndroidstudioProjects/MyMessenger/libs/temboo-android-sdk-1.76-core.jar')
-    compile files('C:/Users/Azteki/AndroidstudioProjects/MyMessenger/libs/Twitter-1.76.jar')
 }

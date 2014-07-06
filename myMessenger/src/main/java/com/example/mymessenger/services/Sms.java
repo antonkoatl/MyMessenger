@@ -7,16 +7,12 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.ContactsContract;
 import android.telephony.SmsManager;
-import android.text.format.Time;
-import android.util.Log;
 import android.widget.Toast;
 
-import com.example.mymessenger.ActivityTwo;
 import com.example.mymessenger.AsyncTaskCompleteListener;
 import com.example.mymessenger.MsgReceiver;
 import com.example.mymessenger.MyApplication;
@@ -49,7 +45,7 @@ public class Sms extends MessageService {
 
     @Override
     protected void setupDBHelper(){
-        msDBHelper = new MSDBHelper_sms(this);
+        msDBHelper = MSDBHelper_sms.getInstance();
     }
 
     @Override
@@ -172,7 +168,7 @@ public class Sms extends MessageService {
     @Override
     public String[] getStringsForMainViewMenu() {
         String data[] = {"---", "New message", "All messages"};
-        List<mDialog> t = msDBHelper.load_dialogs_from_db(1, 0);
+        List<mDialog> t = msDBHelper.load_dialogs_from_db(1, 0, this);
         if(t.size() > 0){
             setActiveDialog(t.get(0));
             data[0] = t.get(0).getParticipantsNames();

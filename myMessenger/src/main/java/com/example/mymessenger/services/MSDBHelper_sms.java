@@ -9,6 +9,8 @@ import android.util.Log;
 import com.example.mymessenger.mContact;
 import com.example.mymessenger.mDialog;
 import com.example.mymessenger.mMessage;
+import com.example.mymessenger.services.MessageService;
+import com.example.mymessenger.services.MSDBHelper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,12 +20,8 @@ import java.util.List;
  */
 public class MSDBHelper_sms extends MSDBHelper {
 
-    public MSDBHelper_sms(MessageService messageService) {
-        super(messageService);
-    }
-
     @Override
-    protected List<mDialog> load_dialogs_from_db(int count, int offset) {
+    protected List<mDialog> load_dialogs_from_db(int count, int offset, MessageService ms) {
 		/*
 		 * Inbox = "content://sms/inbox"
 		 * Failed = "content://sms/failed"
@@ -97,7 +95,7 @@ public class MSDBHelper_sms extends MSDBHelper {
     }
 
     @Override
-    protected List<mMessage> load_msgs_from_db(mDialog dlg, int count, int offset) {
+    protected List<mMessage> load_msgs_from_db(mDialog dlg, int count, int offset, MessageService ms) {
 		/* MESSAGE_TYPE_ALL    = 0;
 		 * MESSAGE_TYPE_INBOX  = 1;
 		 * MESSAGE_TYPE_SENT   = 2;
@@ -149,7 +147,7 @@ public class MSDBHelper_sms extends MSDBHelper {
     }
 
     @Override
-    protected void load_cnts_from_db(List<mContact> cnts) {
+    protected void load_cnts_from_db(List<mContact> cnts, MessageService ms) {
         for(mContact cnt : cnts) {
             String name = "";
 
@@ -182,17 +180,17 @@ public class MSDBHelper_sms extends MSDBHelper {
     }
 
     @Override
-    public void updateMsgInDB(mMessage msg, mDialog dlg) {
+    public void updateMsgInDB(mMessage msg, mDialog dlg, MessageService ms) {
 
     }
 
     @Override
-    public void updateMsgInDBById(mMessage msg, int msg_id) {
+    public void updateMsgInDBById(mMessage msg, int msg_id, MessageService ms) {
 
     }
 
     @Override
-    public mDialog updateDlgInDB(mMessage msg, long chat_id) {
+    public mDialog updateDlgInDB(mMessage msg, long chat_id, MessageService ms) {
         return null;
     }
 }

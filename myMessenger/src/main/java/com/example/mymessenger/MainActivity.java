@@ -146,6 +146,7 @@ public class MainActivity extends SherlockFragmentActivity {
         // Inflate the menu; this adds items to the action bar if it is present.
         getSupportMenuInflater().inflate(R.menu.main, menu);
         Spinner spinner = (Spinner) menu.findItem(R.id.item_selection1).getActionView();
+
         List<String> choices = new ArrayList<String>();
 
         int selected_service_for_dialogs = app.sPref.getInt("selected_service_for_dialogs", 0);

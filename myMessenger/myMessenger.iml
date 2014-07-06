@@ -64,8 +64,6 @@
     <orderEntry type="library" exported="" name="signpost-commonshttp4-1.2.1.1" level="project" />
     <orderEntry type="library" exported="" name="commons-codec-1.3" level="project" />
     <orderEntry type="library" exported="" name="twitter4j-async-4.0.2" level="project" />
-    <orderEntry type="library" exported="" name="Twitter-1.76" level="project" />
-    <orderEntry type="library" exported="" name="temboo-android-sdk-1.76-core" level="project" />
     <orderEntry type="library" exported="" name="twitter4j-stream-4.0.2" level="project" />
     <orderEntry type="library" exported="" name="signpost-core-1.2.1.1" level="project" />
     <orderEntry type="library" exported="" name="httpcore-4.0.1" level="project" />

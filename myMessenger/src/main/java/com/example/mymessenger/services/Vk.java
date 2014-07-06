@@ -182,7 +182,7 @@ public class Vk extends MessageService {
                         cnt.icon_50_url = photo_50_url;
                         cnt.name = name;
 
-                        if(msDBHelper.updateCntInDB(cnt) == true)updated = true;
+                        if(msDBHelper.updateCntInDB(cnt, Vk.this) == true)updated = true;
                     }
 
                     req.onFinished(updated);

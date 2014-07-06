@@ -5,7 +5,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.Log;
@@ -103,7 +102,7 @@ public abstract class MessageService {
     }
 
     protected void setupDBHelper(){
-        msDBHelper = new MSDBHelper(this);
+        msDBHelper = MSDBHelper.getInstance();
     }
 
     public void init(){
@@ -160,7 +159,7 @@ public abstract class MessageService {
 
     // Запросить данные контактов
     public final void requestContactsData(List<mContact> cnts) {
-        msDBHelper.getContactsFromDB(cnts);
+        msDBHelper.getContactsFromDB(cnts, this);
         if(isOnline()) getContactsFromNet(new CntsDownloadsRequest(cnts));
     }
 
@@ -194,10 +193,10 @@ public abstract class MessageService {
         int dlgs_in_db = msApp.dbHelper.getDlgsCount(MessageService.this);
 
         if (offset + count < dlgs_in_db) {
-            msDBHelper.getDialogsFromDB(count, offset, cb);
+            msDBHelper.getDialogsFromDB(count, offset, cb, this);
             if(isOnline()) refreshDialogsFromNet(cb, 0);
         } else {
-            msDBHelper.getDialogsFromDB(count, offset, cb);
+            msDBHelper.getDialogsFromDB(count, offset, cb, this);
             if(isOnline()) {
                 msUpdateDlgsDB_cb up_cb = new msUpdateDlgsDB_cb(cb);
                 getDialogsFromNet(new DlgsDownloadsRequest(count, offset, up_cb));
@@ -216,10 +215,10 @@ public abstract class MessageService {
         int msgs_in_db = msApp.dbHelper.getMsgsCount(dlg, MessageService.this);
 
         if (offset + count < msgs_in_db) {
-            msDBHelper.getMessagesFromDB(dlg, count, offset, cb);
+            msDBHelper.getMessagesFromDB(dlg, count, offset, cb, this);
             if(isOnline()) refreshMessagesFromNet(dlg, cb, 0);
         } else {
-            msDBHelper.getMessagesFromDB(dlg, count, offset, cb);
+            msDBHelper.getMessagesFromDB(dlg, count, offset, cb, this);
             if(isOnline()) {
                 msUpdateMsgsDB_cb up_cb = new msUpdateMsgsDB_cb(dlg, cb);
                 getMessagesFromNet(new MsgsDownloadsRequest(dlg, count, offset, up_cb));
@@ -370,6 +369,7 @@ public abstract class MessageService {
             msgs_thread_count.put(dlg, lm_count);
         } else lm_count.value += count;
     }
+
 
     public boolean isLoading() {
         return !(msIsSetupFinished && msIsInitFinished);

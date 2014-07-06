@@ -33,7 +33,7 @@ public class MsgReceiver extends BroadcastReceiver {
             MessageService ms = app.getService(msg.msg_service);
 			long chat_id = intent.getLongExtra("chat_id", 0);
 
-            ms.msDBHelper.updateMsgInDB(msg, chat_id);
+            ms.msDBHelper.updateMsgInDB(msg, chat_id, ms);
 
 			if(!msg.getFlag(mMessage.OUT)){
 				if(app.getUA() != app.UA_MSGS_LIST && app.getUA() != app.UA_DLGS_LIST)
@@ -50,7 +50,7 @@ public class MsgReceiver extends BroadcastReceiver {
 			int service_type = intent.getIntExtra("service_type", 0);
 
             MessageService ms = app.getService(service_type);
-            mMessage msg = ms.msDBHelper.getMsgByIdFromDB(msg_id);
+            mMessage msg = ms.msDBHelper.getMsgByIdFromDB(msg_id, ms);
 			
 			if(msg != null){
 				if(mode == UPDATE_REPLACE){
@@ -66,7 +66,7 @@ public class MsgReceiver extends BroadcastReceiver {
 					if( (flags & 2) == 2 )msg.setOut(false);
 				}
 				
-                ms.msDBHelper.updateMsgInDBById(msg, msg_id);
+                ms.msDBHelper.updateMsgInDBById(msg, msg_id, ms);
 				Log.d("MsgReceiver", "Msg updated: " + msg.text);
 			}
 			
