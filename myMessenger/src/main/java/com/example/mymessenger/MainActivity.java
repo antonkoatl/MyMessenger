@@ -163,7 +163,7 @@ public class MainActivity extends SherlockFragmentActivity {
         }
 
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
-                android.R.layout.simple_spinner_item, choices);
+                android.R.layout.simple_spinner_dropdown_item, choices);
 // Specify the layout to use when the list of choices appears
         if(saved != null){
             spinner.setSelection( adapter.getPosition(saved) );
@@ -213,7 +213,8 @@ public class MainActivity extends SherlockFragmentActivity {
             for(MessageService ms : app.myMsgServices){
                 choices.add(ms.getServiceName());
             }
-            ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,android.R.layout.simple_spinner_item, choices);
+            ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,android.R.layout.simple_spinner_dropdown_item, choices);
+            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
             spinner.setAdapter(adapter);
 
             int selected_service_for_dialogs = app.sPref.getInt("selected_service_for_dialogs", 0);
