@@ -7,7 +7,7 @@ import android.view.View;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
-import com.example.mymessenger.services.MessageService;
+import com.example.mymessenger.services.MessageService.MessageService;
 
 public class MsgListItem {
 	MyApplication app;

@@ -26,7 +26,7 @@ import android.widget.ImageView.ScaleType;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.example.mymessenger.services.MessageService;
+import com.example.mymessenger.services.MessageService.MessageService;
 import com.example.mymessenger.ui.PagerSlidingTabStrip;
 import com.example.mymessenger.ui.PagerSlidingTabStrip.IconTabProvider;
 
@@ -40,38 +40,19 @@ import java.util.List;
 import java.util.Map;
 
 public class EmojiView extends LinearLayout {
-    private static final int ITERATION_LEN = 5;
     public static long[][] data;
-    private static ArrayList<Integer> permFailedPacks;
     private ArrayList<EmojiGridAdapter> adapters;
-    private HorizontalScrollView bottomTabs;
-    private LinearLayout btmTabsContent;
-    private int currentTab;
     private LinearLayout emojiTabsWrap;
     private int[] icons;
     private Listener listener;
     private ViewPager pager;
-    private OnClickListener promotedClickListener;
     private FrameLayout recentsWrap;
-    private Runnable runAfterPreload;
-    private boolean showStickers;
-    private OnClickListener stickerClickListener;
-    private LinearLayout stickerPagerDots;
-    private int stickerRows;
-    private int stickerSize;
 
     private ViewPager stickersPager;
-    private int stickersPerRow;
-    private boolean stickersPreloading;
-    private LinearLayout stickersWrap;
-    private OnClickListener storeClickListener;
-    private OnClickListener tabClickListener;
     private PagerSlidingTabStrip tabs;
-    public ArrayList<Integer> tempFailedPacks;
     private HashMap<Long, Float> useCounts;
     private ArrayList<GridView> views;
 	private MessageService ms;
-	private Context context;
 
 
     private Map<Long, Bitmap> bmps;
@@ -93,7 +74,6 @@ public class EmojiView extends LinearLayout {
 
         Bitmap bmp;
         long eid;
-        int page;
 
         public EmojiDrawable(long eid) {
             this.eid = eid;
@@ -301,7 +281,6 @@ public class EmojiView extends LinearLayout {
     
     public EmojiView(Context context, MessageService ms) {
         super(context);
-        this.context = context;
         this.views = new ArrayList();
         this.adapters = new ArrayList();
         this.ms = ms;
@@ -315,23 +294,7 @@ public class EmojiView extends LinearLayout {
         this.data[0] = new long[]{};
         System.arraycopy(ms.getEmojiCodes(), 0, data, 1, ms.getEmojiCodes().length);
         this.useCounts = new HashMap();
-        this.tabClickListener = new OnClickListener() {
-            public void onClick(View v) {
-                int i = 0;
-                while (i < EmojiView.this.btmTabsContent.getChildCount()) {
-                    View ch = EmojiView.this.btmTabsContent.getChildAt(i);
-                    ch.setSelected(ch == v);
-                    if (ch == v) {
-                        EmojiView.this.setTab(i - 1);
-                    }
-                    i++;
-                }
-            }
-        };
-       
-        
 
-        this.currentTab = 0;
 
         init();
     }
@@ -423,7 +386,7 @@ public class EmojiView extends LinearLayout {
 
     private void init() {
         float r8f = 1.0f;
-        setOrientation(1);
+        setOrientation(LinearLayout.VERTICAL);
         int i = 0;
         while (i < data.length) {
             GridView gv = new GridView(getContext());
@@ -448,7 +411,7 @@ public class EmojiView extends LinearLayout {
         this.tabs.setTabBackground(0);
         setBackgroundColor(-1315086);
         this.emojiTabsWrap = new LinearLayout(getContext());
-        this.emojiTabsWrap.setOrientation(0);
+        this.emojiTabsWrap.setOrientation(LinearLayout.HORIZONTAL);
         this.emojiTabsWrap.addView(this.tabs, new LayoutParams(-1, -1, 1.0f));
         ImageView bsBtn = new ImageView(getContext());
         bsBtn.setImageResource(R.drawable.ic_emoji_backspace);
@@ -512,15 +475,13 @@ public class EmojiView extends LinearLayout {
 
 
     private void setTab(int tab) {
-        this.currentTab = tab;
         if (tab == 0) {
-            this.emojiTabsWrap.setVisibility(0);
-            this.pager.setVisibility(0);
+            this.emojiTabsWrap.setVisibility(View.VISIBLE);
+            this.pager.setVisibility(View.VISIBLE);
             setBackgroundColor(-1315086);
         } else {
-            this.emojiTabsWrap.setVisibility(8);
-            this.pager.setVisibility(8);
-            this.stickersWrap.setVisibility(0);
+            this.emojiTabsWrap.setVisibility(View.GONE);
+            this.pager.setVisibility(View.GONE);
 
             //updateStickerPagerDots();
             

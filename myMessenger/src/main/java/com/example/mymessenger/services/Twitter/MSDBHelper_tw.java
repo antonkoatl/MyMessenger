@@ -1,21 +1,12 @@
-package com.example.mymessenger.services;
+package com.example.mymessenger.services.Twitter;
 
-import android.database.Cursor;
-import android.net.Uri;
-import android.provider.ContactsContract;
-import android.text.format.Time;
-import android.util.Log;
-
-import com.example.mymessenger.mContact;
 import com.example.mymessenger.mDialog;
 import com.example.mymessenger.mMessage;
+import com.example.mymessenger.services.MessageService.MSDBHelper;
+import com.example.mymessenger.services.MessageService.MessageService;
 
-import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Created by Azteki on 05.07.2014.
- */
 public class MSDBHelper_tw extends MSDBHelper {
     private static MSDBHelper instance = new MSDBHelper_tw();
 
@@ -28,9 +19,8 @@ public class MSDBHelper_tw extends MSDBHelper {
         // Ignore chat_id, it's for dlgs view only
         mDialog dlg_no_chat = new mDialog(dlg);
         dlg_no_chat.chat_id = 0;
-        List<mMessage> result = ms.msApp.dbHelper.loadMsgs(ms, dlg_no_chat, count, offset);
 
-        return result;
+        return ms.getMsApp().dbHelper.loadMsgs(ms, dlg_no_chat, count, offset);
     }
 
     @Override

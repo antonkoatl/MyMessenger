@@ -1,4 +1,4 @@
-package com.example.mymessenger.services;
+package com.example.mymessenger.services.MessageService;
 
 import android.content.Context;
 import android.content.Intent;
@@ -85,7 +85,7 @@ public abstract class MessageService {
     protected MessageService(MyApplication app, int ser_type, int ser_name_id) {
         this.msApp = app;
         setupDBHelper();
-        msContacts = new HashMap<String, mContact>();
+/**/        msContacts = new HashMap<String, mContact>();
         msgs_thread_count = new HashMap<mDialog, IntegerMutable>(); //индикаторы загрузки сообщений для диалогов
 
         msAccumCnts = new ArrayList<mContact>();
@@ -761,8 +761,13 @@ public abstract class MessageService {
 
 
 
+    public final MyApplication getMsApp(){
+        return this.msApp;
+    }
 
-
+    public final boolean isInitFinished(){
+        return this.msIsInitFinished;
+    }
 
 
 
@@ -868,9 +873,9 @@ public abstract class MessageService {
 
 
     public class DlgsDownloadsRequest implements DownloadsRequest<List<mDialog>> {
-        AsyncTaskCompleteListener<List<mDialog>> cb;
-        int count;
-        int offset;
+        public AsyncTaskCompleteListener<List<mDialog>> cb;
+        public int count;
+        public int offset;
 
         DlgsDownloadsRequest(int count, int offset, AsyncTaskCompleteListener<List<mDialog>> cb){
             this.count = count;
@@ -911,10 +916,10 @@ public abstract class MessageService {
     };
 
     public class MsgsDownloadsRequest implements DownloadsRequest<List<mMessage>> {
-        AsyncTaskCompleteListener<List<mMessage>> cb;
-        int count;
-        int offset;
-        mDialog dlg;
+        public AsyncTaskCompleteListener<List<mMessage>> cb;
+        public int count;
+        public int offset;
+        public mDialog dlg;
 
         MsgsDownloadsRequest(mDialog dlg, int count, int offset, AsyncTaskCompleteListener<List<mMessage>> cb) {
             this.cb = cb;
@@ -955,7 +960,7 @@ public abstract class MessageService {
     }
 
     public class CntsDownloadsRequest implements DownloadsRequest<Boolean> {
-        List<mContact> cnts;
+        public List<mContact> cnts;
 
         CntsDownloadsRequest(List<mContact> cnts) {
             this.cnts = cnts;

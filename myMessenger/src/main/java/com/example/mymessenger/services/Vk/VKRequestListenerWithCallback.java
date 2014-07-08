@@ -1,4 +1,4 @@
-package com.example.mymessenger.services;
+package com.example.mymessenger.services.Vk;
 
 import android.util.Log;
 
@@ -9,6 +9,7 @@ import com.vk.sdk.api.VKRequest.VKRequestListener;
 import com.vk.sdk.api.VKResponse;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public abstract class VKRequestListenerWithCallback<T> extends VKRequestListener {
@@ -49,6 +50,6 @@ public abstract class VKRequestListenerWithCallback<T> extends VKRequestListener
 
     public void setParams(Object...objects){
         params = new ArrayList<Object>();
-        for(Object o : objects)params.add(o);
+        Collections.addAll(params, objects);
     }
 }

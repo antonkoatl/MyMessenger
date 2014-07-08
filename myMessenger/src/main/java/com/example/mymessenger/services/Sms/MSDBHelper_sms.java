@@ -1,4 +1,4 @@
-package com.example.mymessenger.services;
+package com.example.mymessenger.services.Sms;
 
 import android.database.Cursor;
 import android.net.Uri;
@@ -9,8 +9,8 @@ import android.util.Log;
 import com.example.mymessenger.mContact;
 import com.example.mymessenger.mDialog;
 import com.example.mymessenger.mMessage;
-import com.example.mymessenger.services.MessageService;
-import com.example.mymessenger.services.MSDBHelper;
+import com.example.mymessenger.services.MessageService.MSDBHelper;
+import com.example.mymessenger.services.MessageService.MessageService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -60,7 +60,7 @@ public class MSDBHelper_sms extends MSDBHelper {
         String selection = null; // A filter declaring which rows to return, formatted as an SQL WHERE clause (excluding the WHERE itself). Passing null will return all rows for the given URI
         String[] selectionArgs = null; // You may include ?s in selection, which will be replaced by the values from selectionArgs, in the order that they appear in the selection. The values will be bound as Strings
         String sortOrder = null; // How to order the rows, formatted as an SQL ORDER BY clause (excluding the ORDER BY itself). Passing null will use the default sort order, which may be unordered
-        Cursor cursor = ms.msApp.getApplicationContext().getContentResolver().query(Uri.parse("content://mms-sms/conversations?simple=true"), projection, selection, selectionArgs, sortOrder);
+        Cursor cursor = ms.getMsApp().getApplicationContext().getContentResolver().query(Uri.parse("content://mms-sms/conversations?simple=true"), projection, selection, selectionArgs, sortOrder);
 
         int total = cursor.getCount();
         List<mDialog> return_dialogs = new ArrayList<mDialog>();
@@ -75,7 +75,7 @@ public class MSDBHelper_sms extends MSDBHelper {
                 String[] recipient_ids = cursor.getString( cursor.getColumnIndex("recipient_ids") ).split(" ");
 
                 for(String rid : recipient_ids){
-                    Cursor c = ms.msApp.getApplicationContext().getContentResolver().query(Uri.parse("content://mms-sms/canonical-addresses"), null, "_id = ?", new String[]{rid}, null);
+                    Cursor c = ms.getMsApp().getApplicationContext().getContentResolver().query(Uri.parse("content://mms-sms/canonical-addresses"), null, "_id = ?", new String[]{rid}, null);
                     if(c.moveToNext()){
                         mdl.participants.add( ms.getContact(c.getString(c.getColumnIndex("address"))) );
                     } else {
@@ -116,7 +116,7 @@ public class MSDBHelper_sms extends MSDBHelper {
         String selection = "address=?"; // A filter declaring which rows to return, formatted as an SQL WHERE clause (excluding the WHERE itself). Passing null will return all rows for the given URI
         String[] selectionArgs = {dlg.participants.get(0).address}; // You may include ?s in selection, which will be replaced by the values from selectionArgs, in the order that they appear in the selection. The values will be bound as Strings
         String sortOrder = null; // How to order the rows, formatted as an SQL ORDER BY clause (excluding the ORDER BY itself). Passing null will use the default sort order, which may be unordered
-        Cursor cursor = ms.msApp.getApplicationContext().getContentResolver().query(Uri.parse("content://sms"), projection, selection, selectionArgs, sortOrder);
+        Cursor cursor = ms.getMsApp().getApplicationContext().getContentResolver().query(Uri.parse("content://sms"), projection, selection, selectionArgs, sortOrder);
 
         int total = cursor.getCount();
 
@@ -165,7 +165,7 @@ public class MSDBHelper_sms extends MSDBHelper {
             Uri contactUri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(cnt.address));
 
             // query time
-            Cursor name_cursor = ms.msApp.getApplicationContext().getContentResolver().query(contactUri, name_projection, null, null, null);
+            Cursor name_cursor = ms.getMsApp().getApplicationContext().getContentResolver().query(contactUri, name_projection, null, null, null);
 
             if (name_cursor != null) {
                 if (name_cursor.moveToFirst()) {

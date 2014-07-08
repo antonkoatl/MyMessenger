@@ -11,15 +11,13 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.os.Message;
 import android.support.v4.app.FragmentPagerAdapter;
 
-import com.example.mymessenger.services.MessageService;
-import com.example.mymessenger.services.Sms;
-import com.example.mymessenger.services.Vk;
-import com.example.mymessenger.services.msTwitter;
+import com.example.mymessenger.services.MessageService.MessageService;
+import com.example.mymessenger.services.Sms.Sms;
+import com.example.mymessenger.services.Vk.Vk;
+import com.example.mymessenger.services.Twitter.mTwitter;
 import com.example.mymessenger.ui.ListViewSimpleFragment;
-import com.example.mymessenger.ui.ServicesMenuFragment;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -241,7 +239,7 @@ public class MyApplication extends Application {
         switch(service_type){
             case MessageService.SMS: ms = new Sms(this); break;
             case MessageService.VK: ms = new Vk(this); break;
-            case MessageService.TW: ms = new msTwitter(this); break;
+            case MessageService.TW: ms = new mTwitter(this); break;
         }
         return ms;
     }

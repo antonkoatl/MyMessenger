@@ -3,7 +3,7 @@ package com.example.mymessenger;
 import android.app.IntentService;
 import android.content.Intent;
 
-import com.example.mymessenger.services.MessageService;
+import com.example.mymessenger.services.MessageService.MessageService;
 
 import java.io.File;
 import java.io.FileOutputStream;

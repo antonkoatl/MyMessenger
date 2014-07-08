@@ -1,4 +1,4 @@
-package com.example.mymessenger.services;
+package com.example.mymessenger.services.Sms;
 
 import android.app.Activity;
 import android.app.PendingIntent;
@@ -22,6 +22,7 @@ import com.example.mymessenger.SmsReceiver;
 import com.example.mymessenger.mContact;
 import com.example.mymessenger.mDialog;
 import com.example.mymessenger.mMessage;
+import com.example.mymessenger.services.MessageService.MessageService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -105,7 +106,7 @@ public class Sms extends MessageService {
                     break;
             }
 
-            msg.setFlag(mMessage.OUT, true);
+            msg.setOut(true);
 
             Intent intent2 = new Intent(MsgReceiver.ACTION_RECEIVE);
             intent2.putExtra("service_type", getServiceType());
@@ -116,7 +117,7 @@ public class Sms extends MessageService {
 
         }
 
-    };
+    }
 
     class mDeliveryReceiver extends BroadcastReceiver {
         mMessage msg;
@@ -139,7 +140,7 @@ public class Sms extends MessageService {
             context.unregisterReceiver(this);
         }
 
-    };
+    }
 
 
     @Override
@@ -168,19 +169,21 @@ public class Sms extends MessageService {
     @Override
     public String[] getStringsForMainViewMenu() {
         String data[] = {"---", "New message", "All messages"};
-        List<mDialog> t = msDBHelper.load_dialogs_from_db(1, 0, this);
+        /*List<mDialog> t = msDBHelper.load_dialogs_from_db(1, 0, this);
         if(t.size() > 0){
             setActiveDialog(t.get(0));
             data[0] = t.get(0).getParticipantsNames();
         }
         else
-            setActiveDialog(null);
+            setActiveDialog(null);*/
+        if(getActiveDialog() != null){
+            data[0] = getActiveDialog().getParticipantsNames();
+        }
         return data;
     }
 
     @Override
     public void MainViewMenu_click(int which, Context con) {
-        Intent intent;
         switch(which) {
             case 0:
                 openActiveDlg();
@@ -215,9 +218,9 @@ public class Sms extends MessageService {
         List<mContact> cnts = new ArrayList<mContact>();
 
         // define the columns I want the query to return
-        String[] name_projection = new String[] {
+        /*String[] name_projection = new String[] {
                 ContactsContract.PhoneLookup.DISPLAY_NAME,
-                ContactsContract.PhoneLookup._ID};
+                ContactsContract.PhoneLookup._ID};*/
 
         // query time
         Cursor name_cursor = msApp.getApplicationContext().getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null, null, null, ContactsContract.PhoneLookup.DISPLAY_NAME + " ASC");

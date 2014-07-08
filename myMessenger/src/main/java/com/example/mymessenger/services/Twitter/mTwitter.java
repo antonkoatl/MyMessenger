@@ -1,15 +1,13 @@
-package com.example.mymessenger.services;
+package com.example.mymessenger.services.Twitter;
 
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.Log;
 
 import com.example.mymessenger.AsyncTaskCompleteListener;
-import com.example.mymessenger.MainActivity;
 import com.example.mymessenger.MyApplication;
 import com.example.mymessenger.R;
 import com.example.mymessenger.RunnableAdvanced;
@@ -17,6 +15,8 @@ import com.example.mymessenger.mContact;
 import com.example.mymessenger.mDialog;
 import com.example.mymessenger.mGlobal;
 import com.example.mymessenger.mMessage;
+import com.example.mymessenger.services.MessageService.MessageService;
+import com.example.mymessenger.services.MessageService.SimpleOpenAuthActivity;
 
 
 import java.util.ArrayList;
@@ -33,7 +33,7 @@ import twitter4j.auth.AccessToken;
 import twitter4j.auth.RequestToken;
 import twitter4j.conf.ConfigurationBuilder;
 
-public class msTwitter extends MessageService {
+public class mTwitter extends MessageService {
     public static final String CALLBACK_URI = "https://mymessenger.callback";
     public static final String CANCEL_URI = "twitter://cancel";
     public static final String ACCESS_TOKEN = "access_token";
@@ -43,9 +43,9 @@ public class msTwitter extends MessageService {
     protected static String OAUTH_AUTHORIZE = "https://api.twitter.com/oauth/authorize";
 
     // Twitter oauth urls
-    static final String URL_TWITTER_AUTH = "auth_url";
-    static final String URL_TWITTER_OAUTH_VERIFIER = "oauth_verifier";
-    static final String URL_TWITTER_OAUTH_TOKEN = "oauth_token";
+    public static final String URL_TWITTER_AUTH = "auth_url";
+    public static final String URL_TWITTER_OAUTH_VERIFIER = "oauth_verifier";
+    public static final String URL_TWITTER_OAUTH_TOKEN = "oauth_token";
 
     public static final int TWITTER_REQUEST_CODE = 1012;
 
@@ -102,7 +102,7 @@ public class msTwitter extends MessageService {
     Twitter mTwitter;
     TwitterFactory factory;
 
-    public msTwitter(MyApplication app) {
+    public mTwitter(MyApplication app) {
         super(app, TW, R.string.service_name_tw);
 
         thread1.start();
@@ -170,7 +170,7 @@ public class msTwitter extends MessageService {
     @Override
     protected void onAuthorize(){
         super.onAuthorize();
-        if(!msIsInitFinished) onInitFinish();
+        if(!isInitFinished()) onInitFinish();
         da = null;
     }
 
@@ -278,7 +278,7 @@ public class msTwitter extends MessageService {
                     cnt.name = user.getName();
                     cnt.icon_50_url = user.getProfileImageURL();
 
-                    if(msDBHelper.updateCntInDB(cnt, msTwitter.this) == true)updated = true;
+                    if(msDBHelper.updateCntInDB(cnt, com.example.mymessenger.services.Twitter.mTwitter.this) == true)updated = true;
                 }
                 req.onFinished(updated);
             }

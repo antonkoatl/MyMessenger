@@ -10,7 +10,7 @@ import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 
 import com.actionbarsherlock.app.SherlockActivity;
-import com.example.mymessenger.services.MessageService;
+import com.example.mymessenger.services.MessageService.MessageService;
 import com.example.mymessenger.ui.PullToRefreshListView;
 
 import java.util.ArrayList;

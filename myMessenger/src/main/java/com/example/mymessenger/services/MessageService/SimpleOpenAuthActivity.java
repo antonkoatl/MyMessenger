@@ -1,5 +1,5 @@
 
-package com.example.mymessenger.services;
+package com.example.mymessenger.services.MessageService;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -9,7 +9,6 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.webkit.WebSettings;
@@ -18,9 +17,7 @@ import android.webkit.WebViewClient;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 
-import java.util.Locale;
-
-import twitter4j.auth.AccessToken;
+import com.example.mymessenger.services.Twitter.mTwitter;
 
 /**
  * Activity for request OAuth authorization in case of missing VK app.
@@ -72,14 +69,14 @@ public class SimpleOpenAuthActivity extends Activity {
 
         private boolean processUrl(String url) {
             Intent data = new Intent("VK_RESULT_INTENT_NAME");
-            if (url.startsWith(msTwitter.CALLBACK_URI)) {
+            if (url.startsWith(mTwitter.CALLBACK_URI)) {
                 //AccessToken at = mTwitter.getOAuthAccessToken(mRequestToken);
                 Uri uri =  Uri.parse(url);
-                data.putExtra(msTwitter.URL_TWITTER_OAUTH_VERIFIER, uri.getQueryParameter(msTwitter.URL_TWITTER_OAUTH_VERIFIER));
+                data.putExtra(mTwitter.URL_TWITTER_OAUTH_VERIFIER, uri.getQueryParameter(mTwitter.URL_TWITTER_OAUTH_VERIFIER));
                 setResult(RESULT_OK, data);
                 finish();
                 return true;
-            } else if (url.startsWith(msTwitter.CANCEL_URI)) {
+            } else if (url.startsWith(mTwitter.CANCEL_URI)) {
                 setResult(RESULT_CANCELED, data);
                 finish();
                 return true;

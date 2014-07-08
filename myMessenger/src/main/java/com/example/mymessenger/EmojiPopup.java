@@ -14,7 +14,7 @@ import android.widget.PopupWindow;
 import android.widget.PopupWindow.OnDismissListener;
 
 import com.example.mymessenger.SoftKeyboardStateHelper.SoftKeyboardStateListener;
-import com.example.mymessenger.services.MessageService;
+import com.example.mymessenger.services.MessageService.MessageService;
 
 public class EmojiPopup {
     public static final String ACTION_HIDE_POPUP = "com.vkontakte.andoroid.HIDE_EMOJI_POPUP";
@@ -128,7 +128,7 @@ public class EmojiPopup {
     }
 
     public void showEmojiPopup(boolean show) {
-        Log.i("vk", new StringBuilder("show emoji popup ").append(show).append(", ime fullscreen=").append(((InputMethodManager) this.context.getSystemService("input_method")).isFullscreenMode()).toString());
+        Log.i("vk", new StringBuilder("show emoji popup ").append(show).append(", ime fullscreen=").append(((InputMethodManager) this.context.getSystemService(Context.INPUT_METHOD_SERVICE)).isFullscreenMode()).toString());
         
         
         IntentFilter filter;

@@ -10,7 +10,7 @@ import android.telephony.SmsMessage;
 import android.text.TextUtils;
 import android.text.format.Time;
 
-import com.example.mymessenger.services.MessageService;
+import com.example.mymessenger.services.MessageService.MessageService;
 
 import java.util.Calendar;
 import java.util.GregorianCalendar;

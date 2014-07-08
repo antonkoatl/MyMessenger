@@ -6,14 +6,13 @@ import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
-import android.os.Message;
 import android.os.SystemClock;
 import android.text.Spannable;
 import android.text.Spannable.Factory;
 import android.text.style.ImageSpan;
 import android.util.DisplayMetrics;
 
-import com.example.mymessenger.services.MessageService;
+import com.example.mymessenger.services.MessageService.MessageService;
 
 import java.io.File;
 import java.io.FileOutputStream;

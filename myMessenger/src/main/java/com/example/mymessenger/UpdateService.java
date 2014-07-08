@@ -7,7 +7,7 @@ import android.os.HandlerThread;
 import android.os.IBinder;
 import android.util.Log;
 
-import com.example.mymessenger.services.MessageService;
+import com.example.mymessenger.services.MessageService.MessageService;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -47,7 +47,7 @@ public class UpdateService extends Service {
 
 					@Override
 					public void onTaskComplete(RunnableAdvanced<?> result) {
-						Log.d("UpdateService", "posted " + result.toString());
+						Log.d("UpdateService", "posted " + String.valueOf(result));
 						runnables.put(service_type, result);
 						handler.post(result);
 					}
@@ -66,7 +66,7 @@ public class UpdateService extends Service {
 
 				@Override
 				public void onTaskComplete(RunnableAdvanced<?> result) {
-					Log.d("UpdateService", "posted " + result.toString());
+					Log.d("UpdateService", "posted " + String.valueOf(result));
 					runnables.put(service_type, result);
 					handler.post(result);
 				}

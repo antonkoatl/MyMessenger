@@ -1,4 +1,4 @@
-package com.example.mymessenger.services;
+package com.example.mymessenger.services.MessageService;
 
 import android.os.AsyncTask;
 
@@ -41,7 +41,7 @@ public class MSDBHelper {
         new load_dlgs_from_db_async(cb, ms).execute(count, offset);
     }
 
-    protected boolean updateCntInDB(mContact cnt, MessageService ms){
+    public boolean updateCntInDB(mContact cnt, MessageService ms){
         mContact cnt_in_db = ms.msApp.dbHelper.getCnt(cnt.address, ms);
 
         if(cnt_in_db != null){

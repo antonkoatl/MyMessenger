@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.PagerAdapter;
 import android.text.format.Time;
@@ -39,7 +38,7 @@ import com.example.mymessenger.MyMsgAdapter;
 import com.example.mymessenger.R;
 import com.example.mymessenger.mDialog;
 import com.example.mymessenger.mMessage;
-import com.example.mymessenger.services.MessageService;
+import com.example.mymessenger.services.MessageService.MessageService;
 import com.example.mymessenger.ui.PullToRefreshListView.OnRefreshListener;
 
 import java.util.ArrayList;

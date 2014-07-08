@@ -1,4 +1,4 @@
-package com.example.mymessenger.services;
+package com.example.mymessenger.services.Vk;
 
 import android.app.Activity;
 import android.content.Context;
@@ -6,11 +6,9 @@ import android.content.Intent;
 import android.graphics.BitmapFactory;
 import android.util.Log;
 
-import com.example.mymessenger.ActivityTwo;
 import com.example.mymessenger.AsyncTaskCompleteListener;
 import com.example.mymessenger.ChatMessageFormatter;
 import com.example.mymessenger.DownloadService;
-import com.example.mymessenger.MainActivity;
 import com.example.mymessenger.MsgReceiver;
 import com.example.mymessenger.MyApplication;
 import com.example.mymessenger.R;
@@ -19,8 +17,8 @@ import com.example.mymessenger.UpdateService;
 import com.example.mymessenger.download_waiter;
 import com.example.mymessenger.mContact;
 import com.example.mymessenger.mDialog;
-import com.example.mymessenger.mGlobal;
 import com.example.mymessenger.mMessage;
+import com.example.mymessenger.services.MessageService.MessageService;
 import com.vk.sdk.VKAccessToken;
 import com.vk.sdk.VKCaptchaDialog;
 import com.vk.sdk.VKScope;
@@ -585,7 +583,7 @@ public class Vk extends MessageService {
     protected void onAuthorize(){
         super.onAuthorize();
 
-        if(!msIsInitFinished) onInitFinish();
+        if(!isInitFinished()) onInitFinish();
         execRequestsWaitingForAuth();
     }
 

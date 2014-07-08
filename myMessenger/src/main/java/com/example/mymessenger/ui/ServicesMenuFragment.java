@@ -2,7 +2,6 @@ package com.example.mymessenger.ui;
 
 import android.content.res.Resources;
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -26,7 +25,7 @@ import com.actionbarsherlock.view.MenuInflater;
 import com.example.mymessenger.MainActivity;
 import com.example.mymessenger.MyApplication;
 import com.example.mymessenger.R;
-import com.example.mymessenger.services.MessageService;
+import com.example.mymessenger.services.MessageService.MessageService;
 
 
 public class ServicesMenuFragment extends SherlockFragment implements OnClickListener, OnTouchListener {

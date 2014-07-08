@@ -18,8 +18,8 @@ import android.widget.Toast;
 import com.actionbarsherlock.app.SherlockFragmentActivity;
 import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.MenuItem;
-import com.example.mymessenger.services.MessageService;
-import com.example.mymessenger.services.msTwitter;
+import com.example.mymessenger.services.MessageService.MessageService;
+import com.example.mymessenger.services.Twitter.mTwitter;
 import com.example.mymessenger.ui.ListViewSimpleFragment;
 import com.example.mymessenger.ui.ServicesMenuFragment;
 import com.vk.sdk.VKUIHelper;
@@ -308,7 +308,7 @@ public class MainActivity extends SherlockFragmentActivity {
 		super.onActivityResult(requestCode, resultCode, data);
 		VKUIHelper.onActivityResult(this, requestCode, resultCode, data);
         if(app.getService(MessageService.TW) != null)
-            ((msTwitter) app.getService(MessageService.TW)).authOnActivityResult(this, requestCode, resultCode, data);
+            ((mTwitter) app.getService(MessageService.TW)).authOnActivityResult(this, requestCode, resultCode, data);
 		
 		if(requestCode == SelectServiceActivity.REQUEST_CODE){
 			if(resultCode == SelectServiceActivity.RESULT_ADDED){

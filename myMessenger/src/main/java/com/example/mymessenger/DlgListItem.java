@@ -8,8 +8,6 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.example.mymessenger.services.MessageService;
-
 public class DlgListItem {
 	MyApplication app;
 	public mDialog dlg;
@@ -88,7 +86,7 @@ public class DlgListItem {
 	     			
 	 				@Override
 	 				public void onDownloadComplete() {
-	 					BitmapFactory.Options options = new BitmapFactory.Options();
+	 					//BitmapFactory.Options options = new BitmapFactory.Options();
 	 					//options.inPreferredConfig = Bitmap.Config.ARGB_8888;
 	 					cnt.icon_50 = BitmapFactory.decodeFile(filepath);
 	 					iv.setImageBitmap( cnt.icon_50);

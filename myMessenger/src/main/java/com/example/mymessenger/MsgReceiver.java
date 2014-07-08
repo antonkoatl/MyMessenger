@@ -9,10 +9,7 @@ import android.content.Intent;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
-import com.example.mymessenger.services.MessageService;
-
-import java.util.ArrayList;
-import java.util.List;
+import com.example.mymessenger.services.MessageService.MessageService;
 
 public class MsgReceiver extends BroadcastReceiver {
 	public static final String ACTION_RECEIVE = "android.mymessenger.MSG_RECEIVED";
