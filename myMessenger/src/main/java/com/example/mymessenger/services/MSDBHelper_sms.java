@@ -19,6 +19,11 @@ import java.util.List;
  * Created by Azteki on 05.07.2014.
  */
 public class MSDBHelper_sms extends MSDBHelper {
+    private static MSDBHelper instance = new MSDBHelper_sms();
+
+    public static MSDBHelper getInstance(){
+        return instance;
+    }
 
     @Override
     protected List<mDialog> load_dialogs_from_db(int count, int offset, MessageService ms) {

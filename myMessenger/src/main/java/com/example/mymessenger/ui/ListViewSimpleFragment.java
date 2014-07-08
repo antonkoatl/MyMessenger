@@ -26,6 +26,9 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 
+import com.actionbarsherlock.app.SherlockFragment;
+import com.actionbarsherlock.view.Menu;
+import com.actionbarsherlock.view.MenuInflater;
 import com.example.mymessenger.AsyncTaskCompleteListener;
 import com.example.mymessenger.EmojiPopup;
 import com.example.mymessenger.MainActivity;
@@ -43,7 +46,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class ListViewSimpleFragment extends Fragment implements OnClickListener, OnTouchListener {
+public class ListViewSimpleFragment extends SherlockFragment implements OnClickListener, OnTouchListener {
     public static int DIALOGS = 1;
     public static int MESSAGES = 2;
     public int mode;
@@ -687,6 +690,12 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putInt("fragment_mode", mode);
+    }
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        Log.d("ListViewSimpleFragment", "onCreateOptionsMenu");
+        super.onCreateOptionsMenu(menu, inflater);
     }
 
 }

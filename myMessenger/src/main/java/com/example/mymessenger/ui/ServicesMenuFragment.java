@@ -20,13 +20,16 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.actionbarsherlock.app.SherlockFragment;
+import com.actionbarsherlock.view.Menu;
+import com.actionbarsherlock.view.MenuInflater;
 import com.example.mymessenger.MainActivity;
 import com.example.mymessenger.MyApplication;
 import com.example.mymessenger.R;
 import com.example.mymessenger.services.MessageService;
 
 
-public class ServicesMenuFragment extends Fragment implements OnClickListener, OnTouchListener {
+public class ServicesMenuFragment extends SherlockFragment implements OnClickListener, OnTouchListener {
 	static final int MENU_CON_MOVE = 101;
 	static final int MENU_CON_DELETE = 102;
 	
@@ -246,5 +249,11 @@ public class ServicesMenuFragment extends Fragment implements OnClickListener, O
             prog_bar.setVisibility(View.VISIBLE);
         else
             prog_bar.setVisibility(View.INVISIBLE);
+    }
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        Log.d("ServicesMenuFragment", "onCreateOptionsMenu");
+        super.onCreateOptionsMenu(menu, inflater);
     }
 }

@@ -118,6 +118,11 @@ public class msTwitter extends MessageService {
     }
 
     @Override
+    protected void setupDBHelper(){
+        msDBHelper = MSDBHelper_tw.getInstance();
+    }
+
+    @Override
     public void init(){
         String access_token = sPref.getString(ACCESS_TOKEN, null);
         String access_token_secret = sPref.getString(SECRET_TOKEN, null);
@@ -362,7 +367,7 @@ public class msTwitter extends MessageService {
                     dlg.chat_id = status.getId();
                     dlg.participants.add(getContact(status.getUser().getScreenName()));
 
-                    //dlg.title;
+                    dlg.title = status.getUser().getName();
                     dlg.snippet = status.getText();
                     //dlg.snippet_out = item.getInt( "out" );
                     dlg.last_msg_time.set(status.getCreatedAt().getTime());

@@ -33,8 +33,20 @@ public class mDialog {
 		this.participants.add(cnt);
 	}
 
+    public mDialog(mDialog dlg) {
+        messages = new ArrayList<mMessage>(dlg.messages);
+        participants = new ArrayList<mContact>(dlg.participants);
+        last_msg_time = new Time(dlg.last_msg_time);
 
-	public String getParticipantsNames(){
+        this.chat_id = dlg.chat_id;
+        this.msg_service_type = dlg.msg_service_type;
+        this.snippet = dlg.snippet;
+        this.snippet_out = dlg.snippet_out;
+        this.title = dlg.title;
+    }
+
+
+    public String getParticipantsNames(){
 		String res;
 		if(participants.size() > 0){
 			res = participants.get(0).name == null ? participants.get(0).address : participants.get(0).name;

@@ -13,7 +13,6 @@ import java.util.List;
 public class MSDBHelper {
     private static MSDBHelper instance = new MSDBHelper();
 
-
     public static MSDBHelper getInstance(){
         return instance;
     }

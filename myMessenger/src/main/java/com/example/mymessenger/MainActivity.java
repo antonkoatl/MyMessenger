@@ -143,6 +143,9 @@ public class MainActivity extends SherlockFragmentActivity {
 
 	@Override
     public boolean onCreateOptionsMenu(Menu menu) {
+        // TODO: Создаётся два раза подряд при перелистывании фрагметов (?)
+        Log.d("MainActiviy", "onCreateOptionsMenu");
+
         // Inflate the menu; this adds items to the action bar if it is present.
         getSupportMenuInflater().inflate(R.menu.main, menu);
         Spinner spinner = (Spinner) menu.findItem(R.id.item_selection1).getActionView();
