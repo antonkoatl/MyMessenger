@@ -45,8 +45,8 @@ public class MyPagerAdapter extends FragmentPagerAdapter {
     public CharSequence getPageTitle(int position) {
     	if(position == 2){
     		MyApplication app = ((MyApplication) ((Activity) context).getApplication()); 
-    		if (!(app.getActiveService() == null) && !(app.getActiveService().getActiveDialog() == null))
-    			return app.getActiveService().getActiveDialog().getDialogTitle();
+    		if (!(app.msManager.getActiveService() == null) && !(app.msManager.getActiveService().getActiveDialog() == null))
+    			return app.msManager.getActiveService().getActiveDialog().getDialogTitle();
     		else return "---";
     	} else if(position == 1)return "Dialogs";
     	else if(position == 0)return "Services";

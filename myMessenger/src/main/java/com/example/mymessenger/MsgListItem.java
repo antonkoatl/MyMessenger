@@ -7,7 +7,7 @@ import android.view.View;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
-import com.example.mymessenger.services.MessageService.MessageService;
+import com.example.mymessenger.services.MessageService.msInterfaceMS;
 
 public class MsgListItem {
 	MyApplication app;
@@ -21,7 +21,7 @@ public class MsgListItem {
 	
 	public void setupView(View view) {
 		
-	    MessageService ser = app.getService(msg.msg_service);
+	    msInterfaceMS ser = app.msManager.getService(msg.msg_service);
 	    boolean left = msg.getFlag(mMessage.OUT);
 	    
 	    RelativeLayout rl = (RelativeLayout) view.findViewById(R.id.msg_container);
@@ -92,32 +92,4 @@ public class MsgListItem {
 		}		
 	}
 
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((msg == null) ? 0 : msg.hashCode());
-		return result;
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		MsgListItem other = (MsgListItem) obj;
-		if (msg == null) {
-			if (other.msg != null)
-				return false;
-		} else if (!msg.equals(other.msg))
-			return false;
-		return true;
-	}
-	
-	
-
-	
 }

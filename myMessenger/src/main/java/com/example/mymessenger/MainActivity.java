@@ -19,6 +19,8 @@ import com.actionbarsherlock.app.SherlockFragmentActivity;
 import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.MenuItem;
 import com.example.mymessenger.services.MessageService.MessageService;
+import com.example.mymessenger.services.MessageService.msInterfaceMS;
+import com.example.mymessenger.services.MessageService.msInterfaceUI;
 import com.example.mymessenger.services.Twitter.mTwitter;
 import com.example.mymessenger.ui.ListViewSimpleFragment;
 import com.example.mymessenger.ui.ServicesMenuFragment;
@@ -58,8 +60,8 @@ public class MainActivity extends SherlockFragmentActivity {
         
         if(notification_clicked_msg){
         	mMessage msg = (mMessage) intent.getParcelableExtra("msg");
-        	app.setActiveService(msg.msg_service);
-            MessageService ms = app.getActiveService();
+        	app.msManager.setActiveService(msg.msg_service);
+            msInterfaceMS ms = app.msManager.getActiveService();
 
         	mDialog dlg = new mDialog();        	
         	dlg.participants.add( msg.respondent );			
@@ -156,12 +158,12 @@ public class MainActivity extends SherlockFragmentActivity {
         String saved = null;
         if(selected_service_for_dialogs == 0){
             saved = getString(R.string.service_name_all);
-        } else if(app.getService(selected_service_for_dialogs) != null){
-            saved = app.getService(selected_service_for_dialogs).getServiceName();
+        } else if(app.msManager.getService(selected_service_for_dialogs) != null){
+            saved = app.msManager.getService(selected_service_for_dialogs).getServiceName();
         }
 
         choices.add(getString(R.string.service_name_all));
-        for(MessageService ms : app.myMsgServices){
+        for(msInterfaceMS ms : app.msManager.myMsgServices){
             choices.add(ms.getServiceName());
         }
 
@@ -213,7 +215,7 @@ public class MainActivity extends SherlockFragmentActivity {
             // TODO: не пересоздавать каждый раз, обновлять по мере надобности
             List<String> choices = new ArrayList<String>();
             choices.add(getString(R.string.service_name_all));
-            for(MessageService ms : app.myMsgServices){
+            for(msInterfaceMS ms : app.msManager.myMsgServices){
                 choices.add(ms.getServiceName());
             }
             ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,android.R.layout.simple_spinner_dropdown_item, choices);
@@ -224,8 +226,8 @@ public class MainActivity extends SherlockFragmentActivity {
             String saved = null;
             if(selected_service_for_dialogs == 0){
                 saved = getString(R.string.service_name_all);
-            } else if(app.getService(selected_service_for_dialogs) != null){
-                saved = app.getService(selected_service_for_dialogs).getServiceName();
+            } else if(app.msManager.getService(selected_service_for_dialogs) != null){
+                saved = app.msManager.getService(selected_service_for_dialogs).getServiceName();
             }
 
             if(saved != null){
@@ -266,11 +268,11 @@ public class MainActivity extends SherlockFragmentActivity {
     private MessageService getServiceFromButtonId(int id) {
 		switch(id){
 			case 1000+0 :
-				return app.getService( MessageService.SMS );
+				return app.msManager.getService( MessageService.SMS );
 			case 1000+1 :
-				return app.getService( MessageService.VK );
+				return app.msManager.getService( MessageService.VK );
             case 1000+2 :
-                return app.getService( MessageService.TW );
+                return app.msManager.getService( MessageService.TW );
 			default :
 				return null;
 		}
@@ -282,7 +284,7 @@ public class MainActivity extends SherlockFragmentActivity {
 	protected Dialog onCreateDialog(int id) {
 		AlertDialog.Builder adb = new AlertDialog.Builder(this);
 		
-		MessageService ser = getServiceFromButtonId(id);
+		msInterfaceUI ser = getServiceFromButtonId(id);
 		
 		String data[] = ser.getStringsForMainViewMenu();
 
@@ -292,12 +294,10 @@ public class MainActivity extends SherlockFragmentActivity {
 		return adb.create();
 	}
 			
-	
 
-	// ���������� ������� �� ����� ������ �������
 	android.content.DialogInterface.OnClickListener myClickListener = new android.content.DialogInterface.OnClickListener() {
 		public void onClick(DialogInterface dialog, int which) {
-			  MessageService ser = app.getActiveService();
+            msInterfaceUI ser = app.msManager.getActiveService();
 			  ser.MainViewMenu_click(which, MainActivity.this);
 		  }
 	};
@@ -307,13 +307,13 @@ public class MainActivity extends SherlockFragmentActivity {
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		super.onActivityResult(requestCode, resultCode, data);
 		VKUIHelper.onActivityResult(this, requestCode, resultCode, data);
-        if(app.getService(MessageService.TW) != null)
-            ((mTwitter) app.getService(MessageService.TW)).authOnActivityResult(this, requestCode, resultCode, data);
+        if(app.msManager.getService(MessageService.TW) != null)
+            ((mTwitter) app.msManager.getService(MessageService.TW)).authOnActivityResult(this, requestCode, resultCode, data);
 		
 		if(requestCode == SelectServiceActivity.REQUEST_CODE){
 			if(resultCode == SelectServiceActivity.RESULT_ADDED){
 				int service_type = data.getIntExtra("service_type", 0);
-				app.newService(service_type);
+				app.msManager.newService(service_type);
 			}
 			if(resultCode == SelectServiceActivity.RESULT_NOT_ADDED){
 				Toast.makeText(this, "Service not added", Toast.LENGTH_SHORT).show();
@@ -322,7 +322,7 @@ public class MainActivity extends SherlockFragmentActivity {
 		
 		if(requestCode == ActivityTwo.REQUEST_CODE){
 			if(resultCode == ActivityTwo.RESULT_SELECTED){
-				MessageService ms = app.getService( data.getIntExtra("msg_service", 0) );
+				msInterfaceMS ms = app.msManager.getService( data.getIntExtra("msg_service", 0) );
 				mContact cnt = ms.getContact( data.getStringExtra("cnt") );
 				mDialog dlg = ms.getDialog(cnt);
 				ms.setActiveDialog(dlg);

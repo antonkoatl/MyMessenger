@@ -10,7 +10,7 @@ import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 
 import com.actionbarsherlock.app.SherlockActivity;
-import com.example.mymessenger.services.MessageService.MessageService;
+import com.example.mymessenger.services.MessageService.msInterfaceMS;
 import com.example.mymessenger.ui.PullToRefreshListView;
 
 import java.util.ArrayList;
@@ -51,7 +51,7 @@ public class ActivityTwo extends SherlockActivity implements OnClickListener {
 	    mode = intent.getStringExtra("mode");
 	    msg_service = intent.getIntExtra("msg_service", 0);
 	    
-	    MessageService ms = app.getActiveService();
+	    msInterfaceMS ms = app.msManager.getActiveService();
 	    
 	    
 	    if (mode.equals("contacts")) {
@@ -99,7 +99,7 @@ public class ActivityTwo extends SherlockActivity implements OnClickListener {
 		@Override
 		public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
 			if ( !cnt_maxed && ( (totalItemCount - (firstVisibleItem + visibleItemCount)) < 5 ) && !cnt_isLoading) {
-				MessageService ms = app.getService( app.active_service );
+				msInterfaceMS ms = app.msManager.getActiveService();
 				ms.requestContacts(showing_contacts.size(), 100, async_complete_listener_cnt);
 				cnt_isLoading = true;
 			}
@@ -151,47 +151,17 @@ public class ActivityTwo extends SherlockActivity implements OnClickListener {
 	        }
 			
 			if(update){
-				app.getActiveService().requestMessages(app.getActiveService().getActiveDialog(), 20, async_complete_listener_msg_update_total_offset, async_complete_listener_msg_update);
+				app.msManager.getActiveService().requestMessages(app.msManager.getActiveService().getActiveDialog(), 20, async_complete_listener_msg_update_total_offset, async_complete_listener_msg_update);
 			}
 		}
 	};
 
-	
-	AsyncTaskCompleteListener<Void> contact_data_changed = new AsyncTaskCompleteListener<Void>(){
-		@Override
-		public void onTaskComplete(Void result) {
-			if(msg_adapter != null)msg_adapter.notifyDataSetChanged();
-			if(dlg_adapter != null)dlg_adapter.notifyDataSetChanged();
-		}
-		
-	};
-	
+
 	@Override
 	public void onClick(View view) {
 			
 	}
 
-	public void NewMessage(mMessage msg){
-		boolean toScroll = false;
-		int firstVisibleItem = listview.getFirstVisiblePosition();
-		if(listview.getChildAt(listview.getChildCount() - 1).getBottom() == listview.getHeight())
-			toScroll = true;
-		showing_messages.add(msg);
-		msg_adapter.notifyDataSetChanged();
-		if(toScroll)
-			listview.setSelectionFromTop(firstVisibleItem  + 1, 0);
-
-	}
-	
-	public void MsgUpdate(int service_type){
-		MessageService ms = app.getService( service_type );
-		
-		if(service_type == app.getActiveService().getServiceType()){
-			async_complete_listener_msg_update_total_offset = 0;
-			ms.requestMessages(ms.getActiveDialog(), 20, 0, async_complete_listener_msg_update);
-		}
-
-	}
 
 	@Override
 	protected void onResume() { 

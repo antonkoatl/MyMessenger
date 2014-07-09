@@ -9,6 +9,7 @@ import android.net.Uri;
 import android.util.Log;
 
 import com.example.mymessenger.services.MessageService.MessageService;
+import com.example.mymessenger.services.MessageService.msInterfaceMS;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -48,7 +49,7 @@ public class DBHelper extends SQLiteOpenHelper {
 
 	@Override
 	public void onCreate(SQLiteDatabase db) {
-		for(MessageService ms : app.myMsgServices){
+		for(msInterfaceMS ms : app.msManager.myMsgServices){
 			createTablesDb(ms, db);
 		}
 	}
@@ -193,7 +194,7 @@ public class DBHelper extends SQLiteOpenHelper {
 		return dlg_key;
 	}
 
-	private void createTablesDb(MessageService ms, SQLiteDatabase db){
+	private void createTablesDb(msInterfaceMS ms, SQLiteDatabase db){
 		String tn_msgs = getTableNameMsgs(ms);
 		String tn_dlgs = getTableNameDlgs(ms);
 		String tn_cnts = getTableNameCnts(ms);
@@ -237,15 +238,15 @@ public class DBHelper extends SQLiteOpenHelper {
 	}
 	
 	
-	public String getTableNameDlgs(MessageService ms){
+	public String getTableNameDlgs(msInterfaceMS ms){
 		return "dlgs_" + String.valueOf(ms.getServiceType()) + "_" + ms.getMyContact().address;
 	}
 	
-	public String getTableNameMsgs(MessageService ms){
+	public String getTableNameMsgs(msInterfaceMS ms){
 		return "msgs_" + String.valueOf(ms.getServiceType()) + "_" + ms.getMyContact().address;
 	}
 	
-	public String getTableNameCnts(MessageService ms){
+	public String getTableNameCnts(msInterfaceMS ms){
 		return "cnts_" + String.valueOf(ms.getServiceType()) + "_" + ms.getMyContact().address;
 	}
 	
@@ -593,5 +594,59 @@ public class DBHelper extends SQLiteOpenHelper {
             }
         }
         return dlgs_updated;
+    }
+
+    public List<mMessage> update_db_msgs(List<mMessage> result, MessageService ms, mDialog dlg) {
+        SQLiteDatabase db = getWritableDatabase();
+        String my_table_name = getTableNameMsgs(ms);
+        List<mMessage> msgs = new ArrayList<mMessage>();
+
+        for (mMessage msg : result) {
+            if( update_db_msg(msg, dlg, ms) ) msgs.add(msg);
+        }
+
+        return msgs;
+    }
+
+    public boolean update_db_msg(mMessage msg, mDialog dlg, MessageService ms) {
+        SQLiteDatabase db = getWritableDatabase();
+        int dlg_key = getDlgId(dlg, ms);
+        String my_table_name = getTableNameMsgs(ms);
+        String selection = DBHelper.colDlgkey + " = ? AND " + DBHelper.colSendtime + " = ? AND " + DBHelper.colBody + " = ?";
+        String[] selectionArgs = { String.valueOf(dlg_key), String.valueOf(msg.sendTime.toMillis(false)), msg.text };
+        Cursor c = db.query(my_table_name, null, selection, selectionArgs, null, null, null);
+
+        if(c.moveToFirst()){
+            int  flags_in_db = c.getInt( c.getColumnIndex(DBHelper.colFlags) );
+
+            if(msg.flags != flags_in_db){
+                //update
+                int id = c.getInt(c.getColumnIndex(DBHelper.colId));
+                c.close();
+                updateMsg(id, msg, ms);
+                return true;
+            } else {
+                //not update
+                c.close();
+                return false;
+            }
+        } else {
+            //add
+            c.close();
+            insertMsg(msg, my_table_name, dlg_key);
+            return true;
+        }
+    }
+
+    public mDialog update_db_dlg(mMessage msg, int dlg_key, MessageService ms){
+        mDialog dlg = getDlgById(dlg_key, ms);
+        //TODO: dlg = null, возможно при создании нового диалога
+        if(dlg.last_msg_time.before(msg.sendTime)){
+            dlg.last_msg_time.set(msg.sendTime);
+            dlg.snippet = msg.text;
+            dlg.snippet_out = msg.getFlag(mMessage.OUT) ? 1 : 0;
+            updateDlg(dlg_key, dlg, ms);
+        }
+        return dlg;
     }
 }

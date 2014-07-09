@@ -29,7 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public abstract class MessageService {
+public abstract class MessageService implements msInterfaceMS, msInterfaceDB, msInterfaceUI, msInterfaceEM {
     public static final int SMS = 10;
     public static final int VK = 11;
     public static final int TW = 12;
@@ -105,6 +105,7 @@ public abstract class MessageService {
         msDBHelper = MSDBHelper.getInstance();
     }
 
+    @Override
     public void init(){
         onInitFinish();
     }
@@ -127,15 +128,15 @@ public abstract class MessageService {
         msAuthorised = false;
     }
 
-    // Подготовить сервис для работы
-    public final /**/void setup(AsyncTaskCompleteListener<MessageService> asms) {
+    @Override
+    public final void setup(AsyncTaskCompleteListener<MessageService> asms) {
         msIsSetupFinished = false;
         msSetupStage = 1;
         cbms_for_setup = asms;
         setupStages();
     }
 
-    // Удалить сервис
+    @Override
     public abstract void unsetup();
 
     // Обновить информацию об аккаунте
@@ -143,10 +144,9 @@ public abstract class MessageService {
         requestAccountInfoFromNet(self_contact_cb);
     }
 
-    // Запросить список контактов - не кешируется в бд, абстрактный
-    public abstract void requestContacts(int offset, int count, AsyncTaskCompleteListener<List<mContact>> cb);
 
-    // Запросить данные контакта - контакт обновится, вызовутся триггеры контактов. Перед запросом контакты накапливаются CNTS_REQUEST_ACCUM_TIME миллисекунд
+
+    @Override
     public final void requestContactData(mContact cnt) {
         msAccumCnts.add(cnt);
 
@@ -157,7 +157,7 @@ public abstract class MessageService {
         }
     }
 
-    // Запросить данные контактов
+    @Override
     public final void requestContactsData(List<mContact> cnts) {
         msDBHelper.getContactsFromDB(cnts, this);
         if(isOnline()) getContactsFromNet(new CntsDownloadsRequest(cnts));
@@ -187,7 +187,7 @@ public abstract class MessageService {
         requestDialogs(1, 0, acb);
     }
 
-    // Запросить список диалогов
+    @Override
     public final void requestDialogs(int count, int offset, AsyncTaskCompleteListener<List<mDialog>> cb) {
         if(!msIsSetupFinished)return; // TODO: отложить, тоже самое для авторизации
         int dlgs_in_db = msApp.dbHelper.getDlgsCount(MessageService.this);
@@ -206,11 +206,12 @@ public abstract class MessageService {
     }
 
     // TODO: Пересмотреть
+    @Override
     public final void refreshDialogsFromNet(AsyncTaskCompleteListener<List<mDialog>> cb, int count) {
         msRefreshDlgsCb.addRefresh(cb, count);
     }
 
-    // Запросить список сообщений для диалога
+    @Override
     public final void requestMessages(mDialog dlg, int count, int offset, AsyncTaskCompleteListener<List<mMessage>> cb) {
         int msgs_in_db = msApp.dbHelper.getMsgsCount(dlg, MessageService.this);
 
@@ -232,8 +233,8 @@ public abstract class MessageService {
         msRefreshMsgsCb.addRefresh(dlg, cb, count);
     }
 
-    // Получить контакт, создастся, обновится
     // TODO: Периодически обновлять
+    @Override
     public final mContact getContact(String address) {
         mContact cnt = msContacts.get(address);
 
@@ -246,7 +247,7 @@ public abstract class MessageService {
         return cnt;
     }
 
-    // Получить диалог для общения с контактом
+    @Override
     public final mDialog getDialog(mContact cnt) {
         // Есть ли в базе? - Загрузить : Создасть. Обновить
         mDialog dlg = msApp.dbHelper.getDlg(cnt.address, this);
@@ -260,29 +261,28 @@ public abstract class MessageService {
         return dlg;
     }
 
-    // Отправка сообщения
-    public abstract boolean sendMessage(String address, String text);
 
-    // TODO: Переработать, создать механизм проверки успешности передачи данных через интернет перед сохранением в бд
-    public abstract void requestMarkAsReaded(mMessage msg, mDialog dlg);
 
-    // Запросить алгоритм для отслеживания новых сообщений
     // TODO: Организовать работу в UpdateService через ThreadPool
+    @Override
     public abstract void requestNewMessagesRunnable(AsyncTaskCompleteListener<RunnableAdvanced<?>> cb);
 
-
+    @Override
     public final String getServiceName() {
         return msServiceName;
     }
 
+    @Override
     public final int getServiceType() {
         return msServiceType;
     }
 
+    @Override
     public final mDialog getActiveDialog() {
         return msActiveDialog;
     }
 
+    @Override
     public final mContact getMyContact() {
         return msSelfContact;
     }
@@ -299,7 +299,7 @@ public abstract class MessageService {
         return dl_all_msgs_downloaded;
     }
 
-    // Есть ли потоки, загружающие диалоги
+    @Override
     public final boolean isLoadingDlgs() {
         return dlgs_thread_count > 0;
     }
@@ -316,10 +316,9 @@ public abstract class MessageService {
     }
 
 
-    // Функции для интерфейса
-    public abstract String[] getStringsForMainViewMenu();
 
-    public abstract void MainViewMenu_click(int which, Context context);
+
+
 
 
 
@@ -370,7 +369,7 @@ public abstract class MessageService {
         } else lm_count.value += count;
     }
 
-
+    @Override
     public boolean isLoading() {
         return !(msIsSetupFinished && msIsInitFinished);
     }
@@ -506,7 +505,7 @@ public abstract class MessageService {
         @Override
         public void onTaskComplete(List<mMessage> result) {
 
-            result = msApp.update_db_msgs(result, MessageService.this, dlg);
+            result = msApp.dbHelper.update_db_msgs(result, MessageService.this, dlg);
 
             if (cb != null) {
                 cb.onTaskComplete(result);
@@ -818,7 +817,7 @@ public abstract class MessageService {
         return emoji;
     }
 
-    public abstract String getEmojiUrl(long code);
+
 
 
     public void setupEmoji(){
@@ -992,7 +991,7 @@ public abstract class MessageService {
     // Общие действия для меню
     protected void openActiveDlg(){
         if(getActiveDialog() != null){
-            msApp.setActiveService(getServiceType());
+            msApp.msManager.setActiveService(getServiceType());
             ((MainActivity) MyApplication.getMainActivity()).mViewPager.setCurrentItem(2);
         }
     }

@@ -128,10 +128,10 @@ public class MSDBHelper {
         mDialog dlg;
         if (chat_id != 0) {
             int dlg_key = ms.msApp.dbHelper.getDlgIdOrCreate(chat_id, ms);
-            dlg = ms.msApp.update_db_dlg(msg, dlg_key);
+            dlg = ms.msApp.dbHelper.update_db_dlg(msg, dlg_key, ms);
         } else {
             int dlg_key = ms.msApp.dbHelper.getDlgIdOrCreate(msg.respondent.address, ms);
-            dlg = ms.msApp.update_db_dlg(msg, dlg_key);
+            dlg = ms.msApp.dbHelper.update_db_dlg(msg, dlg_key, ms);
         }
 
 
@@ -143,7 +143,7 @@ public class MSDBHelper {
     }
 
     public void updateMsgInDB(mMessage msg, mDialog dlg, MessageService ms) {
-        ms.msApp.update_db_msg(msg, dlg);
+        ms.msApp.dbHelper.update_db_msg(msg, dlg, ms);
         ms.msApp.triggerMsgUpdaters(msg, dlg);
     }
 
@@ -159,6 +159,7 @@ public class MSDBHelper {
         ms.msApp.triggerDlgsUpdaters(dlgs);
         ms.msApp.triggerMsgUpdaters(msg, dlg);
     }
+
 
 
 }

@@ -27,7 +27,7 @@ public class MsgReceiver extends BroadcastReceiver {
 		
 		if(intent.getAction().equals(ACTION_RECEIVE)){
 			mMessage msg = (mMessage) intent.getParcelableExtra("msg");
-            MessageService ms = app.getService(msg.msg_service);
+            MessageService ms = (MessageService) app.msManager.getService(msg.msg_service);
 			long chat_id = intent.getLongExtra("chat_id", 0);
 
             ms.msDBHelper.updateMsgInDB(msg, chat_id, ms);
@@ -46,7 +46,7 @@ public class MsgReceiver extends BroadcastReceiver {
 			int mode = intent.getIntExtra("msg_mode", 0);
 			int service_type = intent.getIntExtra("service_type", 0);
 
-            MessageService ms = app.getService(service_type);
+            MessageService ms = (MessageService) app.msManager.getService(service_type);
             mMessage msg = ms.msDBHelper.getMsgByIdFromDB(msg_id, ms);
 			
 			if(msg != null){
@@ -85,7 +85,7 @@ public class MsgReceiver extends BroadcastReceiver {
                 .setContentText(msg.text) // Основной текст уведомления
                 .setContentIntent(PendingIntent.getActivity(context, 0, notificationIntent, PendingIntent.FLAG_CANCEL_CURRENT))
                 .setWhen(msg.sendTime.toMillis(false)) //отображаемое время уведомления
-                .setContentTitle(app.getService(msg.msg_service).getServiceName() + " - " + msg.respondent.getName() + (chat_id == 0 ? "" : " (chat)") ) //заголовок уведомления
+                .setContentTitle(app.msManager.getService(msg.msg_service).getServiceName() + " - " + msg.respondent.getName() + (chat_id == 0 ? "" : " (chat)") ) //заголовок уведомления
                 .setDefaults(Notification.DEFAULT_ALL); // звук, вибро и диодный индикатор выставляются по умолчанию
 
         Notification notification = nb.build(); //генерируем уведомление

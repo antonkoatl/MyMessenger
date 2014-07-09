@@ -11,6 +11,7 @@ import android.text.TextUtils;
 import android.text.format.Time;
 
 import com.example.mymessenger.services.MessageService.MessageService;
+import com.example.mymessenger.services.MessageService.msInterfaceMS;
 
 import java.util.Calendar;
 import java.util.GregorianCalendar;
@@ -63,7 +64,7 @@ public class SmsReceiver extends BroadcastReceiver {
 		    
 		    mMessage msg = new mMessage();
 		    MyApplication app = (MyApplication) context.getApplicationContext();
-		    MessageService sms_service = app.getService(MessageService.SMS);
+		    msInterfaceMS sms_service = app.msManager.getService(MessageService.SMS);
 		    msg.respondent = sms_service.getContact( sms.getDisplayOriginatingAddress() );
 		    
 		    msg.setFlag(mMessage.OUT, false);			

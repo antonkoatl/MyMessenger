@@ -26,6 +26,8 @@ import com.example.mymessenger.MainActivity;
 import com.example.mymessenger.MyApplication;
 import com.example.mymessenger.R;
 import com.example.mymessenger.services.MessageService.MessageService;
+import com.example.mymessenger.services.MessageService.msInterfaceMS;
+import com.example.mymessenger.services.MessageService.msInterfaceUI;
 
 
 public class ServicesMenuFragment extends SherlockFragment implements OnClickListener, OnTouchListener {
@@ -56,7 +58,7 @@ public class ServicesMenuFragment extends SherlockFragment implements OnClickLis
         
         LinearLayout ll_list = (LinearLayout) rootView.findViewById(R.id.linearlay_mainbuttons);
 
-        for(MessageService ser : app.myMsgServices){
+        for(msInterfaceUI ser : app.msManager.myMsgServices){
         	View button_view = inflater.inflate(R.layout.main_servicerow, container, false);
         	
         	Button service_button = (Button) button_view.findViewById(R.id.service_button);
@@ -132,11 +134,11 @@ public class ServicesMenuFragment extends SherlockFragment implements OnClickLis
 	private MessageService getServiceFromButtonId(int id) {
 		switch(id){
 			case 1000+0 :
-				return ((MyApplication) getActivity().getApplication()).getService( MessageService.SMS );
+				return ((MyApplication) getActivity().getApplication()).msManager.getService( MessageService.SMS );
 			case 1000+1 :
-				return ((MyApplication) getActivity().getApplication()).getService( MessageService.VK );
+				return ((MyApplication) getActivity().getApplication()).msManager.getService( MessageService.VK );
             case 1000+2 :
-                return ((MyApplication) getActivity().getApplication()).getService( MessageService.TW );
+                return ((MyApplication) getActivity().getApplication()).msManager.getService( MessageService.TW );
 			default :
 				return null;
 		}
@@ -192,7 +194,7 @@ public class ServicesMenuFragment extends SherlockFragment implements OnClickLis
 	public void setForDeleteService() {
 		isForDelete = true;
 		View view = getView();
-		for(MessageService ms : ((MyApplication) getActivity().getApplication()).myMsgServices ){
+		for(MessageService ms : ((MyApplication) getActivity().getApplication()).msManager.myMsgServices ){
 			TextView tv = (TextView) view.findViewById( getTextviewDelIdMainScreen(ms.getServiceType()) );
 			tv.setVisibility(View.VISIBLE);
 		}
@@ -205,7 +207,7 @@ public class ServicesMenuFragment extends SherlockFragment implements OnClickLis
 	public void setForNormal(){
 		isForDelete = false;
 		View view = getView();
-		for(MessageService ms : ((MyApplication) getActivity().getApplication()).myMsgServices ){
+		for(MessageService ms : ((MyApplication) getActivity().getApplication()).msManager.myMsgServices ){
 			TextView tv = (TextView) view.findViewById( getTextviewDelIdMainScreen(ms.getServiceType()) );
 			tv.setVisibility(View.INVISIBLE);
 		}
@@ -215,7 +217,7 @@ public class ServicesMenuFragment extends SherlockFragment implements OnClickLis
 	public void onClick(View view) {
 		if( isServicesButton(view.getId()) ){
 			if(isForDelete){
-				((MyApplication) getActivity().getApplication()).deleteService( getServiceFromButtonId( view.getId() ).getServiceType() );
+				((MyApplication) getActivity().getApplication()).msManager.deleteService( getServiceFromButtonId( view.getId() ).getServiceType() );
 				//setForNormal();
 				ServicesMenuFragment fr = (ServicesMenuFragment) ((MainActivity) getActivity()).pagerAdapter.getRegisteredFragment(0);		
 				fr.POSITION = FragmentPagerAdapter.POSITION_NONE;
@@ -226,7 +228,7 @@ public class ServicesMenuFragment extends SherlockFragment implements OnClickLis
 				((MainActivity) getActivity()).pagerAdapter.notifyDataSetChanged();				
 			} else {
 				MessageService ser = getServiceFromButtonId(view.getId()); //TODO: replace for tag?
-				((MyApplication) getActivity().getApplication()).active_service = ser.getServiceType();
+				((MyApplication) getActivity().getApplication()).msManager.active_service = ser.getServiceType();
 				getActivity().removeDialog(view.getId());
 				getActivity().showDialog(view.getId());
 			}

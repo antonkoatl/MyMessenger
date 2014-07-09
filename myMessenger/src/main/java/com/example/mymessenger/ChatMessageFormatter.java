@@ -13,6 +13,7 @@ import android.text.style.ImageSpan;
 import android.util.DisplayMetrics;
 
 import com.example.mymessenger.services.MessageService.MessageService;
+import com.example.mymessenger.services.MessageService.msInterfaceEM;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -107,7 +108,7 @@ public class ChatMessageFormatter {
                 		
                 	}.setParams(spannable, matcher.start(), matcher.end());
 
-                    MessageService ms = ((MyApplication) context.getApplicationContext()).getService(service_type);
+                    msInterfaceEM ms = ((MyApplication) context.getApplicationContext()).msManager.getService(service_type);
                     if(ms != null) {
                         String eurl = ms.getEmojiUrl(entry.getValue());
                         if(eurl != null)getDownload(eurl, cb, line_height, ms);
@@ -145,7 +146,7 @@ public class ChatMessageFormatter {
 	    return spannable;
 	}
 	
-	public static void getDownload(String url_path, final AsyncTaskCompleteListener<Drawable> cb, int size, MessageService ms){
+	public static void getDownload(String url_path, final AsyncTaskCompleteListener<Drawable> cb, int size, msInterfaceEM ms){
 		String output = isFileDownloaded(url_path, ms);
 		if(output == null){
 			new DownloadFilesTask(cb, size, ms).execute(url_path, MyApplication.context.getCacheDir().toString());
@@ -185,7 +186,7 @@ public class ChatMessageFormatter {
 	
 
 	
-	public static String isFileDownloaded(String url_path, MessageService ms){
+	public static String isFileDownloaded(String url_path, msInterfaceEM ms){
 		String fileName = url_path.substring( url_path.lastIndexOf('/')+1, url_path.length() );
 		File output = new File(MyApplication.context.getCacheDir() + File.separator + MessageService.getCacheFolder(ms.getServiceType()), fileName);
 		File output_dir = new File(MyApplication.context.getCacheDir() + File.separator + MessageService.getCacheFolder(ms.getServiceType()));
@@ -289,7 +290,7 @@ public class ChatMessageFormatter {
 	public static class DownloadFilesTask extends AsyncTask<String, Void, Drawable>{
 		AsyncTaskCompleteListener<Drawable> cb;
 		int size;
-        MessageService ms;
+        msInterfaceEM ms;
 		
 		DownloadFilesTask(AsyncTaskCompleteListener<Drawable> cb, MessageService ms){
 			this.cb = cb;
@@ -297,7 +298,7 @@ public class ChatMessageFormatter {
             this.ms = ms;
 		}
 		
-		DownloadFilesTask(AsyncTaskCompleteListener<Drawable> cb, int size, MessageService ms){
+		DownloadFilesTask(AsyncTaskCompleteListener<Drawable> cb, int size, msInterfaceEM ms){
 			this.cb = cb;
 			this.size = size;
             this.ms = ms;

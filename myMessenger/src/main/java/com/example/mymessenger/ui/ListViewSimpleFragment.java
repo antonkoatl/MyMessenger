@@ -39,6 +39,7 @@ import com.example.mymessenger.R;
 import com.example.mymessenger.mDialog;
 import com.example.mymessenger.mMessage;
 import com.example.mymessenger.services.MessageService.MessageService;
+import com.example.mymessenger.services.MessageService.msInterfaceMS;
 import com.example.mymessenger.ui.PullToRefreshListView.OnRefreshListener;
 
 import java.util.ArrayList;
@@ -107,7 +108,7 @@ public class ListViewSimpleFragment extends SherlockFragment implements OnClickL
             msg_adapter = new MyMsgAdapter(getActivity(), new ArrayList<mMessage>());
             listview.setAdapter(msg_adapter);
 
-            MessageService ms = app.getActiveService();
+            msInterfaceMS ms = app.msManager.getActiveService();
             if(ms != null && ms.getActiveDialog() != null)ms.requestMessages(ms.getActiveDialog(), 20, 0, async_complete_listener_msg);
             listview.setRefreshing();
 
@@ -183,7 +184,7 @@ public class ListViewSimpleFragment extends SherlockFragment implements OnClickL
 
             });
 
-            this.emojiPopup = new EmojiPopup(getActivity(), rootView, R.drawable.ic_msg_panel_smiles, app.getActiveService());
+            this.emojiPopup = new EmojiPopup(getActivity(), rootView, R.drawable.ic_msg_panel_smiles, (MessageService) app.msManager.getActiveService());
         }
 
         if (mode == DIALOGS) {
@@ -195,12 +196,12 @@ public class ListViewSimpleFragment extends SherlockFragment implements OnClickL
 
             selected_service_for_dialogs = app.sPref.getInt("selected_service_for_dialogs", 0);
 
-            if(app.getService(selected_service_for_dialogs) == null) selected_service_for_dialogs = 0;
+            if(app.msManager.getService(selected_service_for_dialogs) == null) selected_service_for_dialogs = 0;
 
             if(selected_service_for_dialogs == 0) {
-                app.requestDialogs(20, 0, async_complete_listener_dlg);
+                app.msManager.requestDialogs(20, 0, async_complete_listener_dlg);
             } else {
-                app.getService(selected_service_for_dialogs).requestDialogs(20, 0, async_complete_listener_dlg);
+                app.msManager.getService(selected_service_for_dialogs).requestDialogs(20, 0, async_complete_listener_dlg);
             }
             loaded_dlgs_from_each = 20;
 
@@ -214,9 +215,9 @@ public class ListViewSimpleFragment extends SherlockFragment implements OnClickL
                 public void onRefresh() {
                     listview_refreshing_for_dlgs = true;
                     if(selected_service_for_dialogs == 0) {
-                        app.refreshDialogsFromNet(async_complete_listener_dlg, 0);
+                        app.msManager.refreshDialogsFromNet(async_complete_listener_dlg, 0);
                     } else {
-                        app.getService(selected_service_for_dialogs).refreshDialogsFromNet(async_complete_listener_dlg, 0);
+                        app.msManager.getService(selected_service_for_dialogs).refreshDialogsFromNet(async_complete_listener_dlg, 0);
                     }
                 }
             });
@@ -245,7 +246,7 @@ public class ListViewSimpleFragment extends SherlockFragment implements OnClickL
                         InputMethodManager.HIDE_NOT_ALWAYS);
 
                 Log.d("ActivityTwo.onClick.msg_sendbutton", text);
-                MessageService ms = app.getActiveService();
+                msInterfaceMS ms = app.msManager.getActiveService();
                 mDialog dlg = ms.getActiveDialog();
 
                 if(dlg.chat_id == 0){
@@ -321,9 +322,9 @@ public class ListViewSimpleFragment extends SherlockFragment implements OnClickL
 
         dlg_adapter.clear();
         if(selected_service_for_dialogs == 0) {
-            app.requestDialogs(20, 0, async_complete_listener_dlg);
+            app.msManager.requestDialogs(20, 0, async_complete_listener_dlg);
         } else {
-            app.getService(selected_service_for_dialogs).requestDialogs(20, 0, async_complete_listener_dlg);
+            app.msManager.getService(selected_service_for_dialogs).requestDialogs(20, 0, async_complete_listener_dlg);
         }
 
         app.sPref.edit().putInt("selected_service_for_dialogs", selected_service_for_dialogs).commit();
@@ -366,7 +367,7 @@ public class ListViewSimpleFragment extends SherlockFragment implements OnClickL
 
         @Override
         public void onTaskComplete(List<mMessage> result) {
-            Log.d("async_complete_listener_msg", "completed :: " + String.valueOf( app.getActiveService().isLoadingMsgsForDlg(app.getActiveService().getActiveDialog()) ));
+            Log.d("async_complete_listener_msg", "completed :: " + String.valueOf(((MessageService) app.msManager.getActiveService()).isLoadingMsgsForDlg(app.msManager.getActiveService().getActiveDialog())));
             //Log.d("async_complete_listener_msg", "start size = " + String.valueOf(showing_messages.size()) + " :: " + String.valueOf(result.size()));
             boolean changed = false;
             int append_count = 0;
@@ -402,7 +403,7 @@ public class ListViewSimpleFragment extends SherlockFragment implements OnClickL
                 listview.scrollItems(append_count);
             }
 
-            if(!app.getActiveService().isLoadingMsgsForDlg(app.getActiveService().getActiveDialog())){
+            if(!((MessageService) app.msManager.getActiveService()).isLoadingMsgsForDlg(app.msManager.getActiveService().getActiveDialog())){
                 listview.onRefreshCompleteNoAnimation();
                 //Log.d("async_complete_listener_msg", "finishing refresh");
             }
@@ -473,7 +474,7 @@ public class ListViewSimpleFragment extends SherlockFragment implements OnClickL
             if(changed)
                 dlg_adapter.notifyDataSetChanged();
 
-            if(listview_refreshing_for_dlgs && !app.isLoadingDlgs()){
+            if(listview_refreshing_for_dlgs && !app.msManager.isLoadingDlgs()){
                 listview.onRefreshComplete();
                 listview_refreshing_for_dlgs = false;
             }
@@ -526,11 +527,11 @@ public class ListViewSimpleFragment extends SherlockFragment implements OnClickL
         public void onTaskComplete(mMessage msg, mDialog dlg) {
             if(msg_adapter.getCount() == 0)return;
 
-            if(msg.msg_service != app.getActiveService().getServiceType()){ // Не тот сервис - источник
+            if(msg.msg_service != app.msManager.getActiveService().getServiceType()){ // Не тот сервис - источник
                 return;
             }
 
-            if(!dlg.equals(app.getActiveService().getActiveDialog())){ // Не тот диалог
+            if(!dlg.equals(app.msManager.getActiveService().getActiveDialog())){ // Не тот диалог
                 return;
             }
 
@@ -569,8 +570,8 @@ public class ListViewSimpleFragment extends SherlockFragment implements OnClickL
         @Override
         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
             mDialog dlg = ((mDialog) dlg_adapter.getItem(position));
-            app.setActiveService( dlg.getMsgServiceType() );
-            app.getService( dlg.getMsgServiceType() ).setActiveDialog(dlg);
+            app.msManager.setActiveService(dlg.getMsgServiceType());
+            app.msManager.getService(dlg.getMsgServiceType()).setActiveDialog(dlg);
             ((MainActivity) getActivity()).pagerAdapter.recreateFragment(2);
 
             //fr.refresh_data();
@@ -586,8 +587,8 @@ public class ListViewSimpleFragment extends SherlockFragment implements OnClickL
 
         @Override
         public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
-            if ( !app.dlgs_loading_maxed && ( (totalItemCount - (firstVisibleItem + visibleItemCount)) < 5 ) && !app.isLoadingDlgs()) {
-                app.requestDialogs(20, loaded_dlgs_from_each, async_complete_listener_dlg);
+            if ( !app.dlgs_loading_maxed && ( (totalItemCount - (firstVisibleItem + visibleItemCount)) < 5 ) && !app.msManager.isLoadingDlgs()) {
+                app.msManager.requestDialogs(20, loaded_dlgs_from_each, async_complete_listener_dlg);
                 loaded_dlgs_from_each += 20;
             }
         }
@@ -632,9 +633,9 @@ public class ListViewSimpleFragment extends SherlockFragment implements OnClickL
             if (visibleItemCount == 0) return;
 
 
-            if ( ( firstVisibleItem == 0 ) && app.getActiveService() != null && app.getActiveService().getActiveDialog() != null && app.getActiveService().isAllMsgsDownloaded()){
+            if ( ( firstVisibleItem == 0 ) && app.msManager.getActiveService() != null && app.msManager.getActiveService().getActiveDialog() != null && ((MessageService) app.msManager.getActiveService()).isAllMsgsDownloaded()){
                 if(!listview.isRefreshing()){
-                    MessageService ms = app.getActiveService();
+                    msInterfaceMS ms = app.msManager.getActiveService();
                     //last_requested_msgs_size = showing_messages.size();
                     ms.requestMessages(ms.getActiveDialog(), 20, msg_adapter.getCount(), async_complete_listener_msg);
                     listview.setRefreshingNoAnimation();
@@ -669,7 +670,7 @@ public class ListViewSimpleFragment extends SherlockFragment implements OnClickL
                 mMessage msg = ((mMessage) listview.getItemAtPosition(i));
                 if(msg == null)continue;
                 if(!msg.getFlag(mMessage.LOADING) && !msg.getFlag(mMessage.OUT) && !msg.getFlag(mMessage.READED)){
-                    app.getActiveService().requestMarkAsReaded(msg, app.getActiveService().getActiveDialog());
+                    app.msManager.getActiveService().requestMarkAsReaded(msg, app.msManager.getActiveService().getActiveDialog());
                 }
             }
         }

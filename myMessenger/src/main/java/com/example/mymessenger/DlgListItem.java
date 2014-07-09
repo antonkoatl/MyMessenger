@@ -21,7 +21,7 @@ public class DlgListItem {
 	public void setupView(View view) {
 
 	    TextView textLabel = (TextView) view.findViewById(R.id.dlgview_dlgsername);
-    	textLabel.setText( app.getService( dlg.getMsgServiceType() ).getServiceName() );
+    	textLabel.setText( app.msManager.getService( dlg.getMsgServiceType() ).getServiceName() );
 	    
     	textLabel = (TextView) view.findViewById(R.id.dlgview_dlgname);
     	textLabel.setText( dlg.getParticipantsNames() );
@@ -76,7 +76,7 @@ public class DlgListItem {
     		
 		iv = (ImageView) view.findViewById(R.id.dlgview_dlgtexticon);
 	    if(dlg.snippet_out == 1){
-	    	mContact my_contact = app.getService(dlg.msg_service_type).getMyContact();
+	    	mContact my_contact = app.msManager.getService(dlg.msg_service_type).getMyContact();
 	    	if(my_contact.icon_50 != null){
 	    		iv.setImageBitmap( my_contact.icon_50);
 	     	} else if(my_contact.icon_50_url != null){
@@ -137,30 +137,6 @@ public class DlgListItem {
 		}		
 	}
 
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((dlg == null) ? 0 : dlg.hashCode());
-		return result;
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		DlgListItem other = (DlgListItem) obj;
-		if (dlg == null) {
-			if (other.dlg != null)
-				return false;
-		} else if (!dlg.equals(other.dlg))
-			return false;
-		return true;
-	}
 
 	public void update() {
 		snippet_spannable_cache = null;

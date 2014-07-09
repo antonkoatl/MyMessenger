@@ -7,7 +7,7 @@ import android.os.HandlerThread;
 import android.os.IBinder;
 import android.util.Log;
 
-import com.example.mymessenger.services.MessageService.MessageService;
+import com.example.mymessenger.services.MessageService.msInterfaceMS;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -40,7 +40,7 @@ public class UpdateService extends Service {
 		}
 		
 		if(ss == -1){
-			for(MessageService i : ( (MyApplication) getApplication() ).myMsgServices){
+			for(msInterfaceMS i : ( (MyApplication) getApplication() ).msManager.myMsgServices){
 				Log.d("UpdateService", "requested");
 				AsyncTaskCompleteListener<RunnableAdvanced<?>> async_complete_listener_runnable_t = new AsyncTaskCompleteListener<RunnableAdvanced<?>>(){
 					int service_type;
@@ -78,7 +78,7 @@ public class UpdateService extends Service {
 				
 			}.setServiceType(ss);
 			
-			( (MyApplication) getApplication() ).getService(ss).requestNewMessagesRunnable(async_complete_listener_runnable_t);
+			( (MyApplication) getApplication() ).msManager.getService(ss).requestNewMessagesRunnable(async_complete_listener_runnable_t);
 		}
 		
 		return START_REDELIVER_INTENT;
