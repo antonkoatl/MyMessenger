@@ -4,12 +4,15 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.os.Bundle;
+import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.PagerAdapter;
 import android.text.format.Time;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -25,9 +28,6 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 
-import com.actionbarsherlock.app.SherlockFragment;
-import com.actionbarsherlock.view.Menu;
-import com.actionbarsherlock.view.MenuInflater;
 import com.example.mymessenger.AsyncTaskCompleteListener;
 import com.example.mymessenger.EmojiPopup;
 import com.example.mymessenger.MainActivity;
@@ -46,7 +46,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class ListViewSimpleFragment extends SherlockFragment implements OnClickListener, OnTouchListener {
+public class ListViewSimpleFragment extends Fragment implements OnClickListener, OnTouchListener {
     public static int DIALOGS = 1;
     public static int MESSAGES = 2;
     public int mode;

@@ -1,3 +1,2 @@
 include ':vksdk_library'
-include ':twitter'
 include ':myMessenger'

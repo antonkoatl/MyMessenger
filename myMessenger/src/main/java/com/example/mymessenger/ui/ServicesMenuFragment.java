@@ -2,12 +2,15 @@ package com.example.mymessenger.ui;
 
 import android.content.res.Resources;
 import android.os.Bundle;
+import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
@@ -19,9 +22,6 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import com.actionbarsherlock.app.SherlockFragment;
-import com.actionbarsherlock.view.Menu;
-import com.actionbarsherlock.view.MenuInflater;
 import com.example.mymessenger.MainActivity;
 import com.example.mymessenger.MyApplication;
 import com.example.mymessenger.R;
@@ -30,7 +30,7 @@ import com.example.mymessenger.services.MessageService.msInterfaceMS;
 import com.example.mymessenger.services.MessageService.msInterfaceUI;
 
 
-public class ServicesMenuFragment extends SherlockFragment implements OnClickListener, OnTouchListener {
+public class ServicesMenuFragment extends Fragment implements OnClickListener, OnTouchListener {
 	static final int MENU_CON_MOVE = 101;
 	static final int MENU_CON_DELETE = 102;
 	
@@ -217,7 +217,7 @@ public class ServicesMenuFragment extends SherlockFragment implements OnClickLis
 	public void onClick(View view) {
 		if( isServicesButton(view.getId()) ){
 			if(isForDelete){
-				((MyApplication) getActivity().getApplication()).msManager.deleteService( getServiceFromButtonId( view.getId() ).getServiceType() );
+				((MyApplication) getActivity().getApplication()).msManager.deleteService(getServiceFromButtonId(view.getId()).getServiceType());
 				//setForNormal();
 				ServicesMenuFragment fr = (ServicesMenuFragment) ((MainActivity) getActivity()).pagerAdapter.getRegisteredFragment(0);		
 				fr.POSITION = FragmentPagerAdapter.POSITION_NONE;

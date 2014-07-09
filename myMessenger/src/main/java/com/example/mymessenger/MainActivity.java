@@ -6,8 +6,12 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.support.v4.view.MenuItemCompat;
 import android.support.v4.view.ViewPager;
+import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -15,9 +19,6 @@ import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.Toast;
 
-import com.actionbarsherlock.app.SherlockFragmentActivity;
-import com.actionbarsherlock.view.Menu;
-import com.actionbarsherlock.view.MenuItem;
 import com.example.mymessenger.services.MessageService.MessageService;
 import com.example.mymessenger.services.MessageService.msInterfaceMS;
 import com.example.mymessenger.services.MessageService.msInterfaceUI;
@@ -29,7 +30,7 @@ import com.vk.sdk.VKUIHelper;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MainActivity extends SherlockFragmentActivity {
+public class MainActivity extends ActionBarActivity {
 	final int DIALOG_SMS = 1;
 	MyApplication app;
 	private SharedPreferences sPref;
@@ -149,8 +150,9 @@ public class MainActivity extends SherlockFragmentActivity {
         Log.d("MainActiviy", "onCreateOptionsMenu");
 
         // Inflate the menu; this adds items to the action bar if it is present.
-        getSupportMenuInflater().inflate(R.menu.main, menu);
-        Spinner spinner = (Spinner) menu.findItem(R.id.item_selection1).getActionView();
+        getMenuInflater().inflate(R.menu.main, menu);
+        MenuItem searchItem = menu.findItem(R.id.item_selection1);
+        Spinner spinner = (Spinner) MenuItemCompat.getActionView(searchItem);
 
         List<String> choices = new ArrayList<String>();
 
@@ -210,7 +212,8 @@ public class MainActivity extends SherlockFragmentActivity {
         if(mViewPager.getCurrentItem() == 1) {
             menu.findItem(R.id.item_selection1).setVisible(true);
 
-            Spinner spinner = (Spinner) menu.findItem(R.id.item_selection1).getActionView();
+            MenuItem searchItem = menu.findItem(R.id.item_selection1);
+            Spinner spinner = (Spinner) MenuItemCompat.getActionView(searchItem);
 
             // TODO: не пересоздавать каждый раз, обновлять по мере надобности
             List<String> choices = new ArrayList<String>();

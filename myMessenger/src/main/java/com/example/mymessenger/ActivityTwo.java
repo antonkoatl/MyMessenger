@@ -1,7 +1,9 @@
 package com.example.mymessenger;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.v7.app.ActionBarActivity;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.AbsListView;
@@ -9,14 +11,13 @@ import android.widget.AbsListView.OnScrollListener;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 
-import com.actionbarsherlock.app.SherlockActivity;
 import com.example.mymessenger.services.MessageService.msInterfaceMS;
 import com.example.mymessenger.ui.PullToRefreshListView;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class ActivityTwo extends SherlockActivity implements OnClickListener {
+public class ActivityTwo extends ActionBarActivity implements OnClickListener {
 	public static final int REQUEST_CODE = 200;
 	public static final int RESULT_SELECTED = 100;
 	
