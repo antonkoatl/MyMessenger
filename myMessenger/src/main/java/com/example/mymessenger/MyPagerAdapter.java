@@ -2,6 +2,7 @@ package com.example.mymessenger;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.res.Configuration;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
@@ -99,5 +100,13 @@ public class MyPagerAdapter extends FragmentPagerAdapter {
 		notifyDataSetChanged();		
 	}
 
+    @Override
+    public float getPageWidth(int position) {
+        MyApplication app = ((MyApplication) ((Activity) context).getApplication());
+        if(context.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE){
+            return 0.5f;
+        }
+        else return 1f;
+    }
 	
 }
