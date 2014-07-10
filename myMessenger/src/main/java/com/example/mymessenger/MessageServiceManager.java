@@ -63,7 +63,7 @@ public class MessageServiceManager {
         }
         msApp.sPref.edit().putString(PREF_USING_SERVICES, usingservices).commit();
 
-        ((MainActivity) msApp.getMainActivity()).pagerAdapter.recreateFragment(0);
+
 
         AsyncTaskCompleteListener<MessageService> asms = new AsyncTaskCompleteListener<MessageService>(){
 
@@ -84,6 +84,8 @@ public class MessageServiceManager {
         };
 
         ms.setup(asms);
+
+        ((MainActivity) msApp.getMainActivity()).pagerAdapter.recreateFragment(0);
 
         return true;
 

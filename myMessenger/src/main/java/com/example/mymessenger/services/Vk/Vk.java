@@ -144,7 +144,7 @@ public class Vk extends MessageService {
     };
 
     @Override
-    protected void getContactsFromNet(final CntsDownloadsRequest req) {
+    protected void getContactsDataFromNet(final CntsDataDownloadsRequest req) {
         req.onStarted();
 
         String uids = req.cnts.get(0).address;
@@ -165,7 +165,7 @@ public class Vk extends MessageService {
                 try {
                     JSONArray response_json = response.json.getJSONArray("response");
 
-                    boolean updated = false;
+                    List<mContact> cnts = new ArrayList<mContact>();
 
                     for(int i = 0; i < response_json.length(); i++){
                         JSONObject item = response_json.getJSONObject(i);
@@ -180,10 +180,10 @@ public class Vk extends MessageService {
                         cnt.icon_50_url = photo_50_url;
                         cnt.name = name;
 
-                        if(msDBHelper.updateCntInDB(cnt, Vk.this) == true)updated = true;
+                        cnts.add(cnt);
                     }
 
-                    req.onFinished(updated);
+                    req.onFinished(cnts);
 
 
                 } catch (JSONException e) {
@@ -255,7 +255,6 @@ public class Vk extends MessageService {
 
     @Override
     public void MainViewMenu_click(int which, Context con) {
-        Intent intent;
         switch(which) {
             case 0:
                 openActiveDlg();
@@ -270,15 +269,16 @@ public class Vk extends MessageService {
     }
 
     @Override
-    public void requestContacts(int offset, int count, AsyncTaskCompleteListener<List<mContact>> cb) {
+    public void getContactsFromNet(final CntsDownloadsRequest req) {
+        req.onStarted();
 
         VKRequest request = new VKRequest("friends.get", VKParameters.from("order", "hints",
-                VKApiConst.OFFSET, String.valueOf(offset), VKApiConst.COUNT, String.valueOf(count), VKApiConst.FIELDS, "photo_100"));
+                VKApiConst.OFFSET, String.valueOf(req.offset), VKApiConst.COUNT, String.valueOf(req.count), VKApiConst.FIELDS, "photo_100"));
 
         request.secure = false;
         VKParameters preparedParameters = request.getPreparedParameters();
 
-        VKRequestListener rl = new VKRequestListenerWithCallback<List<mContact>>(cb, Vk.this) {
+        VKRequestListener rl = new VKRequestListenerWithCallback<List<mContact>>(null, Vk.this) {
             @Override
             public void onComplete(VKResponse response) {
                 Log.d("requestContacts", "onComplete" );
@@ -329,7 +329,8 @@ public class Vk extends MessageService {
 
                         cnts.add(cnt);
                     }
-                    callback.onTaskComplete(cnts);
+                    //callback.onTaskComplete(cnts);
+                    req.onFinished(cnts);
 
                 } catch (JSONException e) {
                     e.printStackTrace();

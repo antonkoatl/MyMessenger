@@ -145,6 +145,10 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
     }
 
 
+    @Override
+    public void requestContacts(int offset, int count, AsyncTaskCompleteListener<List<mContact>> cb){
+        if(isOnline()) getContactsFromNet(new CntsDownloadsRequest(count, offset, cb));
+    }
 
     @Override
     public final void requestContactData(mContact cnt) {
@@ -160,7 +164,7 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
     @Override
     public final void requestContactsData(List<mContact> cnts) {
         msDBHelper.getContactsFromDB(cnts, this);
-        if(isOnline()) getContactsFromNet(new CntsDownloadsRequest(cnts));
+        if(isOnline()) getContactsDataFromNet(new CntsDataDownloadsRequest(cnts));
     }
 
     // Запросить активный диалог. Загружается из памяти, если нет - из интернета последний
@@ -347,6 +351,8 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
 
 
     // Загрузка данных контактов из интернета, после завершения должно проверятся msAccumCnts. Если что то обновилось - вызываться триггеры
+    protected abstract void getContactsDataFromNet(final CntsDataDownloadsRequest req);
+
     protected abstract void getContactsFromNet(final CntsDownloadsRequest req);
 
     // Загрузка сообщений из бд, выполняется асинхронно
@@ -958,10 +964,10 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
         }
     }
 
-    public class CntsDownloadsRequest implements DownloadsRequest<Boolean> {
+    public class CntsDataDownloadsRequest implements DownloadsRequest<List<mContact>> {
         public List<mContact> cnts;
 
-        CntsDownloadsRequest(List<mContact> cnts) {
+        CntsDataDownloadsRequest(List<mContact> cnts) {
             this.cnts = cnts;
         }
 
@@ -971,11 +977,58 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
         }
 
         @Override
-        public void onFinished(Boolean result) {
+        public void onFinished(List<mContact> result) {
             if(msAccumCnts.size() > 0) msHandler.postDelayed(cnts_request_runnable, 500);
             else ms_accum_cnt_handler_isRunning = false;
 
-            if(result)msApp.triggerCntsUpdaters();
+            boolean updated = false;
+
+            for(mContact cnt : result){
+                if(msDBHelper.updateCntInDB(cnt, MessageService.this) == true)updated = true;
+            }
+
+            if(updated)msApp.triggerCntsUpdaters();
+        }
+
+        @Override
+        public void onError() {
+
+        }
+    }
+
+    public class CntsDownloadsRequest implements DownloadsRequest<List<mContact>> {
+        public AsyncTaskCompleteListener<List<mContact>> cb;
+        public int count;
+        public int offset;
+
+        CntsDownloadsRequest(int count, int offset, AsyncTaskCompleteListener<List<mContact>> cb) {
+            this.cb = cb;
+            this.count = count;
+            this.offset = offset;
+        }
+
+        @Override
+        public void onStarted() {
+
+        }
+
+        @Override
+        public void onFinished(List<mContact> result) {
+            if (cb != null) {
+                ((MainActivity) MyApplication.getMainActivity()).runOnUiThread(new Runnable() {
+                    List<mContact> cnts;
+
+                    Runnable setMsgs(List<mContact> msgs) {
+                        this.cnts = msgs;
+                        return this;
+                    }
+
+                    @Override
+                    public void run() {
+                        cb.onTaskComplete(cnts);
+                    }
+                }.setMsgs(result));
+            }
         }
 
         @Override

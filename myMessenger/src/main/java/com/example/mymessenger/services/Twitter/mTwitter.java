@@ -8,6 +8,7 @@ import android.os.HandlerThread;
 import android.util.Log;
 
 import com.example.mymessenger.AsyncTaskCompleteListener;
+import com.example.mymessenger.MainActivity;
 import com.example.mymessenger.MyApplication;
 import com.example.mymessenger.R;
 import com.example.mymessenger.RunnableAdvanced;
@@ -22,6 +23,7 @@ import com.example.mymessenger.services.MessageService.SimpleOpenAuthActivity;
 import java.util.ArrayList;
 import java.util.List;
 
+import twitter4j.PagableResponseList;
 import twitter4j.Paging;
 import twitter4j.ResponseList;
 import twitter4j.Status;
@@ -48,6 +50,8 @@ public class mTwitter extends MessageService {
     public static final String URL_TWITTER_OAUTH_TOKEN = "oauth_token";
 
     public static final int TWITTER_REQUEST_CODE = 1012;
+
+    public static final int MAX_STATUSES_FROM_HOME_TIMELINE = 1000;
 
     // Очень долго проходят запросы, отдельный поток для этого:
     protected Handler handler1; //Для отложенного запроса данных о пользователях
@@ -206,8 +210,38 @@ public class mTwitter extends MessageService {
     }
 
     @Override
-    public void requestContacts(int offset, int count, AsyncTaskCompleteListener<List<mContact>> cb) {
+    public void getContactsFromNet(final CntsDownloadsRequest req) {
+        req.onStarted();
+        Runnable r = new Runnable() {
+            @Override
+            public void run() {
+                long cursor = -1;
+                PagableResponseList<User> users;
+                List<mContact> cnts = new ArrayList<mContact>();
+                int i = 0;
+                do {
+                    try {
+                        users = mTwitter.getFriendsList(mTwitter.getId(), cursor, 100);
+                    } catch (TwitterException e) {
+                        handleTwitterException(e, this, req);
+                        return;
+                    }
 
+
+                    for (User user : users) {
+                        if(i < req.offset)continue;
+                        if(i > (req.offset + req.count) )continue;
+                        mContact cnt = new mContact(user.getScreenName());
+                        cnt.name = user.getName();
+                        cnt.icon_50_url = user.getProfileImageURL();
+                        cnts.add(cnt);
+                    }
+                } while ( ((cursor = users.getNextCursor()) != 0) && (i < (req.offset + req.count)) );
+                req.onFinished(cnts);
+            }
+        };
+
+        handler1.post(r);
     }
 
     @Override
@@ -227,12 +261,28 @@ public class mTwitter extends MessageService {
 
     @Override
     public String[] getStringsForMainViewMenu() {
-        return new String[0];
+        String data[] = {"---", "New message", "All messages", "Status"};
+        if(getActiveDialog() != null){
+            data[0] = getActiveDialog().getParticipantsNames();
+        }
+
+
+        return data;
     }
 
     @Override
     public void MainViewMenu_click(int which, Context context) {
-
+        switch(which) {
+            case 0:
+                openActiveDlg();
+                break;
+            case 1:
+                openContacts(context);
+                break;
+            case 2:
+                openDialogs();
+                break;
+        }
     }
 
     @Override
@@ -261,12 +311,12 @@ public class mTwitter extends MessageService {
     }
 
     @Override
-    protected void getContactsFromNet(final CntsDownloadsRequest req) {
+    protected void getContactsDataFromNet(final CntsDataDownloadsRequest req) {
         req.onStarted();
         Runnable r = new Runnable() {
             @Override
             public void run() {
-                boolean updated = false;
+                List<mContact> cnts = new ArrayList<mContact>();
                 for(mContact cnt : req.cnts) {
                     User user = null;
                     try {
@@ -277,10 +327,10 @@ public class mTwitter extends MessageService {
                     }
                     cnt.name = user.getName();
                     cnt.icon_50_url = user.getProfileImageURL();
+                    cnts.add(cnt);
 
-                    if(msDBHelper.updateCntInDB(cnt, com.example.mymessenger.services.Twitter.mTwitter.this) == true)updated = true;
                 }
-                req.onFinished(updated);
+                req.onFinished(cnts);
             }
         };
 
@@ -344,6 +394,10 @@ public class mTwitter extends MessageService {
         Runnable r = new Runnable() {
             @Override
             public void run() {
+                if((req.offset + req.count) > MAX_STATUSES_FROM_HOME_TIMELINE){
+                    req.onFinished(new ArrayList<mDialog>());
+                    return;
+                }
                 int page = req.offset / req.count + 1;
                 ResponseList<Status> statuses;
 
@@ -364,7 +418,7 @@ public class mTwitter extends MessageService {
 
                     mDialog dlg = new mDialog();
 
-                    dlg.chat_id = status.getId();
+                    //dlg.chat_id = status.getId();
                     dlg.participants.add(getContact(status.getUser().getScreenName()));
 
                     dlg.title = status.getUser().getName();

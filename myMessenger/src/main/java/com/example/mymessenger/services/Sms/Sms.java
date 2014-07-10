@@ -198,7 +198,7 @@ public class Sms extends MessageService {
     }
 
     @Override
-    protected void getContactsFromNet(CntsDownloadsRequest req) {
+    protected void getContactsDataFromNet(CntsDataDownloadsRequest req) {
 
     }
 
@@ -213,8 +213,9 @@ public class Sms extends MessageService {
     }
 
     @Override
-    public void requestContacts(int offset, int count,
-                                AsyncTaskCompleteListener<List<mContact>> cb) {
+    public void getContactsFromNet(final CntsDownloadsRequest req) {
+        req.onStarted();
+
         List<mContact> cnts = new ArrayList<mContact>();
 
         // define the columns I want the query to return
@@ -226,11 +227,11 @@ public class Sms extends MessageService {
         Cursor name_cursor = msApp.getApplicationContext().getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null, null, null, ContactsContract.PhoneLookup.DISPLAY_NAME + " ASC");
 
         if(name_cursor.moveToFirst()){
-            for (int i = 0; i < offset; i++) name_cursor.moveToNext();
+            for (int i = 0; i < req.offset; i++) name_cursor.moveToNext();
             name_cursor.moveToPrevious();
         }
 
-        for (int i = 0; i < count; i++) {
+        for (int i = 0; i < req.count; i++) {
             if (name_cursor.moveToNext()) {
                 //if(name_cursor.getInt( name_cursor.getColumnIndex( ContactsContract.Contacts.HAS_PHONE_NUMBER ) ) == 0)continue;
 
@@ -241,7 +242,7 @@ public class Sms extends MessageService {
         }
         name_cursor.close();
 
-        cb.onTaskComplete(cnts);
+        req.onFinished(cnts);
 
     }
 
