@@ -542,7 +542,7 @@ public class PullToRefreshListView extends ListView{
             if(onItemClickListener != null && state == State.PULL_TO_REFRESH){
                 // Passing up onItemClick. Correct position with the number of header views
                 int pos = position - getHeaderViewsCount();
-                if(pos > 0)
+                if(pos >= 0)
                     onItemClickListener.onItemClick(adapterView, view, pos, id);
             }
         }

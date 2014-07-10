@@ -97,6 +97,8 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 
         rootView = null;
 
+        POSITION = FragmentPagerAdapter.POSITION_UNCHANGED;
+
 
 
         if (mode == MESSAGES) {

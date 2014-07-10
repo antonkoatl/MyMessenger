@@ -42,6 +42,8 @@ public class ServicesMenuFragment extends Fragment implements OnClickListener, O
     public View onCreateView(LayoutInflater inflater,
             ViewGroup container, Bundle savedInstanceState) {
 		isForDelete = false;
+
+        POSITION = FragmentPagerAdapter.POSITION_UNCHANGED;
 		
         // The last two arguments ensure LayoutParams are inflated
         // properly.
