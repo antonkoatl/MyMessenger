@@ -5,6 +5,7 @@ import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v4.view.ViewPager;
@@ -25,6 +26,7 @@ import com.example.mymessenger.services.MessageService.msInterfaceUI;
 import com.example.mymessenger.services.Twitter.mTwitter;
 import com.example.mymessenger.ui.ListViewSimpleFragment;
 import com.example.mymessenger.ui.ServicesMenuFragment;
+import com.example.mymessenger.ui.ViewPagerAdvanced;
 import com.vk.sdk.VKUIHelper;
 
 import java.util.ArrayList;
@@ -35,7 +37,7 @@ public class MainActivity extends ActionBarActivity {
 	MyApplication app;
 	private SharedPreferences sPref;
 	private List<Button> buttons;
-	public ViewPager mViewPager;
+	public ViewPagerAdvanced mViewPager;
 	public MyPagerAdapter pagerAdapter;
 
     @Override
@@ -56,9 +58,100 @@ public class MainActivity extends ActionBarActivity {
 
         
         pagerAdapter = new MyPagerAdapter(getSupportFragmentManager(), this);
-        mViewPager = (ViewPager) findViewById(R.id.pager);
+        mViewPager = (ViewPagerAdvanced) findViewById(R.id.pager);
         mViewPager.setAdapter(pagerAdapter);
-        
+
+        mViewPager.setOnPageChangeListener(new ViewPagerAdvanced.OnPageChangeListener() {
+            boolean position_changed = false;
+            boolean scroll_finished = false;
+
+            @Override
+            public void onPageSelected(int position) {
+                pagerAdapter.setCurrentPosition(position);
+                position_changed = true;
+                if(scroll_finished)change_width();
+
+                //pagerAdapter.notifyDataSetChanged();
+
+                //pagerAdapter.notifyDataSetChanged();
+
+                /*if(position == 0) {
+                    mViewPager.infoForPosition(0).widthFactor = 0.3f;
+                    mViewPager.infoForPosition(1).widthFactor = 0.7f;
+                } else {
+                    mViewPager.infoForPosition(1).widthFactor = 0.3f;
+                    mViewPager.infoForPosition(2).widthFactor = 0.7f;
+                }*/
+            }
+
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+                //pagerAdapter.notifyDataSetChanged();
+            }
+
+            @Override
+            public void onPageScrollStateChanged(int state) {
+                //pagerAdapter.notifyDataSetChanged();
+                if(state == ViewPagerAdvanced.SCROLL_STATE_IDLE) {
+                    scroll_finished = true;
+                    if(position_changed)change_width();
+                }
+            }
+
+
+            private void change_width(){
+                pagerAdapter.notifyDataSetChanged();
+                scroll_finished = false;
+                position_changed = false;
+                return;
+                /*
+                if(getResources().getConfiguration().orientation != Configuration.ORIENTATION_LANDSCAPE){
+                    return;
+                }
+
+                if (pagerAdapter.current_position == 0) {
+                    ViewPagerAdvanced.ItemInfo ii = mViewPager.infoForPosition(0);
+                    ii.widthFactor = 0.3f;
+                    ii = mViewPager.infoForPosition(1);
+                    ii.widthFactor = 0.7f;
+                    ii = mViewPager.infoForPosition(2);
+                    ii.widthFactor = 0.3f;
+                    View child = mViewPager.getChildAt(0);
+                    ViewPagerAdvanced.LayoutParams lp = (ViewPagerAdvanced.LayoutParams) child.getLayoutParams();
+                    lp.widthFactor = 0.3f;
+                    child = mViewPager.getChildAt(1);
+                    lp = (ViewPagerAdvanced.LayoutParams) child.getLayoutParams();
+                    lp.widthFactor = 0.7f;
+                    child = mViewPager.getChildAt(2);
+                    lp = (ViewPagerAdvanced.LayoutParams) child.getLayoutParams();
+                    lp.widthFactor = 0.3f;
+                } else {
+                    ViewPagerAdvanced.ItemInfo ii = mViewPager.infoForPosition(0);
+                    ii.widthFactor = 0.3f;
+                    ii = mViewPager.infoForPosition(1);
+                    ii.widthFactor = 0.3f;
+                    ii = mViewPager.infoForPosition(2);
+                    ii.widthFactor = 0.7f;
+                    View child = mViewPager.getChildAt(0);
+                    ViewPagerAdvanced.LayoutParams lp = (ViewPagerAdvanced.LayoutParams) child.getLayoutParams();
+                    lp.widthFactor = 0.3f;
+                    child = mViewPager.getChildAt(1);
+                    lp = (ViewPagerAdvanced.LayoutParams) child.getLayoutParams();
+                    lp.widthFactor = 0.3f;
+                    child = mViewPager.getChildAt(2);
+                    lp = (ViewPagerAdvanced.LayoutParams) child.getLayoutParams();
+                    lp.widthFactor = 0.7f;
+
+                }
+                //mViewPager.populate();
+                mViewPager.requestLayout();
+                mViewPager.invalidate();
+
+                scroll_finished = false;
+                position_changed = false;*/
+            }
+        });
+
         if(notification_clicked_msg){
         	mMessage msg = (mMessage) intent.getParcelableExtra("msg");
         	app.msManager.setActiveService(msg.msg_service);

@@ -16,6 +16,7 @@ import com.example.mymessenger.ui.ServicesMenuFragment;
 public class MyPagerAdapter extends FragmentPagerAdapter {
 	SparseArray<Fragment> registeredFragments = new SparseArray<Fragment>();
 	Context context;
+    int current_position;
 	
 	public MyPagerAdapter(FragmentManager fm, Context context) {
 		super(fm);
@@ -100,13 +101,36 @@ public class MyPagerAdapter extends FragmentPagerAdapter {
 		notifyDataSetChanged();		
 	}
 
+    public void setCurrentPosition(int position){
+        current_position = position;
+    }
+
     @Override
     public float getPageWidth(int position) {
-        MyApplication app = ((MyApplication) ((Activity) context).getApplication());
         if(context.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE){
-            return 0.5f;
+            if(current_position == 0) {
+                if(position == 0)return 0.3f;
+                if(position == 1)return 0.7f;
+                if(position == 2)return 0.3f;
+            } else {
+                if(position == 0)return 0.3f;
+                if(position == 1)return 0.3f;
+                if(position == 2)return 0.7f;
+            }
+        } else {
+            return 1f;
         }
-        else return 1f;
+
+        /*
+        if(current_position == 0) {
+            if(position == 0)return 0.3f;
+            if(position == 1)return 0.7f;
+        } else {
+            if(position == 1)return 0.3f;
+            if(position == 2)return 0.7f;
+        }
+*/
+        return 1f;
     }
 	
 }
