@@ -354,7 +354,7 @@ public class ViewPagerAdvanced extends ViewGroup {
          *                 position of the pager. 0 is front and center. 1 is one full
          *                 page position to the right, and -1 is one page position to the left.
          */
-        public void transformPage(View page, float position);
+        public void transformPage(View page, float position, ItemInfo ii);
     }
 
     /**
@@ -951,6 +951,7 @@ public class ViewPagerAdvanced extends ViewGroup {
     }
 
     void populate(int newCurrentItem) {
+        Log.d("slider", "populate");
         ItemInfo oldCurInfo = null;
         int focusDirection = View.FOCUS_FORWARD;
         if (mCurItem != newCurrentItem) {
@@ -1762,7 +1763,7 @@ public class ViewPagerAdvanced extends ViewGroup {
                 if (lp.isDecor) continue;
 
                 final float transformPos = (float) (child.getLeft() - scrollX) / getClientWidth();
-                mPageTransformer.transformPage(child, transformPos);
+                mPageTransformer.transformPage(child, transformPos, infoForChild(child));
             }
         }
 

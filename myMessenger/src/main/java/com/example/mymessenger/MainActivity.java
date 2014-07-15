@@ -25,6 +25,7 @@ import com.example.mymessenger.services.MessageService.msInterfaceMS;
 import com.example.mymessenger.services.MessageService.msInterfaceUI;
 import com.example.mymessenger.services.Twitter.mTwitter;
 import com.example.mymessenger.ui.ListViewSimpleFragment;
+import com.example.mymessenger.ui.PageTransformer;
 import com.example.mymessenger.ui.ServicesMenuFragment;
 import com.example.mymessenger.ui.ViewPagerAdvanced;
 import com.vk.sdk.VKUIHelper;
@@ -60,6 +61,7 @@ public class MainActivity extends ActionBarActivity {
         pagerAdapter = new MyPagerAdapter(getSupportFragmentManager(), this);
         mViewPager = (ViewPagerAdvanced) findViewById(R.id.pager);
         mViewPager.setAdapter(pagerAdapter);
+        //mViewPager.setPageTransformer(true, new PageTransformer());
 
         mViewPager.setOnPageChangeListener(new ViewPagerAdvanced.OnPageChangeListener() {
             boolean position_changed = false;
