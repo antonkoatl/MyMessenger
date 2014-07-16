@@ -792,8 +792,10 @@ public class Vk extends MessageService {
 
 
 
-
-
+    @Override
+    public void onActivityResult(Activity activity, int requestCode, int resultCode, Intent data){
+        VKUIHelper.onActivityResult(activity, requestCode, resultCode, data);
+    }
 
 
 

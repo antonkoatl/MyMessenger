@@ -34,11 +34,13 @@
         <item>India</item>
     </string-array>
 
+    <string name="fb_app_id">1477753472465048</string>
 
     <!-- Services names -->
     <string name="service_name_all">All</string>
     <string name="service_name_sms">Sms</string>
     <string name="service_name_vk">Vkontakte</string>
     <string name="service_name_tw">Twitter</string>
+    <string name="service_name_fb">Facebook</string>
 
 </resources>

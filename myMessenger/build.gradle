@@ -1,13 +1,13 @@
 apply plugin: 'android'
 
 android {
-    compileSdkVersion 14
-    buildToolsVersion "20.0.0"
+    compileSdkVersion 19
+    buildToolsVersion '20.0.0'
 
     defaultConfig {
         applicationId "com.example.mymessenger"
         minSdkVersion 8
-        targetSdkVersion 14
+        targetSdkVersion 19
     }
 
     buildTypes {
@@ -24,6 +24,7 @@ android {
 
 dependencies {
     compile project(':vksdk_library')
+    compile project(':libraries:simplefacebook')
     compile 'com.android.support:support-v4:19.1.+'
     compile 'com.android.support:appcompat-v7:19.1.+'
     compile 'org.twitter4j:twitter4j-core:+'

@@ -3,6 +3,7 @@ package com.example.mymessenger.services.Twitter;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.Log;
@@ -18,7 +19,6 @@ import com.example.mymessenger.mGlobal;
 import com.example.mymessenger.mMessage;
 import com.example.mymessenger.services.MessageService.MessageService;
 import com.example.mymessenger.services.MessageService.SimpleOpenAuthActivity;
-
 
 import java.util.ArrayList;
 import java.util.List;
@@ -146,28 +146,6 @@ public class mTwitter extends MessageService {
     }
 
 
-    public void authOnActivityResult(Activity activity, int requestCode, int resultCode, final Intent result) {
-        if (requestCode == TWITTER_REQUEST_CODE) {
-            if (result != null) {
-                if (resultCode == Activity.RESULT_CANCELED) {
-                    //Пользователь отменил (нажал назад)
-                }
-                if (resultCode == Activity.RESULT_OK) {
-                    //Получен токен
-
-                    Runnable r = new Runnable() {
-                        @Override
-                        public void run() {
-                            da.getAccessToken( result.getStringExtra(URL_TWITTER_OAUTH_VERIFIER) );
-                        }
-                    };
-
-                    MyApplication.handler1.post(r);
-                }
-            }
-
-        }
-    }
 
     double_auth da;
 
@@ -475,6 +453,33 @@ public class mTwitter extends MessageService {
         }
 
         return "https://abs.twimg.com/emoji/v1/72x72/" + scode + ".png";
+    }
+
+
+
+
+    @Override
+    public void onActivityResult(Activity activity, int requestCode, int resultCode, final Intent data){
+        if (requestCode == TWITTER_REQUEST_CODE) {
+            if (data != null) {
+                if (resultCode == Activity.RESULT_CANCELED) {
+                    //Пользователь отменил (нажал назад)
+                }
+                if (resultCode == Activity.RESULT_OK) {
+                    //Получен токен
+
+                    Runnable r = new Runnable() {
+                        @Override
+                        public void run() {
+                            da.getAccessToken( data.getStringExtra(URL_TWITTER_OAUTH_VERIFIER) );
+                        }
+                    };
+
+                    MyApplication.handler1.post(r);
+                }
+            }
+
+        }
     }
 
 }

@@ -1,2 +1,4 @@
 include ':vksdk_library'
+include ':libraries:facebook'
+include ':libraries:simplefacebook'
 include ':myMessenger'

@@ -1,10 +1,12 @@
 package com.example.mymessenger.services.MessageService;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.Log;
@@ -22,6 +24,10 @@ import com.example.mymessenger.mContact;
 import com.example.mymessenger.mDialog;
 import com.example.mymessenger.mGlobal.IntegerMutable;
 import com.example.mymessenger.mMessage;
+import com.example.mymessenger.services.Facebook.mFacebook;
+import com.example.mymessenger.services.Sms.Sms;
+import com.example.mymessenger.services.Twitter.mTwitter;
+import com.example.mymessenger.services.Vk.Vk;
 import com.example.mymessenger.ui.ServicesMenuFragment;
 
 import java.util.ArrayList;
@@ -33,6 +39,7 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
     public static final int SMS = 10;
     public static final int VK = 11;
     public static final int TW = 12;
+    public static final int FB = 13;
 
     public static final int MSGS_DOWNLOAD_COUNT = 20;
     public static final int DLGS_DOWNLOAD_COUNT = 20;
@@ -1067,18 +1074,60 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
 
 
 
+    public void onCreate(Activity activity, Bundle savedInstanceState){
 
+    }
+
+    public void onStart(Activity activity){
+
+    }
+
+    public void onResume(Activity activity){
+
+    }
+
+    public void onPause(Activity activity){
+
+    }
+
+    public void onStop(Activity activity){
+
+    }
+
+    public void onDestroy(Activity activity){
+
+    }
+
+    public void onActivityResult(Activity activity, int requestCode, int resultCode, Intent data){
+
+    }
+
+    public void onSaveInstanceState(Activity activity, Bundle outState) {
+
+    }
 
 
 
     // Static functions
 
 
+    public static MessageService createServiceByType(int service_type, MyApplication app){
+        MessageService ms = null;
+        switch(service_type){
+            case MessageService.SMS: ms = new Sms(app); break;
+            case MessageService.VK: ms = new Vk(app); break;
+            case MessageService.TW: ms = new mTwitter(app); break;
+            case MessageService.FB: ms = new mFacebook(app); break;
+        }
+        return ms;
+    }
+
     public static String getCacheFolder(int ser_type){
         switch (ser_type) {
             case SMS: return "SMSCache";
             case VK: return "VKCache";
             case TW: return "TWCache";
+            case FB: return "FBCache";
         }
         return "ALLCache";
     }

@@ -44,7 +44,8 @@ public class MainActivity extends ActionBarActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        app.setMainActivity(this);
+        MyApplication.setMainActivity(this);
+
 
         Intent intent = getIntent();
         boolean notification_clicked_msg = intent.getBooleanExtra("notification_clicked_msg", false);
@@ -55,7 +56,7 @@ public class MainActivity extends ActionBarActivity {
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setHomeButtonEnabled(true);
         app = (MyApplication) getApplicationContext();
-        
+        app.msManager.onCreate(this, savedInstanceState);
 
         
         pagerAdapter = new MyPagerAdapter(getSupportFragmentManager(), this);
@@ -181,12 +182,14 @@ public class MainActivity extends ActionBarActivity {
     @Override
     protected void onStart(){
     	super.onStart();
+        app.msManager.onStart(this);
     	Log.d("MainActivity", "onStart");
     }
 
     @Override
 	protected void onResume() { 
 		super.onResume();
+        app.msManager.onResume(this);
 		Log.d("MainActivity", "onResume");
 		VKUIHelper.onResume(this);
 	}
@@ -194,12 +197,14 @@ public class MainActivity extends ActionBarActivity {
     @Override
     protected void onPause() {
     	super.onPause();
+        app.msManager.onPause(this);
     	Log.d("MainActivity", "onPause");
     }
     
     @Override
     protected void onStop() {
     	super.onStop();
+        app.msManager.onStop(this);
     	Log.d("MainActivity", "onStop");
     }
     
@@ -207,6 +212,7 @@ public class MainActivity extends ActionBarActivity {
 	protected void onDestroy() { 
 		super.onDestroy();
 		//app.setMainActivity(null);
+        app.msManager.onDestroy(this);
 		Log.d("MainActivity", "onDestroy");
 		VKUIHelper.onDestroy(this);
 	} 
@@ -404,10 +410,9 @@ public class MainActivity extends ActionBarActivity {
 	@Override 
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		super.onActivityResult(requestCode, resultCode, data);
-		VKUIHelper.onActivityResult(this, requestCode, resultCode, data);
-        if(app.msManager.getService(MessageService.TW) != null)
-            ((mTwitter) app.msManager.getService(MessageService.TW)).authOnActivityResult(this, requestCode, resultCode, data);
-		
+
+        app.msManager.onActivityResult(this, requestCode, resultCode, data);
+
 		if(requestCode == SelectServiceActivity.REQUEST_CODE){
 			if(resultCode == SelectServiceActivity.RESULT_ADDED){
 				int service_type = data.getIntExtra("service_type", 0);
@@ -430,7 +435,11 @@ public class MainActivity extends ActionBarActivity {
 	}
 	
 
-
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        app.msManager.onSaveInstanceState(this, outState);
+    }
 	
 
 	

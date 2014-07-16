@@ -51,7 +51,7 @@ public class SelectServiceAdapter extends BaseAdapter {
 	
 	// references to our images
     private Integer[] mThumbIds = {
-            R.drawable.sms_48, R.drawable.vk_48, R.drawable.twitter_48
+            R.drawable.sms_48, R.drawable.vk_48, R.drawable.twitter_48, R.drawable.fb_48
     };
 
 }

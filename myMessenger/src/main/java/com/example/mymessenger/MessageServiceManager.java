@@ -1,10 +1,15 @@
 package com.example.mymessenger;
 
+import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
+import android.os.Bundle;
 import android.support.v4.app.FragmentPagerAdapter;
 
+import com.example.mymessenger.services.Facebook.mFacebook;
 import com.example.mymessenger.services.MessageService.MessageService;
 import com.example.mymessenger.services.MessageService.msInterfaceMS;
+import com.example.mymessenger.services.MessageService.msInterfaceUI;
 import com.example.mymessenger.services.Sms.Sms;
 import com.example.mymessenger.services.Twitter.mTwitter;
 import com.example.mymessenger.services.Vk.Vk;
@@ -28,9 +33,9 @@ public class MessageServiceManager {
 
     public void init(){
         //загрузка сервисов
-        String using_services[] = msApp.getSharedPreferences(MyApplication.PREF_NAME, Context.MODE_PRIVATE).getString(PREF_USING_SERVICES, "10").split(",");
+        String using_services[] = msApp.getSharedPreferences(MyApplication.PREF_NAME, Context.MODE_PRIVATE).getString("PREF_USING_SERVICES", "10").split(",");
         for(String i : using_services){
-            MessageService ms = createServiceByType(Integer.valueOf(i));
+            MessageService ms = MessageService.createServiceByType(Integer.valueOf(i), msApp);
             if(ms != null){
                 addMsgService(ms);
                 ms.init();
@@ -50,7 +55,7 @@ public class MessageServiceManager {
             }
         }
 
-        MessageService ms = createServiceByType(service_type);
+        MessageService ms = MessageService.createServiceByType(service_type, msApp);
         addMsgService(ms);
 
         String usingservices = "";
@@ -116,15 +121,6 @@ public class MessageServiceManager {
         msApp.sPref.edit().putString(PREF_USING_SERVICES, usingservices).commit();
     }
 
-    public MessageService createServiceByType(int service_type){
-        MessageService ms = null;
-        switch(service_type){
-            case MessageService.SMS: ms = new Sms(msApp); break;
-            case MessageService.VK: ms = new Vk(msApp); break;
-            case MessageService.TW: ms = new mTwitter(msApp); break;
-        }
-        return ms;
-    }
 
     public void addMsgService(MessageService mServive){
         myMsgServices.add(mServive);
@@ -162,5 +158,53 @@ public class MessageServiceManager {
         boolean res = false;
         for(MessageService ms : myMsgServices)if(ms.isLoadingDlgs())res = true;
         return res;
+    }
+
+    public void onActivityResult(Activity activity, int requestCode, int resultCode, Intent data) {
+        for(msInterfaceUI ms : myMsgServices){
+            ms.onActivityResult(activity, requestCode, resultCode, data);
+        }
+    }
+
+    public void onSaveInstanceState(Activity activity, Bundle outState) {
+        for(msInterfaceUI ms : myMsgServices){
+            ms.onSaveInstanceState(activity, outState);
+        }
+    }
+
+    public void onCreate(Activity activity, Bundle savedInstanceState) {
+        for(msInterfaceUI ms : myMsgServices){
+            ms.onCreate(activity, savedInstanceState);
+        }
+    }
+
+    public void onStart(Activity activity) {
+        for(msInterfaceUI ms : myMsgServices){
+            ms.onStart(activity);
+        }
+    }
+
+    public void onResume(Activity activity) {
+        for(msInterfaceUI ms : myMsgServices){
+            ms.onResume(activity);
+        }
+    }
+
+    public void onPause(Activity activity) {
+        for(msInterfaceUI ms : myMsgServices){
+            ms.onPause(activity);
+        }
+    }
+
+    public void onStop(Activity activity) {
+        for(msInterfaceUI ms : myMsgServices){
+            ms.onStop(activity);
+        }
+    }
+
+    public void onDestroy(Activity activity) {
+        for(msInterfaceUI ms : myMsgServices){
+            ms.onDestroy(activity);
+        }
     }
 }
