@@ -76,6 +76,8 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 
     public int selected_service_for_dialogs = 0;
 
+    boolean dl_all_msgs_downloaded = false;
+
     // newInstance constructor for creating fragment with arguments
     public static ListViewSimpleFragment newInstance(int mode) {
         ListViewSimpleFragment fragmentFirst = new ListViewSimpleFragment();
@@ -105,17 +107,12 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
             rootView = inflater.inflate(R.layout.msg_list, container, false);
 
             listview = (PullToRefreshListView) rootView.findViewById(R.id.listview_object);
-            ((Button) rootView.findViewById(R.id.msg_sendbutton)).setOnClickListener(this);
+            Button send_button = ((Button) rootView.findViewById(R.id.msg_sendbutton));
+            send_button.setOnClickListener(this);
 
             msg_adapter = new MyMsgAdapter(getActivity(), new ArrayList<mMessage>());
             listview.setAdapter(msg_adapter);
 
-            msInterfaceMS ms = app.msManager.getActiveService();
-            if(ms != null && ms.getActiveDialog() != null)ms.requestMessages(ms.getActiveDialog(), 20, 0, async_complete_listener_msg);
-            listview.setRefreshing();
-
-            //msg_adapter.isLoading = true;
-            //msg_adapter.notifyDataSetChanged();
 
             listview.setOnItemClickListener(MsgClickListener);
             listview.setOnScrollListener(MsgScrollListener);
@@ -187,6 +184,16 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
             });
 
             this.emojiPopup = new EmojiPopup(getActivity(), rootView, R.drawable.ic_msg_panel_smiles, (MessageService) app.msManager.getActiveService());
+
+
+            msInterfaceMS ms = app.msManager.getActiveService();
+
+            if(ms != null){
+                setDialog(ms.getActiveDialog());
+            } else {
+                setDialog(null);
+            }
+
         }
 
         if (mode == DIALOGS) {
@@ -373,6 +380,8 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
             //Log.d("async_complete_listener_msg", "start size = " + String.valueOf(showing_messages.size()) + " :: " + String.valueOf(result.size()));
             boolean changed = false;
             int append_count = 0;
+
+            if(result.size() == 0)dl_all_msgs_downloaded = true;
 
             for(mMessage msg : result){
                 boolean added = false;
@@ -635,7 +644,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
             if (visibleItemCount == 0) return;
 
 
-            if ( ( firstVisibleItem == 0 ) && app.msManager.getActiveService() != null && app.msManager.getActiveService().getActiveDialog() != null && ((MessageService) app.msManager.getActiveService()).isAllMsgsDownloaded()){
+            if ( ( firstVisibleItem == 0 ) && app.msManager.getActiveService() != null && app.msManager.getActiveService().getActiveDialog() != null && !dl_all_msgs_downloaded){
                 if(!listview.isRefreshing()){
                     msInterfaceMS ms = app.msManager.getActiveService();
                     //last_requested_msgs_size = showing_messages.size();
@@ -698,6 +707,34 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         Log.d("ListViewSimpleFragment", "onCreateOptionsMenu");
         super.onCreateOptionsMenu(menu, inflater);
+    }
+
+
+    public void setDialog(mDialog dlg){
+        if(mode == MESSAGES){
+            Button send_button = ((Button) rootView.findViewById(R.id.msg_sendbutton));
+            View myLayout = rootView.findViewById( R.id.msg_footer );
+            ImageView b = (ImageView) myLayout.findViewById(R.id.msg_keyboard);
+            EditText et = (EditText) myLayout.findViewById(R.id.msg_entertext);
+            msInterfaceMS ms = app.msManager.getActiveService();
+            if(dlg != null && ms != null){
+                if(ms.getServiceType() != MessageService.FB){
+                    ms.requestMessages(ms.getActiveDialog(), 20, 0, async_complete_listener_msg);
+                    et.setEnabled(false);
+                    b.setEnabled(false);
+                    send_button.setEnabled(false);
+                    listview.setRefreshing();
+                } else {
+                    ms.requestMessages(ms.getActiveDialog(), 20, 0, async_complete_listener_msg);
+                    listview.setRefreshing();
+                }
+            } else {
+                et.setEnabled(false);
+                b.setEnabled(false);
+                send_button.setEnabled(false);
+                listview.onRefreshComplete();
+            }
+        }
     }
 
 }

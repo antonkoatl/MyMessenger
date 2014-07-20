@@ -65,7 +65,6 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
     protected int msServiceType;
 
     private boolean dl_all_dlgs_downloaded = false; //Все диалоги загружены из сети
-    private boolean dl_all_msgs_downloaded = true;
     protected int dlgs_thread_count = 0; //Количество потоков, загружающих диалоги в данных момент
     protected Map<mDialog, IntegerMutable> msgs_thread_count; //Количество потоков, загружающих сообщения для определённого диалога в данных момент
     protected SharedPreferences sPref;
@@ -304,12 +303,6 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
         msApp.sPref.edit().putInt("active_dialog", msApp.dbHelper.getDlgId(dlg, this)).commit();
     }
 
-
-    // TODO: Пересмотреть
-    public final boolean isAllMsgsDownloaded() {
-        return dl_all_msgs_downloaded;
-    }
-
     @Override
     public final boolean isLoadingDlgs() {
         return dlgs_thread_count > 0;
@@ -441,6 +434,7 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
             case 4:
                 msIsSetupFinished = true;
                 if (cbms_for_setup != null) cbms_for_setup.onTaskComplete(this);
+                init();
                 break;
         }
     }
@@ -619,7 +613,7 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
 
             Params cp = Psets.get(0);
 
-            if (result.size() < cp.count) dl_all_msgs_downloaded = true;
+            //if (result.size() < cp.count) dl_all_msgs_downloaded = true;
             int dlg_key = msApp.dbHelper.getDlgId(cp.dlg, MessageService.this);
 
             for (mMessage msg : result) {

@@ -18,14 +18,19 @@ import com.sromku.simple.fb.Permission;
 import com.sromku.simple.fb.SimpleFacebook;
 import com.sromku.simple.fb.SimpleFacebookConfiguration;
 import com.sromku.simple.fb.entities.Page;
+import com.sromku.simple.fb.entities.Profile;
 import com.sromku.simple.fb.listeners.OnActionListener;
 import com.sromku.simple.fb.listeners.OnLoginListener;
+import com.sromku.simple.fb.listeners.OnProfileListener;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class mFacebook extends MessageService {
@@ -83,13 +88,62 @@ public class mFacebook extends MessageService {
     }
 
     @Override
-    protected void requestAccountInfoFromNet(AsyncTaskCompleteListener<mContact> cb) {
+    protected void requestAccountInfoFromNet(final AsyncTaskCompleteListener<mContact> cb) {
+        Profile.Properties properties = new Profile.Properties.Builder()
+                .add(Profile.Properties.ID)
+                .add(Profile.Properties.NAME)
+                .add(Profile.Properties.PICTURE)
+                .build();
 
+        mSimpleFacebook.getProfile(properties, new OnProfileListener() {
+
+            @Override
+            public void onComplete(Profile profile) {
+                mContact cnt = new mContact(profile.getId());
+                cnt.name = profile.getName();
+                cnt.icon_50_url = profile.getPicture();
+                if (cb != null) cb.onTaskComplete(cnt);
+            }
+
+        });
     }
 
     @Override
-    protected void getContactsDataFromNet(CntsDataDownloadsRequest req) {
+    protected void getContactsDataFromNet(final CntsDataDownloadsRequest req) {
+        req.onStarted();
+        final List<mContact> cnts = new ArrayList<mContact>();
 
+        Profile.Properties properties = new Profile.Properties.Builder()
+                .add(Profile.Properties.ID)
+                .add(Profile.Properties.NAME)
+                .add(Profile.Properties.PICTURE)
+                .build();
+
+        for(int i = 0; i < req.cnts.size(); i++) {
+            mContact cnt = req.cnts.get(i);
+            boolean isLast = false;
+            if(i == (req.cnts.size() - 1))isLast = true;
+
+            mSimpleFacebook.getProfile(cnt.address, properties, new OnProfileListener() {
+                mContact cnt;
+                boolean isLast = false;
+
+                public OnProfileListener setMyParams(mContact cnt, boolean isLast){
+                    this.cnt = cnt;
+                    this.isLast = isLast;
+                    return this;
+                }
+
+                @Override
+                public void onComplete(Profile profile) {
+                    cnt.name = profile.getName();
+                    cnt.icon_50_url = profile.getPicture();
+                    cnts.add(cnt);
+                    if(isLast)req.onFinished(cnts);
+                }
+
+            }.setMyParams(cnt, isLast));
+        }
     }
 
     @Override
@@ -98,25 +152,84 @@ public class mFacebook extends MessageService {
     }
 
     @Override
-    protected void getMessagesFromNet(MsgsDownloadsRequest req) {
+    protected void getMessagesFromNet(final MsgsDownloadsRequest req) {
+        req.onStarted();
 
+        Bundle params = new Bundle();
+        params.putString("limit", String.valueOf(req.count));
+        params.putString("offset", String.valueOf(req.offset));
+
+        mSimpleFacebook.get(String.valueOf(req.dlg.chat_id), "comments", params, new OnActionListener<Page>() {
+
+            @Override
+            public void onComplete(Page response) {
+                List<mMessage> msgs = new ArrayList<mMessage>();
+                try {
+                    JSONObject jThread = response.getGraphObject().getInnerJSONObject();
+                    JSONArray comments = jThread.getJSONArray("data");
+
+                    for(int i = 0; i < comments.length(); i++){
+                        JSONObject jMessage = comments.getJSONObject(i);
+                        mMessage msg = new mMessage();
+
+                        JSONObject jFrom = jMessage.getJSONObject("from");
+                        msg.respondent = getContact(jFrom.getString("id"));
+                        if(msg.respondent.equals(getMyContact())){
+                            msg.setOut(true);
+                        } else {
+                            msg.setOut(false);
+                        }
+
+                        msg.text = jMessage.getString("message");
+
+                        SimpleDateFormat incomingFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
+                        Date date = incomingFormat.parse(jMessage.getString("created_time"));
+
+                        msg.sendTime.set( date.getTime() );
+                        msg.id = jMessage.getString("id");
+                        msg.msg_service = getServiceType();
+
+                        msgs.add(msg);
+                    }
+
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                }
+
+                req.onFinished(msgs);
+
+                if (hasNext()) {
+                    getNext();
+                }
+            }
+
+        });
     }
 
     @Override
-    protected void getDialogsFromNet(DlgsDownloadsRequest req) {
+    protected void getDialogsFromNet(final DlgsDownloadsRequest req) {
         req.onStarted();
-        mSimpleFacebook.get("me", "inbox", null, new OnActionListener<List<Page>>() {
+
+        Bundle params = new Bundle();
+        params.putString("limit", String.valueOf(req.count));
+        params.putString("offset", String.valueOf(req.offset));
+
+        mSimpleFacebook.get("me", "inbox", params, new OnActionListener<List<Page>>() {
 
             @Override
             public void onComplete(List<Page> response) {
                 //Log.i(TAG, "Number of music pages I like = " + response.size());
                 List<mDialog> dlgs = new ArrayList<mDialog>();
-                for(Page p : response) {
+                for(Page pThread : response) {
                     try {
                         mDialog dlg = new mDialog();
-                        dlg.chat_id = Long.valueOf((String) response.get(0).getGraphObject().getProperty("id"));
+                        JSONObject jThread = pThread.getGraphObject().getInnerJSONObject();
 
-                        JSONArray resps = response.get(0).getGraphObject().getInnerJSONObject().getJSONObject("to").getJSONArray("data");
+                        dlg.chat_id = jThread.getLong("id");
+
+                        JSONArray resps = jThread.getJSONObject("to").getJSONArray("data");
                         for(int i = 0; i < resps.length(); i++){
                             JSONObject resp = resps.getJSONObject(i);
                             mContact cnt = getContact( resp.getString("id") );
@@ -124,13 +237,28 @@ public class mFacebook extends MessageService {
                             dlg.participants.add(cnt);
                         }
 
+                        dlg.last_msg_time.set( Long.valueOf(jThread.getString("updated_time"))*1000 );
 
+                        JSONObject last_message = jThread.getJSONObject("comments").getJSONArray("data").getJSONObject(0);
+                        dlg.snippet = last_message.getString("message");
+                        if(last_message.getJSONObject("from").getString("id") == getMyContact().address){
+                            dlg.snippet_out = 1;
+                        } else {
+                            dlg.snippet_out = 0;
+                        }
 
+                        dlgs.add(dlg);
 
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
 
+                }
+
+                req.onFinished(dlgs);
+
+                if (hasNext()) {
+                    getNext();
                 }
             }
 
