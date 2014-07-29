@@ -11,77 +11,73 @@ import com.example.mymessenger.services.MessageService.msInterfaceMS;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadPoolExecutor;
 
 public class UpdateService extends Service {
-	Handler handler;
-	HandlerThread hthread;
-	
 	Map<Integer, RunnableAdvanced<?>> runnables;
-	
-	public void onCreate() {
+    Map<Integer, Future<?>> futures;
+    private ExecutorService executor;
+
+    class async_complete_listener_runnable implements AsyncTaskCompleteListener<RunnableAdvanced<?>> {
+        int service_type;
+
+        @Override
+        public void onTaskComplete(RunnableAdvanced<?> result) {
+            Log.d("UpdateService", "posted " + String.valueOf(result));
+            runnables.put(service_type, result);
+            futures.put(service_type, executor.submit(result) );
+        }
+
+        public AsyncTaskCompleteListener<RunnableAdvanced<?>> setServiceType(int service_type){
+            this.service_type = service_type;
+            return this;
+        }
+
+    }
+
+    public void onCreate() {
 		super.onCreate();
 		runnables = new HashMap<Integer, RunnableAdvanced<?>>();
-		
-		HandlerThread thread = new HandlerThread("UpdateServiceHandlerThread");
-		thread.start();
-		handler = new Handler(thread.getLooper());
+        futures = new HashMap<Integer, Future<?>>();
+
+        executor = Executors.newCachedThreadPool();
 	}
   
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
-		int ss = intent.getIntExtra("specific_service", -1);
-		
-		boolean remove = intent.getBooleanExtra("remove", false);
-		
-		if(remove){
-			RunnableAdvanced<?> r = runnables.get(ss);
-			if(r != null)r.kill();
-			return START_REDELIVER_INTENT;
-		}
-		
-		if(ss == -1){
-			for(msInterfaceMS i : ( (MyApplication) getApplication() ).msManager.myMsgServices){
-				Log.d("UpdateService", "requested");
-				AsyncTaskCompleteListener<RunnableAdvanced<?>> async_complete_listener_runnable_t = new AsyncTaskCompleteListener<RunnableAdvanced<?>>(){
-					int service_type;
+		int spec_ser = -1;
+        boolean remove = false;
 
-					@Override
-					public void onTaskComplete(RunnableAdvanced<?> result) {
-						Log.d("UpdateService", "posted " + String.valueOf(result));
-						runnables.put(service_type, result);
-						handler.post(result);
-					}
-					
-					public AsyncTaskCompleteListener<RunnableAdvanced<?>> setServiceType(int service_type){
-						this.service_type = service_type;
-						return this;
-					}
-					
-				}.setServiceType(i.getServiceType());
-				i.requestNewMessagesRunnable(async_complete_listener_runnable_t);
-			}
+        if(intent != null){
+            spec_ser = intent.getIntExtra("specific_service", -1);
+            remove = intent.getBooleanExtra("remove", false);
+        }
+
+		if(remove && spec_ser != -1){
+			RunnableAdvanced<?> r = runnables.get(spec_ser);
+            Future<?> f = futures.get(spec_ser);
+			if(r != null && f != null){
+                f.cancel(true);
+                futures.remove(spec_ser);
+            }
+			return START_STICKY;
 		} else {
-			AsyncTaskCompleteListener<RunnableAdvanced<?>> async_complete_listener_runnable_t = new AsyncTaskCompleteListener<RunnableAdvanced<?>>(){
-				int service_type;
-
-				@Override
-				public void onTaskComplete(RunnableAdvanced<?> result) {
-					Log.d("UpdateService", "posted " + String.valueOf(result));
-					runnables.put(service_type, result);
-					handler.post(result);
-				}
-				
-				public AsyncTaskCompleteListener<RunnableAdvanced<?>> setServiceType(int service_type){
-					this.service_type = service_type;
-					return this;
-				}
-				
-			}.setServiceType(ss);
-			
-			( (MyApplication) getApplication() ).msManager.getService(ss).requestNewMessagesRunnable(async_complete_listener_runnable_t);
+			for(msInterfaceMS i : ( (MyApplication) getApplication() ).msManager.myMsgServices){
+                if(runnables.get(i.getServiceType()) == null) {
+                    Log.d("UpdateService", "requested");
+                    async_complete_listener_runnable async_complete_listener_runnable_t = new async_complete_listener_runnable();
+                    async_complete_listener_runnable_t.setServiceType(i.getServiceType());
+                    i.requestNewMessagesRunnable(async_complete_listener_runnable_t);
+                } else if (futures.get(i.getServiceType()) == null){
+                    futures.put(i.getServiceType(), executor.submit(runnables.get(i.getServiceType())) );
+                }
+			}
 		}
 		
-		return START_REDELIVER_INTENT;
+		return START_STICKY;
 	}
 
 

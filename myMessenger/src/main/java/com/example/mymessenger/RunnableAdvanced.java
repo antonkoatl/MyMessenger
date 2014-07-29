@@ -6,7 +6,7 @@ public abstract class RunnableAdvanced<T> implements Runnable {
 
 	@Override
 	public void run() {
-		while(!kill)run_iteration();
+		while(!kill && !Thread.currentThread().isInterrupted())run_iteration();
 	}
 	
 	public void run_iteration(){

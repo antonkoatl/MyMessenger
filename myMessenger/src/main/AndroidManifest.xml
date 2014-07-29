@@ -40,7 +40,7 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED"/>
             </intent-filter>
         </receiver>
-        <service android:name="UpdateService"></service>
+        <service android:name="UpdateService" android:exported="false" ></service>
         <receiver android:name="MsgReceiver">
             <intent-filter>
                 <action android:name="android.mymessenger.MSG_RECEIVED"/>

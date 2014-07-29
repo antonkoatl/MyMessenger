@@ -19,6 +19,11 @@ import com.example.mymessenger.services.Vk.Vk;
 import com.example.mymessenger.services.Twitter.mTwitter;
 import com.example.mymessenger.ui.ListViewSimpleFragment;
 
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -67,9 +72,51 @@ public class MyApplication extends Application {
         handler1 = new Handler(thread1.getLooper());
     }
 
+    class DoublePrintStream extends PrintStream {
+
+        PrintStream origStream 	= null;
+
+        public DoublePrintStream(OutputStream out, PrintStream orig) {
+            super(out);
+            this.origStream = orig;
+        }
+
+        public void flush(){
+            super.flush();
+            this.origStream.flush();
+        }
+
+        public void write(byte[] buf, int off, int len){
+            super.write(buf, off, len);
+            this.origStream.write(buf, off, len);
+        }
+
+        public void write(int b){
+            super.write(b);
+            this.origStream.write(b);
+        }
+
+        public void write(byte[] b) throws IOException {
+            super.write(b);
+            this.origStream.write(b);
+        }
+
+
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();
+
+        FileOutputStream fos = null;
+        try {
+            fos = openFileOutput("errors.txt", MODE_WORLD_READABLE);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        PrintStream ps = new DoublePrintStream(fos, System.err);
+
+        System.setErr(ps);
 
         if (context == null) {
             context = getApplicationContext();

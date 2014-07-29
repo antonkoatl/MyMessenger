@@ -33,7 +33,7 @@ public class MessageServiceManager {
 
     public void init(){
         //загрузка сервисов
-        String using_services[] = msApp.getSharedPreferences(MyApplication.PREF_NAME, Context.MODE_PRIVATE).getString("PREF_USING_SERVICES", "10").split(",");
+        String using_services[] = msApp.getSharedPreferences(MyApplication.PREF_NAME, Context.MODE_PRIVATE).getString(PREF_USING_SERVICES, "10").split(",");
         for(String i : using_services){
             MessageService ms = MessageService.createServiceByType(Integer.valueOf(i), msApp);
             if(ms != null){

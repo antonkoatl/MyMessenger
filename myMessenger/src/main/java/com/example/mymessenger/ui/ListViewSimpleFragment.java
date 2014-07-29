@@ -718,7 +718,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
             EditText et = (EditText) myLayout.findViewById(R.id.msg_entertext);
             msInterfaceMS ms = app.msManager.getActiveService();
             if(dlg != null && ms != null){
-                if(ms.getServiceType() != MessageService.FB){
+                if(ms.getServiceType() == MessageService.FB){
                     ms.requestMessages(ms.getActiveDialog(), 20, 0, async_complete_listener_msg);
                     et.setEnabled(false);
                     b.setEnabled(false);
