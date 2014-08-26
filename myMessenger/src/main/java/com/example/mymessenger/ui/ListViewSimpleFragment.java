@@ -249,10 +249,12 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
                 String text = textLabel.getText().toString();
                 textLabel.setText("");
 
+                /*
                 InputMethodManager inputManager = (InputMethodManager) app.getSystemService(Context.INPUT_METHOD_SERVICE);
                 inputManager.hideSoftInputFromWindow(
                         app.getMainActivity().getCurrentFocus().getWindowToken(),
                         InputMethodManager.HIDE_NOT_ALWAYS);
+                */
 
                 Log.d("ActivityTwo.onClick.msg_sendbutton", text);
                 msInterfaceMS ms = app.msManager.getActiveService();

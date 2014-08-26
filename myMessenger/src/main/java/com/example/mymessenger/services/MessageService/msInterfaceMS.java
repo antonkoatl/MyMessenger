@@ -55,6 +55,9 @@ public interface msInterfaceMS extends msInterfaceGeneral {
     // Получить контакт, создастся, обновится
     public mContact getContact(String address);
 
+    // Force load from DB in current thread
+    public mContact getContactCheckDB(String address);
+
     // Получить диалог для общения с контактом
     public mDialog getDialog(mContact cnt);
 

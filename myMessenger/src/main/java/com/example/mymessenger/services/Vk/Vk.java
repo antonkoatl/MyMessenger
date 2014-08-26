@@ -728,7 +728,7 @@ public class Vk extends MessageService {
                         if(attachments.has("from")){ //chat
                             long chat_id = Long.valueOf(from_id) - 2000000000; //hint
                             mMessage msg = new mMessage();
-                            msg.respondent = getContact( attachments.getString("from") );
+                            msg.respondent = getContactCheckDB( attachments.getString("from") );
                             msg.setOut((flags & 2) == 2);
                             msg.text = text;
                             msg.sendTime.set(timestamp*1000);
@@ -741,7 +741,7 @@ public class Vk extends MessageService {
                             msApp.sendBroadcast(intent);
                         } else {
                             mMessage msg = new mMessage();
-                            msg.respondent = getContact( from_id );
+                            msg.respondent = getContactCheckDB( from_id );
                             msg.setOut((flags & 2) == 2);
                             msg.text = text;
                             msg.sendTime.set(timestamp*1000);

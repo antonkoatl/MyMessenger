@@ -257,6 +257,19 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
         return cnt;
     }
 
+    public final mContact getContactCheckDB(String address){
+        mContact cnt = msContacts.get(address);
+
+        if (cnt == null) {
+            cnt = new mContact(address);
+            msApp.dbHelper.loadCnt(cnt, this);
+            msContacts.put(address, cnt);
+            requestContactData(cnt);
+        }
+
+        return cnt;
+    }
+
     @Override
     public final mDialog getDialog(mContact cnt) {
         // Есть ли в базе? - Загрузить : Создасть. Обновить

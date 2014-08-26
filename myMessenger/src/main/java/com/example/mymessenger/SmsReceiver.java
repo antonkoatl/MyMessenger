@@ -65,7 +65,8 @@ public class SmsReceiver extends BroadcastReceiver {
 		    mMessage msg = new mMessage();
 		    MyApplication app = (MyApplication) context.getApplicationContext();
 		    msInterfaceMS sms_service = app.msManager.getService(MessageService.SMS);
-		    msg.respondent = sms_service.getContact( sms.getDisplayOriginatingAddress() );
+
+		    msg.respondent = sms_service.getContactCheckDB( sms.getDisplayOriginatingAddress() );
 		    
 		    msg.setFlag(mMessage.OUT, false);			
 			msg.text = sms.getDisplayMessageBody();

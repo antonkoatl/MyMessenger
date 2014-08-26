@@ -438,18 +438,24 @@ public class DBHelper extends SQLiteOpenHelper {
         String table_name = getTableNameCnts(ms);
 
         for(mContact cnt : cnts){
-            String selection = colAddress + " = ?";
-            String selection_args[] = {cnt.address};
-            Cursor cursor = getReadableDatabase().query(table_name, null, selection, selection_args, null, null, null);
-
-            if(cursor.moveToFirst()){
-                cnt.name = cursor.getString( cursor.getColumnIndex(colName) );
-                cnt.icon_50_url = cursor.getString( cursor.getColumnIndex(colIcon50url) );
-            }
-
-            cursor.close();
+            loadCnt(cnt, ms);
         }
+    }
 
+    public boolean loadCnt(mContact cnt, MessageService ms){
+        String table_name = getTableNameCnts(ms);
+        String selection = colAddress + " = ?";
+        String selection_args[] = {cnt.address};
+        Cursor cursor = getReadableDatabase().query(table_name, null, selection, selection_args, null, null, null);
+        boolean isFound = false;
+
+        if(cursor.moveToFirst()){
+            cnt.name = cursor.getString( cursor.getColumnIndex(colName) );
+            cnt.icon_50_url = cursor.getString( cursor.getColumnIndex(colIcon50url) );
+            isFound = true;
+        }
+        cursor.close();
+        return isFound;
     }
 
 	public void updateMsg(int id, mMessage msg, MessageService ms) {
