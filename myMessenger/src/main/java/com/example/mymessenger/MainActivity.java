@@ -158,14 +158,20 @@ public class MainActivity extends ActionBarActivity {
         if(notification_clicked_msg){
         	mMessage msg = (mMessage) intent.getParcelableExtra("msg");
         	app.msManager.setActiveService(msg.msg_service);
-            msInterfaceMS ms = app.msManager.getActiveService();
+            //msInterfaceMS ms = app.msManager.getActiveService();
+            MessageService ms = app.msManager.getActiveService();
 
-        	mDialog dlg = new mDialog();        	
-        	dlg.participants.add( msg.respondent );			
+            long chat_id = intent.getLongExtra("chat_id", 0);
+
+            mDialog dlg;
+
+        	dlg = ms.msDBHelper.getDlgFromDBOrCreate(msg, chat_id, ms);
+
+        	/*dlg.participants.add( msg.respondent );
         	dlg.snippet = msg.text;
 			dlg.snippet_out = msg.getFlag(mMessage.OUT) ? 1 : 0;
 			dlg.last_msg_time.set(msg.sendTime);
-			dlg.msg_service_type = msg.msg_service;
+			dlg.msg_service_type = msg.msg_service;*/
 			
         	ms.setActiveDialog(dlg);
         	List<mDialog> dlgs = new ArrayList<mDialog>();

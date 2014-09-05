@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.example.mymessenger.AsyncTaskCompleteListener;
 import com.example.mymessenger.MyApplication;
@@ -14,6 +15,9 @@ import com.example.mymessenger.mContact;
 import com.example.mymessenger.mDialog;
 import com.example.mymessenger.mMessage;
 import com.example.mymessenger.services.MessageService.MessageService;
+import com.facebook.FacebookException;
+import com.facebook.FacebookOperationCanceledException;
+import com.facebook.widget.WebDialog;
 import com.sromku.simple.fb.Permission;
 import com.sromku.simple.fb.SimpleFacebook;
 import com.sromku.simple.fb.SimpleFacebookConfiguration;
@@ -84,6 +88,41 @@ public class mFacebook extends MessageService {
 
     @Override
     public boolean sendMessage(String address, String text) {
+        Bundle params = new Bundle();
+        params.putString("message", text);
+        //params.putString("data", json);
+        final Context context = MyApplication.context;
+        WebDialog requestsDialog = (new WebDialog.RequestsDialogBuilder(
+                context, mSimpleFacebook.getSession(), params)).setOnCompleteListener(
+                new WebDialog.OnCompleteListener() {
+
+                    @Override
+                    public void onComplete(Bundle values,
+                                           FacebookException error) {
+
+                        if (error != null) {
+                            if (error instanceof FacebookOperationCanceledException) {
+                                Toast.makeText(context, "Request cancelled",
+                                        Toast.LENGTH_SHORT).show();
+                            } else {
+                                Toast.makeText(context, "Network Error",
+                                        Toast.LENGTH_SHORT).show();
+                            }
+                        } else {
+                            final String requestId = values
+                                    .getString("request");
+                            if (requestId != null) {
+                                Toast.makeText(context, "Request sent",
+                                        Toast.LENGTH_SHORT).show();
+                            } else {
+                                Toast.makeText(context, "Request cancelled",
+                                        Toast.LENGTH_SHORT).show();
+                            }
+                        }
+                    }
+
+                }).build();
+        requestsDialog.show();
         return false;
     }
 

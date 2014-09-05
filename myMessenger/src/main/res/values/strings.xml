@@ -16,6 +16,8 @@
     <string name="action_item_1">Item 1</string>
 	<string name="action_item_2">Item 2</string>
 	<string name="action_item_3">Item 3</string>
+
+    <item name="SERVICE_BUTTON_SERVICE_KEY" type="id"/>
 	
 	
 	<string name="ptr_pull_to_refresh">Pull to refresh</string>

@@ -107,4 +107,5 @@ public class mMessage implements Parcelable {
     public boolean isReaded() {
         return getFlag(READED);
     }
+
 }

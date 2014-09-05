@@ -138,6 +138,19 @@ public class MSDBHelper {
         return dlg;
     }
 
+    public mDialog getDlgFromDBOrCreate(mMessage msg, long chat_id, MessageService ms){
+        mDialog dlg;
+        if (chat_id != 0) {
+            int dlg_key = ms.msApp.dbHelper.getDlgIdOrCreate(chat_id, ms);
+            dlg = ms.msApp.dbHelper.getDlgById(dlg_key, ms);
+        } else {
+            int dlg_key = ms.msApp.dbHelper.getDlgIdOrCreate(msg.respondent.address, ms);
+            dlg = ms.msApp.dbHelper.getDlgById(dlg_key, ms);
+        }
+
+        return dlg;
+    }
+
     public void updateMsgInDB(mMessage msg, long chat_id, MessageService ms) {
         updateMsgInDB(msg, updateDlgInDB(msg, chat_id, ms), ms);
     }

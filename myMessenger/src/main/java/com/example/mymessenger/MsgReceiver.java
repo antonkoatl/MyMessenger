@@ -77,6 +77,7 @@ public class MsgReceiver extends BroadcastReceiver {
         Intent notificationIntent = new Intent(context, MainActivity.class); // по клику на уведомлении откроется MainActivity
         notificationIntent.putExtra("notification_clicked_msg", true);
         notificationIntent.putExtra("msg", msg);
+        notificationIntent.putExtra("chat_id", chat_id);
 
         NotificationCompat.Builder nb = new NotificationCompat.Builder(context)
                 .setSmallIcon(R.drawable.ic_launcher) //иконка уведомления

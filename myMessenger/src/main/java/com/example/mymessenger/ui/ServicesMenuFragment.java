@@ -29,14 +29,21 @@ import com.example.mymessenger.services.MessageService.MessageService;
 import com.example.mymessenger.services.MessageService.msInterfaceMS;
 import com.example.mymessenger.services.MessageService.msInterfaceUI;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 
 public class ServicesMenuFragment extends Fragment implements OnClickListener, OnTouchListener {
 	static final int MENU_CON_MOVE = 101;
 	static final int MENU_CON_DELETE = 102;
-	
+
 	boolean isForDelete = false;
 	
 	public int POSITION = FragmentPagerAdapter.POSITION_UNCHANGED;
+
+    Map<Integer, View> service_button_views = new HashMap<Integer, View>();
 	
 	@Override
     public View onCreateView(LayoutInflater inflater,
@@ -65,95 +72,31 @@ public class ServicesMenuFragment extends Fragment implements OnClickListener, O
         	
         	Button service_button = (Button) button_view.findViewById(R.id.service_button);
         	service_button.setText(ser.getServiceName());
-        	service_button.setId( getButtonIdMainScreen(ser.getServiceType()) );
+            service_button.setTag(R.id.SERVICE_BUTTON_SERVICE_KEY, ser.getServiceType());
         	service_button.setOnClickListener(this);
         	registerForContextMenu(service_button);
         	
         	TextView service_delete = (TextView) button_view.findViewById(R.id.service_delete);
         	service_delete.setVisibility(View.INVISIBLE);
-        	service_delete.setId( getTextviewDelIdMainScreen(ser.getServiceType()) );
 
             ProgressBar prog_bar = (ProgressBar) button_view.findViewById(R.id.service_loading);
             if(ser.isLoading()) prog_bar.setVisibility(View.VISIBLE);
             else prog_bar.setVisibility(View.INVISIBLE);
-            prog_bar.setId( getProgbarIdMainScreen(ser.getServiceType() ));
 
         	ll_list.addView(button_view);
+            service_button_views.put(ser.getServiceType(), button_view);
             Log.d("myLogs", "Service button added: " + ser.getServiceName());
         }
         //((ViewGroup)rootView).addView(row1);
         return rootView;
     }
-	
-	private int getButtonIdMainScreen(int type) {
-    	int res = 1000;
-		switch(type){
-		case MessageService.SMS :
-			res += 0;
-			break;
-		case MessageService.VK :
-			res += 1;
-			break;
-        case MessageService.TW :
-            res += 2;
-            break;
-		}
-		return res;
-	}
-	
-	private int getTextviewDelIdMainScreen(int type) {
-    	int res = 2000;
-		switch(type){
-		case MessageService.SMS :
-			res += 0;
-			break;
-		case MessageService.VK :
-			res += 1;
-			break;
-        case MessageService.TW :
-            res += 2;
-            break;
-        }
-		return res;
-	}
 
-    private int getProgbarIdMainScreen(int type) {
-        int res = 3000;
-        switch(type){
-            case MessageService.SMS :
-                res += 0;
-                break;
-            case MessageService.VK :
-                res += 1;
-                break;
-            case MessageService.TW :
-                res += 2;
-                break;
-        }
-        return res;
+    private boolean isServicesButton(View view) {
+        if (view.getTag(R.id.SERVICE_BUTTON_SERVICE_KEY) == null)
+            return false;
+        else
+            return true;
     }
-	
-	private MessageService getServiceFromButtonId(int id) {
-		switch(id){
-			case 1000+0 :
-				return ((MyApplication) getActivity().getApplication()).msManager.getService( MessageService.SMS );
-			case 1000+1 :
-				return ((MyApplication) getActivity().getApplication()).msManager.getService( MessageService.VK );
-            case 1000+2 :
-                return ((MyApplication) getActivity().getApplication()).msManager.getService( MessageService.TW );
-			default :
-				return null;
-		}
-	}
-	
-
-	
-	private boolean isServicesButton(int id) {
-		if (id >= 1000 && id < 1020)
-			return true;
-		else 
-			return false;
-	}
 	
 	public float convertPixelsToDp(float px){
 	    Resources resources = getActivity().getResources();
@@ -195,11 +138,10 @@ public class ServicesMenuFragment extends Fragment implements OnClickListener, O
 
 	public void setForDeleteService() {
 		isForDelete = true;
-		View view = getView();
-		for(MessageService ms : ((MyApplication) getActivity().getApplication()).msManager.myMsgServices ){
-			TextView tv = (TextView) view.findViewById( getTextviewDelIdMainScreen(ms.getServiceType()) );
-			tv.setVisibility(View.VISIBLE);
-		}
+        for(View view : service_button_views.values()){
+            TextView tv = (TextView) view.findViewById( R.id.service_delete );
+            tv.setVisibility(View.VISIBLE);
+        }
 	}
 	
 	public boolean isForDeleteService(){
@@ -208,18 +150,17 @@ public class ServicesMenuFragment extends Fragment implements OnClickListener, O
 	
 	public void setForNormal(){
 		isForDelete = false;
-		View view = getView();
-		for(MessageService ms : ((MyApplication) getActivity().getApplication()).msManager.myMsgServices ){
-			TextView tv = (TextView) view.findViewById( getTextviewDelIdMainScreen(ms.getServiceType()) );
-			tv.setVisibility(View.INVISIBLE);
-		}
+        for(View view : service_button_views.values()){
+            TextView tv = (TextView) view.findViewById( R.id.service_delete );
+            tv.setVisibility(View.INVISIBLE);
+        }
 	}
 
 	@Override
 	public void onClick(View view) {
-		if( isServicesButton(view.getId()) ){
+		if( isServicesButton(view) ){
 			if(isForDelete){
-				((MyApplication) getActivity().getApplication()).msManager.deleteService(getServiceFromButtonId(view.getId()).getServiceType());
+                ((MyApplication) getActivity().getApplication()).msManager.deleteService((Integer) view.getTag());
 				//setForNormal();
 				ServicesMenuFragment fr = (ServicesMenuFragment) ((MainActivity) getActivity()).pagerAdapter.getRegisteredFragment(0);		
 				fr.POSITION = FragmentPagerAdapter.POSITION_NONE;
@@ -229,7 +170,7 @@ public class ServicesMenuFragment extends Fragment implements OnClickListener, O
 				
 				((MainActivity) getActivity()).pagerAdapter.notifyDataSetChanged();				
 			} else {
-				MessageService ser = getServiceFromButtonId(view.getId()); //TODO: replace for tag?
+				MessageService ser = ((MyApplication) getActivity().getApplication()).msManager.getService((Integer) view.getTag(R.id.SERVICE_BUTTON_SERVICE_KEY));
 				((MyApplication) getActivity().getApplication()).msManager.active_service = ser.getServiceType();
 				getActivity().removeDialog(view.getId());
 				getActivity().showDialog(view.getId());
@@ -247,7 +188,7 @@ public class ServicesMenuFragment extends Fragment implements OnClickListener, O
 
     public void setServiceLoading(MessageService ms, boolean fl) {
         View view = getView();
-        ProgressBar prog_bar = (ProgressBar) view.findViewById( getProgbarIdMainScreen(ms.getServiceType()) );
+        ProgressBar prog_bar = (ProgressBar) service_button_views.get(ms.getServiceType()).findViewById( R.id.service_loading );
         if(fl)
             prog_bar.setVisibility(View.VISIBLE);
         else
