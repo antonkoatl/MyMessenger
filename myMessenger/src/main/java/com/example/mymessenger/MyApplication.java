@@ -6,18 +6,8 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.SharedPreferences.Editor;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.support.v4.app.FragmentPagerAdapter;
-
-import com.example.mymessenger.services.MessageService.MessageService;
-import com.example.mymessenger.services.Sms.Sms;
-import com.example.mymessenger.services.Vk.Vk;
-import com.example.mymessenger.services.Twitter.mTwitter;
-import com.example.mymessenger.ui.ListViewSimpleFragment;
 
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -40,7 +30,7 @@ public class MyApplication extends Application {
 
 
     public List<AsyncTaskCompleteListener<Void>> cnts_updaters;
-    public List<AsyncTaskCompleteListener<List<mDialog>>> dlgs_updaters;
+    public List<AsyncTaskCompleteListener<mDialog>> dlg_updaters;
     public List<AsyncTaskCompleteListenerMsg> msg_updaters;
 
     public List<download_waiter> dl_waiters;
@@ -125,7 +115,7 @@ public class MyApplication extends Application {
         dbHelper = new DBHelper(this); //Класс для работы с бд
 
         cnts_updaters = new ArrayList<AsyncTaskCompleteListener<Void>>(); //Обработчики обвновлений контактных данных
-        dlgs_updaters = new ArrayList<AsyncTaskCompleteListener<List<mDialog>>>(); //Обработчики обвновлений диалогов
+        dlg_updaters = new ArrayList<AsyncTaskCompleteListener<mDialog>>(); //Обработчики обвновлений диалогов
         msg_updaters = new ArrayList<AsyncTaskCompleteListenerMsg>(); //Обработчики обвновлений сообщений
 
         dl_waiters = new ArrayList<download_waiter>(); //Обработчики завершения загрузок
@@ -161,8 +151,8 @@ public class MyApplication extends Application {
         if(!cnts_updaters.contains(updater))cnts_updaters.add(updater);
     }
 
-    public void registerDlgsUpdater(AsyncTaskCompleteListener<List<mDialog>> updater){
-        if(!dlgs_updaters.contains(updater))dlgs_updaters.add(updater);
+    public void registerDlgUpdater(AsyncTaskCompleteListener<mDialog> updater){
+        if(!dlg_updaters.contains(updater)) dlg_updaters.add(updater);
     }
 
     public void registerMsgUpdater(AsyncTaskCompleteListenerMsg updater){
@@ -173,8 +163,8 @@ public class MyApplication extends Application {
         cnts_updaters.remove(updater);
     }
 
-    public void unregisterDlgsUpdater(AsyncTaskCompleteListener<List<mDialog>> updater){
-        dlgs_updaters.remove(updater);
+    public void unregisterDlgUpdater(AsyncTaskCompleteListener<List<mDialog>> updater){
+        dlg_updaters.remove(updater);
     }
 
     public void unregisterMsgUpdater(AsyncTaskCompleteListenerMsg updater){
@@ -193,13 +183,13 @@ public class MyApplication extends Application {
         }
     }
 
-    public void triggerDlgsUpdaters(final List<mDialog> dlgs){
+    public void triggerDlgUpdaters(final mDialog dlg){
         if(getMainActivity() != null){
             getMainActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    for(AsyncTaskCompleteListener<List<mDialog>> updater : dlgs_updaters)
-                        updater.onTaskComplete(dlgs);
+                    for(AsyncTaskCompleteListener<mDialog> updater : dlg_updaters)
+                        updater.onTaskComplete(dlg);
                 }
             });
         }

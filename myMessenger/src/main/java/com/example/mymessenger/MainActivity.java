@@ -174,9 +174,7 @@ public class MainActivity extends ActionBarActivity {
 			dlg.msg_service_type = msg.msg_service;*/
 			
         	ms.setActiveDialog(dlg);
-        	List<mDialog> dlgs = new ArrayList<mDialog>();
-        	dlgs.add(dlg);
-        	app.triggerDlgsUpdaters(dlgs);
+        	app.triggerDlgUpdaters(dlg);
         	
         	pagerAdapter.recreateFragment(2);
         	mViewPager.setCurrentItem(2, false);

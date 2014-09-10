@@ -11,6 +11,9 @@ import android.util.Log;
 
 import com.example.mymessenger.services.MessageService.MessageService;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class MsgReceiver extends BroadcastReceiver {
 	public static final String ACTION_RECEIVE = "android.mymessenger.MSG_RECEIVED";
 	public static final String ACTION_UPDATE = "android.mymessenger.MSG_UPDATED";
@@ -30,7 +33,10 @@ public class MsgReceiver extends BroadcastReceiver {
             MessageService ms = (MessageService) app.msManager.getService(msg.msg_service);
 			long chat_id = intent.getLongExtra("chat_id", 0);
 
+            mDialog dlg = ms.msDBHelper.updateDlgInDB(msg, chat_id, ms);
             ms.msDBHelper.updateMsgInDB(msg, chat_id, ms);
+            ms.getMsApp().triggerMsgUpdaters(msg, dlg);
+            ms.getMsApp().triggerDlgUpdaters(dlg);
 
 			if(!msg.getFlag(mMessage.OUT)){
 				if(app.getUA() != app.UA_MSGS_LIST && app.getUA() != app.UA_DLGS_LIST)
@@ -62,8 +68,12 @@ public class MsgReceiver extends BroadcastReceiver {
 					if( (flags & 1) == 1 )msg.setReaded(true);
 					if( (flags & 2) == 2 )msg.setOut(false);
 				}
-				
+
                 ms.msDBHelper.updateMsgInDBById(msg, msg_id, ms);
+                mDialog dlg = ms.msDBHelper.getDlgFromDBById( ms.msDBHelper.getDlgIdByMsgId(msg_id, ms), ms );
+
+                ms.getMsApp().triggerDlgUpdaters(dlg);
+                ms.getMsApp().triggerMsgUpdaters(msg, dlg);
 				Log.d("MsgReceiver", "Msg updated: " + msg.text);
 			}
 			

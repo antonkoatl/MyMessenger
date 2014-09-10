@@ -1,7 +1,6 @@
 package com.example.mymessenger.ui;
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.res.Configuration;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -19,7 +18,6 @@ import android.view.View.OnClickListener;
 import android.view.View.OnKeyListener;
 import android.view.View.OnTouchListener;
 import android.view.ViewGroup;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.AbsListView;
 import android.widget.AbsListView.OnScrollListener;
 import android.widget.AdapterView;
@@ -208,9 +206,9 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
             if(app.msManager.getService(selected_service_for_dialogs) == null) selected_service_for_dialogs = 0;
 
             if(selected_service_for_dialogs == 0) {
-                app.msManager.requestDialogs(20, 0, async_complete_listener_dlg);
+                app.msManager.requestDialogs(20, 0, dlg_receiver);
             } else {
-                app.msManager.getService(selected_service_for_dialogs).requestDialogs(20, 0, async_complete_listener_dlg);
+                app.msManager.getService(selected_service_for_dialogs).requestDialogs(20, 0, dlg_receiver);
             }
             loaded_dlgs_from_each = 20;
 
@@ -224,14 +222,14 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
                 public void onRefresh() {
                     listview_refreshing_for_dlgs = true;
                     if(selected_service_for_dialogs == 0) {
-                        app.msManager.refreshDialogsFromNet(async_complete_listener_dlg, 0);
+                        app.msManager.refreshDialogsFromNet(dlg_receiver, 0);
                     } else {
-                        app.msManager.getService(selected_service_for_dialogs).refreshDialogsFromNet(async_complete_listener_dlg, 0);
+                        app.msManager.getService(selected_service_for_dialogs).refreshDialogsFromNet(dlg_receiver, 0);
                     }
                 }
             });
 
-            app.registerDlgsUpdater(async_complete_listener_dlg_update);
+            app.registerDlgUpdater(async_complete_listener_dlg);
         }
 
         rootView.setOnTouchListener(this);
@@ -316,6 +314,18 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
     }
 
 
+    AsyncTaskCompleteListener<List<mDialog>> dlg_receiver = new AsyncTaskCompleteListener<List<mDialog>>(){
+
+        @Override
+        public void onTaskComplete(List<mDialog> result) {
+            if(listview_refreshing_for_dlgs && !app.msManager.isLoadingDlgs()){
+                listview.onRefreshComplete();
+                listview_refreshing_for_dlgs = false;
+            }
+
+            for(mDialog dlg : result)app.triggerDlgUpdaters(dlg);
+        }
+    };
 
     AsyncTaskCompleteListener<Void> updater = new AsyncTaskCompleteListener<Void>(){
         @Override
@@ -333,9 +343,9 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 
         dlg_adapter.clear();
         if(selected_service_for_dialogs == 0) {
-            app.msManager.requestDialogs(20, 0, async_complete_listener_dlg);
+            app.msManager.requestDialogs(20, 0, dlg_receiver);
         } else {
-            app.msManager.getService(selected_service_for_dialogs).requestDialogs(20, 0, async_complete_listener_dlg);
+            app.msManager.getService(selected_service_for_dialogs).requestDialogs(20, 0, dlg_receiver);
         }
 
         app.sPref.edit().putInt("selected_service_for_dialogs", selected_service_for_dialogs).commit();
@@ -448,89 +458,46 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 
     };
 
-    AsyncTaskCompleteListener<List<mDialog>> async_complete_listener_dlg = new AsyncTaskCompleteListener<List<mDialog>>(){
+    AsyncTaskCompleteListener<mDialog> async_complete_listener_dlg = new AsyncTaskCompleteListener<mDialog>(){
 
         @Override
-        public void onTaskComplete(List<mDialog> result) {
+        public void onTaskComplete(mDialog dlg) {
             boolean changed = false;
-            for(mDialog dlg : result){
-                if(selected_service_for_dialogs != 0 && selected_service_for_dialogs != dlg.getMsgServiceType())continue;
-                boolean added = false;
 
-                int tind = dlg_adapter.indexOf(dlg);
-                if(tind != -1){
-                    //showing_dialogs.set(tind, dlg); dlg_adapter.getItem(0).equals(dlg)
-                    mDialog dlg2 = dlg_adapter.remove(tind);
-                    dlg2.update(dlg);
-                    dlg = dlg2;
-                    changed = true;
+            if(selected_service_for_dialogs != 0 && selected_service_for_dialogs != dlg.getMsgServiceType())return;
+
+            /*
+            if(dlg.last_msg_time.before( ((mDialog) dlg_adapter.getItem(dlg_adapter.getCount() - 1)).last_msg_time ) ){ // Поступивший диалог был позже, чем последний отображаемый
+                return;
+            }
+            */
+
+            boolean added = false;
+
+            int tind = dlg_adapter.indexOf(dlg);
+            if(tind != -1){
+                mDialog dlg2 = dlg_adapter.remove(tind);
+                dlg2.update(dlg);
+                dlg = dlg2;
+            }
+
+            for(int i = 0; i < dlg_adapter.getCount(); i++){
+                if(((mDialog) dlg_adapter.getItem(i)).getLastMessageTime() == null || dlg.getLastMessageTime() == null){
+                    Log.d("smth", "wrong");
                 }
-
-                for(int i = 0; i < dlg_adapter.getCount(); i++){
-                    if( ((mDialog) dlg_adapter.getItem(i)).getLastMessageTime() == null || dlg.getLastMessageTime() == null){
-                        Log.d("smth", "wrong");
-                    }
-                    if( dlg.getLastMessageTime().after( ((mDialog) dlg_adapter.getItem(i)).getLastMessageTime() ) ){
-                        dlg_adapter.add(i, dlg);
-                        changed = true;
-                        added = true;
-                        break;
-                    }
-                }
-
-                if(!added){
-                    dlg_adapter.add(dlg);
-                    changed = true;
+                if( dlg.getLastMessageTime().after( ((mDialog) dlg_adapter.getItem(i)).getLastMessageTime() ) ){
+                    dlg_adapter.add(i, dlg);
+                    added = true;
+                    break;
                 }
             }
 
-            if(changed)
-                dlg_adapter.notifyDataSetChanged();
-
-            if(listview_refreshing_for_dlgs && !app.msManager.isLoadingDlgs()){
-                listview.onRefreshComplete();
-                listview_refreshing_for_dlgs = false;
-            }
-        }
-
-    };
-
-    AsyncTaskCompleteListener<List<mDialog>> async_complete_listener_dlg_update = new AsyncTaskCompleteListener<List<mDialog>>(){
-
-        @Override
-        public void onTaskComplete(List<mDialog> result) {
-            if(dlg_adapter.getCount() == 0)return;
-            for(mDialog dlg : result){
-                if(selected_service_for_dialogs != 0 && selected_service_for_dialogs != dlg.getMsgServiceType())continue;
-                if(dlg.last_msg_time.before( ((mDialog) dlg_adapter.getItem(dlg_adapter.getCount() - 1)).last_msg_time ) ){ // Поступивший диалог был позже, чем последний отображаемый
-                    continue;
-                }
-
-                boolean updated = false;
-
-                int tind = dlg_adapter.indexOf(dlg);
-                if(tind != -1){
-                    mDialog dlg2 = dlg_adapter.remove(tind);
-                    dlg2.update(dlg);
-                    dlg = dlg2;
-                    updated = true;
-                }
-
-                for(int i = 0; i < dlg_adapter.getCount(); i++){
-                    if(((mDialog) dlg_adapter.getItem(i)).getLastMessageTime() == null || dlg.getLastMessageTime() == null){
-                        Log.d("smth", "wrong");
-                    }
-                    if( dlg.getLastMessageTime().after( ((mDialog) dlg_adapter.getItem(i)).getLastMessageTime() ) ){
-                        dlg_adapter.add(i, dlg);
-                        if(!updated){
-                            dlg_adapter.remove(dlg_adapter.getCount() - 1);
-                        }
-                        break;
-                    }
-                }
+            if(!added){
+                dlg_adapter.add(dlg);
+                changed = true;
             }
 
-            dlg_adapter.notifyDataSetChanged();
+            if(changed)dlg_adapter.notifyDataSetChanged();
         }
 
     };
@@ -601,7 +568,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
         @Override
         public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
             if ( !app.dlgs_loading_maxed && ( (totalItemCount - (firstVisibleItem + visibleItemCount)) < 5 ) && !app.msManager.isLoadingDlgs()) {
-                app.msManager.requestDialogs(20, loaded_dlgs_from_each, async_complete_listener_dlg);
+                app.msManager.requestDialogs(20, loaded_dlgs_from_each, dlg_receiver);
                 loaded_dlgs_from_each += 20;
             }
         }
@@ -738,5 +705,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
             }
         }
     }
+
+
 
 }

@@ -170,4 +170,7 @@ public class mDialog {
 			return participants.get(0).name == null ? participants.get(0).address : participants.get(0).name;
 	}
 
+    public boolean isChat() {
+        return chat_id != 0;
+    }
 }

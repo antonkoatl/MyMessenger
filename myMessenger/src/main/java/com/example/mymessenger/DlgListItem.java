@@ -24,7 +24,7 @@ public class DlgListItem {
     	textLabel.setText( app.msManager.getService( dlg.getMsgServiceType() ).getServiceName() );
 	    
     	textLabel = (TextView) view.findViewById(R.id.dlgview_dlgname);
-    	textLabel.setText( dlg.getParticipantsNames() );
+        textLabel.setText( dlg.isChat() ? dlg.getDialogTitle() : dlg.getParticipantsNames() );
     	
     	textLabel = (TextView) view.findViewById(R.id.dlgview_dlgdate);
     	textLabel.setText( dlg.getLastMessageTime().format("%H:%M %d.%m.%Y") );

@@ -70,6 +70,14 @@ public class MSDBHelper {
         ms.msApp.triggerCntsUpdaters();
     }
 
+    public long getDlgIdByMsgId(int msg_id, MessageService ms) {
+        return ms.msApp.dbHelper.getDlgIdByMsgId(msg_id, ms);
+    }
+
+    public mDialog getDlgFromDBById(long dlgId, MessageService ms) {
+        return ms.msApp.dbHelper.getDlgById(dlgId, ms);
+    }
+
     private final class load_msgs_from_db_async extends AsyncTask<Integer, Void, List<mMessage>> {
         private AsyncTaskCompleteListener<List<mMessage>> callback;
         private mDialog dlg;
@@ -157,7 +165,6 @@ public class MSDBHelper {
 
     public void updateMsgInDB(mMessage msg, mDialog dlg, MessageService ms) {
         ms.msApp.dbHelper.update_db_msg(msg, dlg, ms);
-        ms.msApp.triggerMsgUpdaters(msg, dlg);
     }
 
     public mMessage getMsgByIdFromDB(int msg_id, MessageService ms) {
@@ -166,11 +173,6 @@ public class MSDBHelper {
 
     public void updateMsgInDBById(mMessage msg, int msg_id, MessageService ms) {
         ms.msApp.dbHelper.updateMsgById(msg_id,msg, ms);
-        mDialog dlg = ms.msApp.dbHelper.getDlgById(ms.msApp.dbHelper.getDlgIdByMsgId(msg_id, ms), ms);
-        List<mDialog> dlgs = new ArrayList<mDialog>();
-        dlgs.add(dlg);
-        ms.msApp.triggerDlgsUpdaters(dlgs);
-        ms.msApp.triggerMsgUpdaters(msg, dlg);
     }
 
 
