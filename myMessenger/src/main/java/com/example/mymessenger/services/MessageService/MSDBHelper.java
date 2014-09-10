@@ -130,7 +130,7 @@ public class MSDBHelper {
             int dlg_key = ms.msApp.dbHelper.getDlgIdOrCreate(chat_id, ms);
             dlg = ms.msApp.dbHelper.update_db_dlg(msg, dlg_key, ms);
         } else {
-            int dlg_key = ms.msApp.dbHelper.getDlgIdOrCreate(msg.respondent.address, ms);
+            long dlg_key = ms.msApp.dbHelper.getDlgIdOrCreate(msg.respondent.address, ms);
             dlg = ms.msApp.dbHelper.update_db_dlg(msg, dlg_key, ms);
         }
 
@@ -144,7 +144,7 @@ public class MSDBHelper {
             int dlg_key = ms.msApp.dbHelper.getDlgIdOrCreate(chat_id, ms);
             dlg = ms.msApp.dbHelper.getDlgById(dlg_key, ms);
         } else {
-            int dlg_key = ms.msApp.dbHelper.getDlgIdOrCreate(msg.respondent.address, ms);
+            long dlg_key = ms.msApp.dbHelper.getDlgIdOrCreate(msg.respondent.address, ms);
             dlg = ms.msApp.dbHelper.getDlgById(dlg_key, ms);
         }
 

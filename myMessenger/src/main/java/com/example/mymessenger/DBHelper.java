@@ -87,7 +87,7 @@ public class DBHelper extends SQLiteOpenHelper {
 		return dlg_key;
 	}
 	
-	public int getDlgIdOrCreate(String from_id, MessageService ms) {
+	public long getDlgIdOrCreate(String from_id, MessageService ms) {
 		SQLiteDatabase db = getReadableDatabase();
 		
 		String my_table_name = getTableNameDlgs(ms);
@@ -95,7 +95,7 @@ public class DBHelper extends SQLiteOpenHelper {
 		String selection_args[] = {from_id};
 		Cursor c = db.query(my_table_name, null, selection, selection_args, null, null, null);
 		
-		int dlg_key = 0;
+		long dlg_key = -1;
 		
 		if(c.moveToFirst()){
 			dlg_key = c.getInt( c.getColumnIndex(DBHelper.colId) );
@@ -103,11 +103,9 @@ public class DBHelper extends SQLiteOpenHelper {
 			ContentValues cv = new ContentValues();
 			cv.put(colParticipants, from_id);
 			SQLiteDatabase dbw = getWritableDatabase();
-			dbw.insert(my_table_name, null, cv);
+            dlg_key = dbw.insert(my_table_name, null, cv);
 			
-			if(c.moveToFirst()){
-				dlg_key = c.getInt( c.getColumnIndex(DBHelper.colId) );
-			} else {
+			if(dlg_key == -1){
 				Log.d("DBHelper", "Dlg not created!");
 			}
 		}
@@ -350,7 +348,7 @@ public class DBHelper extends SQLiteOpenHelper {
 		return count;
 	}
 
-	public void updateDlg(int id, mDialog dlg, MessageService ms) {
+	public void updateDlg(long id, mDialog dlg, MessageService ms) {
 		String table_name = getTableNameDlgs(ms);
 		
 		ContentValues cv = new ContentValues();
@@ -521,7 +519,7 @@ public class DBHelper extends SQLiteOpenHelper {
 	}
 
 	
-	public mDialog getDlgById(int dlg_key, MessageService ms) {
+	public mDialog getDlgById(long dlg_key, MessageService ms) {
 		mDialog dlg = null;
 		SQLiteDatabase db = getReadableDatabase();
 		
@@ -644,9 +642,8 @@ public class DBHelper extends SQLiteOpenHelper {
         }
     }
 
-    public mDialog update_db_dlg(mMessage msg, int dlg_key, MessageService ms){
+    public mDialog update_db_dlg(mMessage msg, long dlg_key, MessageService ms){
         mDialog dlg = getDlgById(dlg_key, ms);
-        //TODO: dlg = null, возможно при создании нового диалога
         if(dlg.last_msg_time.before(msg.sendTime)){
             dlg.last_msg_time.set(msg.sendTime);
             dlg.snippet = msg.text;

@@ -86,13 +86,19 @@ public class MsgReceiver extends BroadcastReceiver {
                 .setContentText(msg.text) // Основной текст уведомления
                 .setContentIntent(PendingIntent.getActivity(context, 0, notificationIntent, PendingIntent.FLAG_CANCEL_CURRENT))
                 .setWhen(msg.sendTime.toMillis(false)) //отображаемое время уведомления
-                .setContentTitle(app.msManager.getService(msg.msg_service).getServiceName() + " - " + msg.respondent.getName() + (chat_id == 0 ? "" : " (chat)") ) //заголовок уведомления
+                .setContentTitle(app.msManager.getService(msg.msg_service).getServiceName() + " - " + msg.respondent.getName() + (chat_id == 0 ? "" : " (" + getChatName(msg, chat_id) + ")")) //заголовок уведомления
                 .setDefaults(Notification.DEFAULT_ALL); // звук, вибро и диодный индикатор выставляются по умолчанию
 
         Notification notification = nb.build(); //генерируем уведомление
         manager.notify(0 , notification); // отображаем его пользователю.
         //notifications.put(lastId, notification); //теперь мы можем обращаться к нему по id
         //return lastId++;
+    }
+
+    private CharSequence getChatName(mMessage msg, long chat_id) {
+        MessageService ms = (MessageService) app.msManager.getService(msg.msg_service);
+        mDialog dlg = ms.msDBHelper.getDlgFromDBOrCreate(msg, chat_id, ms);
+        return dlg.getDialogTitle();
     }
 
     public void createSimpleNotification(Context context, mMessage msg){
