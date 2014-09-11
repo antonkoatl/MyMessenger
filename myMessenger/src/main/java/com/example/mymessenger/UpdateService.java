@@ -7,6 +7,7 @@ import android.os.HandlerThread;
 import android.os.IBinder;
 import android.util.Log;
 
+import com.example.mymessenger.services.MessageService.MessageService;
 import com.example.mymessenger.services.MessageService.msInterfaceMS;
 
 import java.util.HashMap;
@@ -56,29 +57,37 @@ public class UpdateService extends Service {
             remove = intent.getBooleanExtra("remove", false);
         }
 
-		if(remove && spec_ser != -1){
-			RunnableAdvanced<?> r = runnables.get(spec_ser);
-            Future<?> f = futures.get(spec_ser);
-			if(r != null && f != null){
-                f.cancel(true);
-                futures.remove(spec_ser);
-            }
-			return START_STICKY;
-		} else {
-			for(msInterfaceMS i : ( (MyApplication) getApplication() ).msManager.myMsgServices){
-                if(runnables.get(i.getServiceType()) == null) {
-                    Log.d("UpdateService", "requested");
-                    async_complete_listener_runnable async_complete_listener_runnable_t = new async_complete_listener_runnable();
-                    async_complete_listener_runnable_t.setServiceType(i.getServiceType());
-                    i.requestNewMessagesRunnable(async_complete_listener_runnable_t);
-                } else if (futures.get(i.getServiceType()) == null){
-                    futures.put(i.getServiceType(), executor.submit(runnables.get(i.getServiceType())) );
+		if(spec_ser != -1){
+            if(remove){
+                RunnableAdvanced<?> r = runnables.get(spec_ser);
+                Future<?> f = futures.get(spec_ser);
+                if(r != null && f != null){
+                    f.cancel(true);
+                    futures.remove(spec_ser);
                 }
+                return START_STICKY;
+            } else {
+                getUpdateRunnable(((MyApplication) getApplication()).msManager.getService(spec_ser));
+            }
+        } else {
+			for(msInterfaceMS ms : ( (MyApplication) getApplication() ).msManager.myMsgServices){
+                getUpdateRunnable(ms);
 			}
 		}
 		
 		return START_STICKY;
 	}
+
+    private void getUpdateRunnable(msInterfaceMS ms){
+        if(runnables.get(ms.getServiceType()) == null) {
+            Log.d("UpdateService", "requested");
+            async_complete_listener_runnable async_complete_listener_runnable_t = new async_complete_listener_runnable();
+            async_complete_listener_runnable_t.setServiceType(ms.getServiceType());
+            ms.requestNewMessagesRunnable(async_complete_listener_runnable_t);
+        } else if (futures.get(ms.getServiceType()) == null){
+            futures.put(ms.getServiceType(), executor.submit(runnables.get(ms.getServiceType())) );
+        }
+    }
 
 
 

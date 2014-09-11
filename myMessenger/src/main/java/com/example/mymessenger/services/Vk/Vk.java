@@ -631,6 +631,18 @@ public class Vk extends MessageService {
         String key;
         Integer ts;
 
+        class async_request_server_data implements AsyncTaskCompleteListener<RunnableAdvanced<?>> {
+            @Override
+            public void onTaskComplete(RunnableAdvanced<?> result) {
+                LongPollRunnable lpr = (LongPollRunnable) result;
+                LongPollRunnable.this.server = lpr.server;
+                LongPollRunnable.this.key = lpr.key;
+                Intent intent = new Intent(msApp, UpdateService.class);
+                intent.putExtra("spec_ser", getServiceType());
+                msApp.startService(intent);
+            }
+        }
+
         LongPollRunnable(String server, String key, Integer ts) {
             this.server = server;
             this.key = key;
@@ -670,6 +682,7 @@ public class Vk extends MessageService {
 
                 if(response_json.has("failed")){
                     kill();
+                    requestNewMessagesRunnable(new async_request_server_data());
                     return;
                 }
 
