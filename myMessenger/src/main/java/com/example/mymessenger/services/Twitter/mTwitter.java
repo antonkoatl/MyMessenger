@@ -398,11 +398,9 @@ public class mTwitter extends MessageService {
 
                     //dlg.chat_id = status.getId();
                     dlg.participants.add(getContact(status.getUser().getScreenName()));
-
                     dlg.title = status.getUser().getName();
-                    dlg.snippet = status.getText();
-                    //dlg.snippet_out = item.getInt( "out" );
-                    dlg.last_msg_time.set(status.getCreatedAt().getTime());
+                    dlg.setLastMsg(get_msg_from_status(status));
+                    msDBHelper.updateOrInsertMsgById(dlg.last_msg_id, dlg.last_msg, dlg, mTwitter.this);
                     dlg.msg_service_type = MessageService.TW;
 
                     dlgs.add(dlg);

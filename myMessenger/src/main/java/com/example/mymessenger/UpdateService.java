@@ -86,6 +86,7 @@ public class UpdateService extends Service {
             ms.requestNewMessagesRunnable(async_complete_listener_runnable_t);
         } else if (futures.get(ms.getServiceType()) == null){
             futures.put(ms.getServiceType(), executor.submit(runnables.get(ms.getServiceType())) );
+            runnables.get(ms.getServiceType()).unstop();
         }
     }
 

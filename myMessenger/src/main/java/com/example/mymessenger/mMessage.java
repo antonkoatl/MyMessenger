@@ -96,7 +96,7 @@ public class mMessage implements Parcelable {
 		setFlag(OUT, b);
 	}
 	
-	public boolean isOut(boolean b) {
+	public boolean isOut() {
 		return getFlag(OUT);
 	}
 

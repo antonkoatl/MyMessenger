@@ -190,6 +190,33 @@ public class mFacebook extends MessageService {
 
     }
 
+    private mMessage getMsgFromJSON(JSONObject jmsg) throws JSONException {
+        mMessage msg = new mMessage();
+
+        msg.respondent = getContact(jmsg.getString("id"));
+        if(msg.respondent.equals(getMyContact())){
+            msg.setOut(true);
+        } else {
+            msg.setOut(false);
+        }
+
+        msg.text = jmsg.getString("message");
+
+        SimpleDateFormat incomingFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
+        Date date = null;
+        try {
+            date = incomingFormat.parse(jmsg.getString("created_time"));
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+
+        msg.sendTime.set( date.getTime() );
+        msg.id = jmsg.getString("id");
+        msg.msg_service = getServiceType();
+
+        return msg;
+    }
+
     @Override
     protected void getMessagesFromNet(final MsgsDownloadsRequest req) {
         req.onStarted();
@@ -209,34 +236,14 @@ public class mFacebook extends MessageService {
 
                     for(int i = 0; i < comments.length(); i++){
                         JSONObject jMessage = comments.getJSONObject(i);
-                        mMessage msg = new mMessage();
-
                         JSONObject jFrom = jMessage.getJSONObject("from");
-                        msg.respondent = getContact(jFrom.getString("id"));
-                        if(msg.respondent.equals(getMyContact())){
-                            msg.setOut(true);
-                        } else {
-                            msg.setOut(false);
-                        }
-
-                        msg.text = jMessage.getString("message");
-
-                        SimpleDateFormat incomingFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
-                        Date date = incomingFormat.parse(jMessage.getString("created_time"));
-
-                        msg.sendTime.set( date.getTime() );
-                        msg.id = jMessage.getString("id");
-                        msg.msg_service = getServiceType();
-
+                        mMessage msg = getMsgFromJSON(jFrom);
                         msgs.add(msg);
                     }
 
                 } catch (JSONException e) {
                     e.printStackTrace();
-                } catch (ParseException e) {
-                    e.printStackTrace();
                 }
-
                 req.onFinished(msgs);
 
                 if (hasNext()) {
@@ -276,16 +283,11 @@ public class mFacebook extends MessageService {
                             dlg.participants.add(cnt);
                         }
 
-                        dlg.last_msg_time.set( Long.valueOf(jThread.getString("updated_time"))*1000 );
+                        dlg.getLastMessageTime().set(Long.valueOf(jThread.getString("updated_time")) * 1000);
 
                         JSONObject last_message = jThread.getJSONObject("comments").getJSONArray("data").getJSONObject(0);
-                        dlg.snippet = last_message.getString("message");
-                        if(last_message.getJSONObject("from").getString("id") == getMyContact().address){
-                            dlg.snippet_out = 1;
-                        } else {
-                            dlg.snippet_out = 0;
-                        }
-
+                        dlg.setLastMsg(getMsgFromJSON(last_message));
+                        msDBHelper.updateOrInsertMsgById(dlg.last_msg_id, dlg.last_msg, dlg, mFacebook.this);
                         dlgs.add(dlg);
 
                     } catch (JSONException e) {

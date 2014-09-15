@@ -262,7 +262,7 @@ public class Sms extends MessageService {
 
     @Override
     protected void getDialogsFromNet(DlgsDownloadsRequest req) {
-
+        req.onFinished(new ArrayList<mDialog>());
     }
 
     @Override

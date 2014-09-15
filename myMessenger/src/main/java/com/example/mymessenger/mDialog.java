@@ -12,9 +12,8 @@ public class mDialog {
 	public int msg_service_type;
 	public long chat_id;
 	
-	public Time last_msg_time;
-	public String snippet;
-	public int snippet_out;
+    public mMessage last_msg;
+    public String last_msg_id;
 	
 	public DlgListItem dlg_ui_helper;
 	public String title;
@@ -22,26 +21,23 @@ public class mDialog {
 	public mDialog() {
 		messages = new ArrayList<mMessage>();
 		participants = new ArrayList<mContact>();
-		last_msg_time = new Time();
 	}
 	
 
 	public mDialog(mContact cnt) {
 		messages = new ArrayList<mMessage>();
 		participants = new ArrayList<mContact>();
-		last_msg_time = new Time();
 		this.participants.add(cnt);
 	}
 
     public mDialog(mDialog dlg) {
         messages = new ArrayList<mMessage>(dlg.messages);
         participants = new ArrayList<mContact>(dlg.participants);
-        last_msg_time = new Time(dlg.last_msg_time);
 
         this.chat_id = dlg.chat_id;
         this.msg_service_type = dlg.msg_service_type;
-        this.snippet = dlg.snippet;
-        this.snippet_out = dlg.snippet_out;
+        this.last_msg = dlg.last_msg;
+        this.last_msg_id = dlg.last_msg_id;
         this.title = dlg.title;
     }
 
@@ -87,7 +83,7 @@ public class mDialog {
 
 
 	public Time getLastMessageTime() {
-		return last_msg_time;
+		return last_msg.sendTime;
 	}
 
 
@@ -122,10 +118,9 @@ public class mDialog {
 
 
 	public void update(mDialog dlg) {
-		if(last_msg_time.before(dlg.last_msg_time) && participants.equals(dlg.participants)){
-			last_msg_time.set(dlg.last_msg_time);
-			snippet = dlg.snippet;
-			
+		if(getLastMessageTime().before(dlg.getLastMessageTime()) && participants.equals(dlg.participants)){
+			last_msg = dlg.last_msg;
+
 			for(mMessage m : dlg.messages){
 				if(messages.contains(m))break;
 				else {
@@ -172,5 +167,10 @@ public class mDialog {
 
     public boolean isChat() {
         return chat_id != 0;
+    }
+
+    public void setLastMsg(mMessage msg) {
+        this.last_msg = msg;
+        this.last_msg_id = msg.id;
     }
 }

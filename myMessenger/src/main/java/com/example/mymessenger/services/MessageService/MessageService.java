@@ -313,7 +313,7 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
 
     public final void setActiveDialog(mDialog dlg) {
         msActiveDialog = dlg;
-        msApp.sPref.edit().putInt("active_dialog", msApp.dbHelper.getDlgId(dlg, this)).commit();
+        msApp.sPref.edit().putLong("active_dialog", msApp.dbHelper.getDlgId(dlg, this)).commit();
     }
 
     @Override
@@ -485,11 +485,11 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
             List<mDialog> dlgs = new ArrayList<mDialog>();
 
             for (mDialog mdl : result) {
-                int dlg_key = msApp.dbHelper.getDlgId(mdl, MessageService.this);
+                long dlg_key = msApp.dbHelper.getDlgId(mdl, MessageService.this);
 
-                if(dlg_key != 0){
+                if(dlg_key != -1){
                     mDialog dlg_in_db = msApp.dbHelper.getDlgById(dlg_key, MessageService.this);
-                    if (mdl.last_msg_time.after(dlg_in_db.getLastMessageTime())) {
+                    if (mdl.getLastMessageTime().after(dlg_in_db.getLastMessageTime())) {
                         // Update
                         msApp.dbHelper.updateDlg(dlg_key, mdl, MessageService.this);
                         dlgs.add(mdl);
@@ -627,7 +627,7 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
             Params cp = Psets.get(0);
 
             //if (result.size() < cp.count) dl_all_msgs_downloaded = true;
-            int dlg_key = msApp.dbHelper.getDlgId(cp.dlg, MessageService.this);
+            long dlg_key = msApp.dbHelper.getDlgId(cp.dlg, MessageService.this);
 
             for (mMessage msg : result) {
                 String selection = DBHelper.colDlgkey + " = ? AND " + DBHelper.colSendtime + " = ? AND " + DBHelper.colBody + " = ?";

@@ -47,7 +47,7 @@ public class MsgReceiver extends BroadcastReceiver {
 		}
 
 		if(intent.getAction().equals(ACTION_UPDATE)){
-			int msg_id = intent.getIntExtra("msg_id", -1);
+			String msg_id = intent.getStringExtra("msg_id");
 			int flags = intent.getIntExtra("msg_flags", 0);
 			int mode = intent.getIntExtra("msg_mode", 0);
 			int service_type = intent.getIntExtra("service_type", 0);

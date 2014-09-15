@@ -70,12 +70,16 @@ public class MSDBHelper {
         ms.msApp.triggerCntsUpdaters();
     }
 
-    public long getDlgIdByMsgId(int msg_id, MessageService ms) {
+    public long getDlgIdByMsgId(String msg_id, MessageService ms) {
         return ms.msApp.dbHelper.getDlgIdByMsgId(msg_id, ms);
     }
 
     public mDialog getDlgFromDBById(long dlgId, MessageService ms) {
         return ms.msApp.dbHelper.getDlgById(dlgId, ms);
+    }
+
+    public void updateOrInsertMsgById(String msg_id, mMessage msg, mDialog dlg, MessageService ms) {
+        ms.msApp.dbHelper.updateOrInsertMsgById(msg_id, msg, dlg, ms);
     }
 
     private final class load_msgs_from_db_async extends AsyncTask<Integer, Void, List<mMessage>> {
@@ -167,12 +171,12 @@ public class MSDBHelper {
         ms.msApp.dbHelper.update_db_msg(msg, dlg, ms);
     }
 
-    public mMessage getMsgByIdFromDB(int msg_id, MessageService ms) {
+    public mMessage getMsgByIdFromDB(String msg_id, MessageService ms) {
         return ms.msApp.dbHelper.getMsgByMsgId(msg_id, ms);
     }
 
-    public void updateMsgInDBById(mMessage msg, int msg_id, MessageService ms) {
-        ms.msApp.dbHelper.updateMsgById(msg_id,msg, ms);
+    public void updateMsgInDBById(mMessage msg, String msg_id, MessageService ms) {
+        ms.msApp.dbHelper.updateMsgById(msg_id, msg, ms);
     }
 
 

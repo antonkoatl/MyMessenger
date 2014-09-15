@@ -519,23 +519,16 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
                 return;
             }
 
-            boolean updated = false;
-
             int tind = msg_adapter.indexOf(msg);
             if(tind != -1){
-                mMessage msg2 = msg_adapter.remove(tind);
+                mMessage msg2 = (mMessage) msg_adapter.getItem(tind);
                 msg2.update(msg);
-                msg = msg2;
-                updated = true;
-            }
-
-            for(int i = msg_adapter.getCount() - 1; i >= 0; i--){
-                if( msg.sendTime.after( ((mMessage) msg_adapter.getItem(0)).sendTime ) ){
-                    msg_adapter.add(i+1, msg);
-                    if(!updated){
-                        msg_adapter.remove(0);
+            } else {
+                for (int i = msg_adapter.getCount() - 1; i >= 0; i--) {
+                    if (msg.sendTime.after(((mMessage) msg_adapter.getItem(0)).sendTime)) {
+                        msg_adapter.add(i + 1, msg);
+                        break;
                     }
-                    break;
                 }
             }
 

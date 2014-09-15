@@ -424,9 +424,10 @@ public class Vk extends MessageService {
                         }
 
                         mdl.title = item.getString("title");
-                        mdl.snippet = item.getString( "body" );
-                        mdl.snippet_out = item.getInt( "out" );
-                        mdl.last_msg_time.set(item.getLong("date")*1000);
+                        mdl.setLastMsg(getMsgFromJSON(item));
+                        msDBHelper.updateOrInsertMsgById(mdl.last_msg_id, mdl.last_msg, mdl, Vk.this);
+
+
                         mdl.msg_service_type = MessageService.VK;
 
                         dlgs.add(mdl);
@@ -452,6 +453,19 @@ public class Vk extends MessageService {
         } catch (Exception ex) {
             Log.d("logout_from_net", Log.getStackTraceString(ex));
         }
+    }
+
+    private mMessage getMsgFromJSON(JSONObject item) throws JSONException {
+        mMessage msg = new mMessage();
+        msg.setFlag(mMessage.OUT, item.getInt("out") == 1 ?	true : false);
+
+        msg.respondent = getContact( item.getString( "user_id" ) );
+        msg.text = item.getString( "body" );
+        msg.sendTime.set(item.getLong( "date" )*1000);
+        msg.setFlag(mMessage.READED, item.getInt( "read_state" ) == 1 ? true : false);
+        msg.id = item.getString("id");
+        msg.msg_service = getServiceType();
+        return msg;
     }
 
     @Override
@@ -486,15 +500,8 @@ public class Vk extends MessageService {
                     for (int i = 0; i < items.length(); i++) {
                         JSONObject item = items.getJSONObject(i);
 
-                        mMessage msg = new mMessage();
-                        msg.setFlag(mMessage.OUT, item.getInt("out") == 1 ?	true : false);
+                        mMessage msg = getMsgFromJSON(item);
 
-                        msg.respondent = getContact( item.getString( "user_id" ) );
-                        msg.text = item.getString( "body" );
-                        msg.sendTime.set(item.getLong( "date" )*1000);
-                        msg.setFlag(mMessage.READED, item.getInt( "read_state" ) == 1 ? true : false);
-                        msg.id = item.getString("id");
-                        msg.msg_service = getServiceType();
 
 
                         msgs.add(msg);
@@ -681,7 +688,7 @@ public class Vk extends MessageService {
                 JSONObject response_json = new JSONObject(page);
 
                 if(response_json.has("failed")){
-                    kill();
+                    stop();
                     requestNewMessagesRunnable(new async_request_server_data());
                     return;
                 }

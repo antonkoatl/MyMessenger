@@ -62,6 +62,7 @@ public class MSDBHelper_sms extends MSDBHelper {
         String sortOrder = null; // How to order the rows, formatted as an SQL ORDER BY clause (excluding the ORDER BY itself). Passing null will use the default sort order, which may be unordered
         Cursor cursor = ms.getMsApp().getApplicationContext().getContentResolver().query(Uri.parse("content://mms-sms/conversations?simple=true"), projection, selection, selectionArgs, sortOrder);
 
+
         int total = cursor.getCount();
         List<mDialog> return_dialogs = new ArrayList<mDialog>();
 
@@ -77,7 +78,7 @@ public class MSDBHelper_sms extends MSDBHelper {
                 for(String rid : recipient_ids){
                     Cursor c = ms.getMsApp().getApplicationContext().getContentResolver().query(Uri.parse("content://mms-sms/canonical-addresses"), null, "_id = ?", new String[]{rid}, null);
                     if(c.moveToNext()){
-                        mdl.participants.add( ms.getContact(c.getString(c.getColumnIndex("address"))) );
+                        mdl.participants.add( ms.getContact( check_address( c.getString(c.getColumnIndex("address")) ) ) );
                     } else {
                         for(String cn : cursor.getColumnNames()){
                             Log.d("getDialogs", cn + " : " + cursor.getString(cursor.getColumnIndex(cn)));
@@ -87,8 +88,24 @@ public class MSDBHelper_sms extends MSDBHelper {
                     c.close();
                 }
 
-                mdl.snippet = cursor.getString( cursor.getColumnIndex("snippet") );
-                mdl.last_msg_time.set(cursor.getLong( cursor.getColumnIndex("date") ));
+                Cursor c = ms.getMsApp().getApplicationContext().getContentResolver().query(Uri.parse("content://sms"), null, "address=?", new String[]{mdl.participants.get(0).address}, null);
+                if(c.moveToNext()){
+                    mMessage msg = new mMessage();
+                    String address = check_address(c.getString(c.getColumnIndex("address")));
+                    msg.text = c.getString( c.getColumnIndex("body") );
+                    msg.sendTime = new Time();
+                    msg.sendTime.set(c.getLong( c.getColumnIndex("date") ) );
+                    msg.setFlag(mMessage.READED, c.getInt( c.getColumnIndex("read") ) == 1 ? true : false);
+                    msg.respondent = ms.getContact(address);
+                    if (cursor.getString(c.getColumnIndex("type")).contains("1")) { //Inbox
+                        msg.setFlag(mMessage.OUT, false);
+                    } else if (cursor.getString(c.getColumnIndex("type")).contains("2")) { //Sent
+                        msg.setFlag(mMessage.OUT, true);
+                    }
+                    mdl.setLastMsg(msg);
+                }
+                c.close();
+
                 mdl.msg_service_type = MessageService.SMS;
 
                 return_dialogs.add(mdl);
@@ -97,6 +114,17 @@ public class MSDBHelper_sms extends MSDBHelper {
 
         cursor.close();
         return return_dialogs;
+    }
+
+    private String check_address(String address){
+        String address2 = address.replaceAll("[-() ]", "");
+        if(address2.matches("\\+?\\d+(\\.\\d+)?")) {
+            if (address2.charAt(0) == '8')
+                address2 = "+7" + address2.substring(1);
+            return address2;
+        }
+        else
+            return address;
     }
 
     @Override
@@ -190,12 +218,40 @@ public class MSDBHelper_sms extends MSDBHelper {
     }
 
     @Override
-    public void updateMsgInDBById(mMessage msg, int msg_id, MessageService ms) {
+    public void updateMsgInDBById(mMessage msg, String msg_id, MessageService ms) {
 
     }
 
     @Override
     public mDialog updateDlgInDB(mMessage msg, long chat_id, MessageService ms) {
-        return null;
+        Cursor c1 = ms.getMsApp().getApplicationContext().getContentResolver().query(Uri.parse("content://mms-sms/canonical-addresses"), null, "address = ?", new String[]{msg.respondent.address}, null);
+        String rid = null;
+        if(c1.moveToNext()) {
+            rid = c1.getString(c1.getColumnIndex("_id"));
+        }
+
+        c1.close();
+
+        if(rid == null)return null;
+
+        String[] projection = null; // A list of which columns to return. Passing null will return all columns, which is inefficient.
+        String selection = "recipient_ids=?"; // A filter declaring which rows to return, formatted as an SQL WHERE clause (excluding the WHERE itself). Passing null will return all rows for the given URI
+        String[] selectionArgs = {rid}; // You may include ?s in selection, which will be replaced by the values from selectionArgs, in the order that they appear in the selection. The values will be bound as Strings
+        String sortOrder = null; // How to order the rows, formatted as an SQL ORDER BY clause (excluding the ORDER BY itself). Passing null will use the default sort order, which may be unordered
+        Cursor cursor = ms.getMsApp().getApplicationContext().getContentResolver().query(Uri.parse("content://mms-sms/conversations?simple=true"), projection, selection, selectionArgs, sortOrder);
+
+        mDialog dlg = null;
+
+        if(cursor.moveToNext()) {
+            dlg = new mDialog();
+
+            dlg.participants.add(ms.getContactCheckDB(msg.respondent.address));
+            // TODO: get last msg
+            dlg.msg_service_type = MessageService.SMS;
+        }
+
+        cursor.close();
+
+        return dlg;
     }
 }

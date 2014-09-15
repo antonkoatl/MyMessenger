@@ -70,6 +70,13 @@ public class MainActivity extends ActionBarActivity {
 
             @Override
             public void onPageSelected(int position) {
+                switch(position){
+                    case 0: app.setUA(MyApplication.UA_SERVICES_MENU); break;
+                    case 1: app.setUA(MyApplication.UA_DLGS_LIST); break;
+                    case 2: app.setUA(MyApplication.UA_MSGS_LIST); break;
+                    default: break;
+                }
+
                 pagerAdapter.setCurrentPosition(position);
                 position_changed = true;
                 if(scroll_finished)change_width();
@@ -187,6 +194,12 @@ public class MainActivity extends ActionBarActivity {
     protected void onStart(){
     	super.onStart();
         app.msManager.onStart(this);
+        switch(pagerAdapter.current_position){
+            case 0: app.setUA(MyApplication.UA_SERVICES_MENU); break;
+            case 1: app.setUA(MyApplication.UA_DLGS_LIST); break;
+            case 2: app.setUA(MyApplication.UA_MSGS_LIST); break;
+            default: break;
+        }
     	Log.d("MainActivity", "onStart");
     }
 
@@ -209,6 +222,7 @@ public class MainActivity extends ActionBarActivity {
     protected void onStop() {
     	super.onStop();
         app.msManager.onStop(this);
+        app.setUA(0);
     	Log.d("MainActivity", "onStop");
     }
     
