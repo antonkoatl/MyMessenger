@@ -28,6 +28,9 @@ public class UpdateService extends Service {
         @Override
         public void onTaskComplete(RunnableAdvanced<?> result) {
             Log.d("UpdateService", "posted " + String.valueOf(result));
+            if(runnables.get(service_type) != null && futures.get(service_type) != null){
+                futures.get(service_type).cancel(true);
+            }
             runnables.put(service_type, result);
             futures.put(service_type, executor.submit(result) );
         }

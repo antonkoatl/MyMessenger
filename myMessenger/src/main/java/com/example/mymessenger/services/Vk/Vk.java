@@ -419,11 +419,13 @@ public class Vk extends MessageService {
                             for(int i1 = 0; i1 < ids.length(); i1++){
                                 mdl.participants.add( getContact( ids.getString(i1) ) );
                             }
+                            if(item.has("photo_50"))mdl.icon_50_url = item.getString("photo_50");
                         } else {
                             mdl.participants.add( getContact( item.getString( "user_id" ) ) );
                         }
 
                         mdl.title = item.getString("title");
+
                         mdl.setLastMsg(getMsgFromJSON(item));
                         msDBHelper.updateOrInsertMsgById(mdl.last_msg_id, mdl.last_msg, mdl, Vk.this);
 
@@ -595,7 +597,7 @@ public class Vk extends MessageService {
         execRequestsWaitingForAuth();
     }
 
-    public void HandleApiError(VKError error){
+    public void HandleApiError(VKError error){ // http://vk.com/dev/errors
         Log.d("HandleApiError", String.valueOf(error.apiError.errorCode) + " :: " + error.apiError.errorMessage + " :: " + error.apiError.requestParams.toString());
         if(error.apiError.errorCode == 5){ // User authorization failed.
             if(msAuthorisationFinished && check_access_toten(error) ){
@@ -605,10 +607,13 @@ public class Vk extends MessageService {
 
             addRequestWaitingForAuth(error.request);
 
-
+            return;
         }
 
-        if(error.apiError.errorCode == 6){ // Too many requests per second.
+        if(error.apiError.errorCode == 6 // Too many requests per second.
+           || error.apiError.errorCode == 10 // Internal server error
+           || error.apiError.errorCode == 1 // Unknown error occurred
+                ){
             Runnable r = new RunnableAdvanced<VKError>(){
 
                 @Override
@@ -620,7 +625,9 @@ public class Vk extends MessageService {
 
             msHandler.postDelayed(r, 5000);
 
+            return;
         }
+
     }
 
     private boolean check_access_toten(VKError error) {
@@ -705,7 +712,7 @@ public class Vk extends MessageService {
 
                         Intent intent = new Intent(MsgReceiver.ACTION_UPDATE);
                         intent.putExtra("msg_flags", flags);
-                        intent.putExtra("msg_id", message_id);
+                        intent.putExtra("msg_id", String.valueOf(message_id));
                         intent.putExtra("msg_mode", MsgReceiver.UPDATE_REPLACE);
                         intent.putExtra("service_type", getServiceType());
                         msApp.sendBroadcast(intent);
@@ -717,7 +724,7 @@ public class Vk extends MessageService {
 
                         Intent intent = new Intent(MsgReceiver.ACTION_UPDATE);
                         intent.putExtra("msg_flags", flags);
-                        intent.putExtra("msg_id", message_id);
+                        intent.putExtra("msg_id", String.valueOf(message_id));
                         intent.putExtra("msg_mode", MsgReceiver.UPDATE_INSTALL);
                         intent.putExtra("service_type", getServiceType());
                         msApp.sendBroadcast(intent);
@@ -729,7 +736,7 @@ public class Vk extends MessageService {
 
                         Intent intent = new Intent(MsgReceiver.ACTION_UPDATE);
                         intent.putExtra("msg_flags", flags);
-                        intent.putExtra("msg_id", message_id);
+                        intent.putExtra("msg_id", String.valueOf(message_id));
                         intent.putExtra("msg_mode", MsgReceiver.UPDATE_RESET);
                         intent.putExtra("service_type", getServiceType());
                         msApp.sendBroadcast(intent);

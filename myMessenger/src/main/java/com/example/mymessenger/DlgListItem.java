@@ -43,46 +43,53 @@ public class DlgListItem {
         }
 
         ImageView iv = (ImageView) view.findViewById(R.id.dlgview_iconmain);
-        if (dlg.participants.get(0).icon_50 != null) {
-            iv.setImageBitmap(dlg.participants.get(0).icon_50);
-        } else if (dlg.participants.get(0).icon_50_url != null) {
-            download_waiter tw = new download_waiter(dlg.participants.get(0).icon_50_url) {
-                ImageView iv;
-                mContact cnt;
+        if (dlg.isChat()){
+            if(dlg.icon_50 != null)
+                iv.setImageBitmap(dlg.icon_50);
+            else {
+                if(dlg.icon_50_url == null)
+                    dlg.icon_50_url = dlg.participants.get(0).icon_50_url;
 
-                @Override
-                public void onDownloadComplete() {
-                    BitmapFactory.Options options = new BitmapFactory.Options();
-                    options.inDensity = DisplayMetrics.DENSITY_LOW;
-                    options.inScaled = true;
-                    options.inTargetDensity = MyApplication.context.getResources().getDisplayMetrics().densityDpi;
-                    cnt.icon_50 = BitmapFactory.decodeFile(filepath, options);
-                    iv.setImageBitmap(cnt.icon_50);
-                }
+                download_waiter tw = new download_waiter(dlg.icon_50_url) {
+                    ImageView iv;
+                    mDialog dlg;
 
-                public download_waiter setParams(ImageView iv, mContact cnt) {
-                    this.iv = iv;
-                    this.cnt = cnt;
-                    return this;
-                }
+                    @Override
+                    public void onDownloadComplete() {
+                        BitmapFactory.Options options = new BitmapFactory.Options();
+                        options.inDensity = DisplayMetrics.DENSITY_LOW;
+                        options.inScaled = true;
+                        options.inTargetDensity = MyApplication.context.getResources().getDisplayMetrics().densityDpi;
+                        dlg.icon_50 = BitmapFactory.decodeFile(filepath, options);
+                        iv.setImageBitmap(dlg.icon_50);
+                    }
+
+                    public download_waiter setParams(ImageView iv, mDialog dlg) {
+                        this.iv = iv;
+                        this.dlg = dlg;
+                        return this;
+                    }
 
 
-            }.setParams(iv, dlg.participants.get(0));
+                }.setParams(iv, dlg);
 
-            app.dl_waiters.add(tw);
+                app.dl_waiters.add(tw);
 
-            Intent intent = new Intent(view.getContext(), DownloadService.class);
-            intent.putExtra("url", dlg.participants.get(0).icon_50_url);
-            view.getContext().getApplicationContext().startService(intent);
+                Intent intent = new Intent(iv.getContext(), DownloadService.class);
+                intent.putExtra("url", dlg.icon_50_url);
+                iv.getContext().getApplicationContext().startService(intent);
+            }
+        } else {
+            showContactImage(dlg.participants.get(0), iv);
         }
 
         iv = (ImageView) view.findViewById(R.id.dlgview_dlgtexticon);
         if (dlg.last_msg.isOut()) {
             mContact my_contact = app.msManager.getService(dlg.msg_service_type).getMyContact();
-            showContactImage(my_contact, iv);
+            showContactImageSmall(my_contact, iv);
         } else if(dlg.isChat()){
             mContact contact = dlg.last_msg.respondent;
-            showContactImage(contact, iv);
+            showContactImageSmall(contact, iv);
 
         } else {
      		iv.setVisibility(View.INVISIBLE);
@@ -120,6 +127,41 @@ public class DlgListItem {
 	}
 	
 	private void showContactImage(mContact cnt, ImageView iv){
+        if (cnt.icon_50 != null) {
+            iv.setImageBitmap(cnt.icon_50);
+        } else if (cnt.icon_50_url != null) {
+            download_waiter tw = new download_waiter(cnt.icon_50_url) {
+                ImageView iv;
+                mContact cnt;
+
+                @Override
+                public void onDownloadComplete() {
+                    BitmapFactory.Options options = new BitmapFactory.Options();
+                    options.inDensity = DisplayMetrics.DENSITY_LOW;
+                    options.inScaled = true;
+                    options.inTargetDensity = MyApplication.context.getResources().getDisplayMetrics().densityDpi;
+                    cnt.icon_50 = BitmapFactory.decodeFile(filepath, options);
+                    iv.setImageBitmap(cnt.icon_50);
+                }
+
+                public download_waiter setParams(ImageView iv, mContact cnt) {
+                    this.iv = iv;
+                    this.cnt = cnt;
+                    return this;
+                }
+
+
+            }.setParams(iv, cnt);
+
+            app.dl_waiters.add(tw);
+
+            Intent intent = new Intent(iv.getContext(), DownloadService.class);
+            intent.putExtra("url", cnt.icon_50_url);
+            iv.getContext().getApplicationContext().startService(intent);
+        }
+    }
+
+    private void showContactImageSmall(mContact cnt, ImageView iv){
         if (cnt.icon_50 != null) {
             iv.setImageBitmap(cnt.icon_50);
         } else if (cnt.icon_50_url != null) {

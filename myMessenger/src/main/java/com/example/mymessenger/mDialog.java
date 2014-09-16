@@ -1,5 +1,6 @@
 package com.example.mymessenger;
 
+import android.graphics.Bitmap;
 import android.text.format.Time;
 import android.view.View;
 
@@ -10,7 +11,10 @@ public class mDialog {
 	public List<mMessage> messages;
 	public List<mContact> participants;
 	public int msg_service_type;
-	public long chat_id;
+
+    public long chat_id;
+    public Bitmap icon_50;
+    public String icon_50_url;
 	
     public mMessage last_msg;
     public String last_msg_id;
@@ -83,7 +87,7 @@ public class mDialog {
 
 
 	public Time getLastMessageTime() {
-		return last_msg.sendTime;
+		return last_msg == null ? null : last_msg.sendTime;
 	}
 
 

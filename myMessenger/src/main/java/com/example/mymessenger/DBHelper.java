@@ -79,7 +79,8 @@ public class DBHelper extends SQLiteOpenHelper {
 		          + colParticipants + " text,"
 		          + colLastmsgid + " text,"
 		          + colChatId + " integer,"
-		          + colTitle + " text"
+		          + colTitle + " text,"
+                  + colIcon50url + " text"
 		          + ");");
 		
 		db.execSQL("create table IF NOT EXISTS " + tn_cnts + " ("
@@ -261,7 +262,7 @@ public class DBHelper extends SQLiteOpenHelper {
 
     public void updateOrInsertMsgById(String msg_id, mMessage msg, mDialog dlg, MessageService ms){
         if(getMsgByMsgId(msg_id, ms) == null){
-            insertMsg(msg, getTableNameMsgs(ms), getDlgId(dlg, ms));
+            insertMsg(msg, getTableNameMsgs(ms), getDlgIdOrCreate(dlg, ms));
         } else {
             updateMsgById(msg_id, msg, ms);
         }
@@ -283,9 +284,10 @@ public class DBHelper extends SQLiteOpenHelper {
 		SQLiteDatabase db = getReadableDatabase();
 		
 		String table_name = getTableNameMsgs(ms);
-		String selection = colMsgId + " = " + message_id;
-		
-		Cursor cursor = db.query(table_name, null, selection, null, null, null, null);
+		String selection = colMsgId + "=?";
+		String sel_args[] = {message_id};
+
+		Cursor cursor = db.query(table_name, null, selection, sel_args, null, null, null);
 		
 		if(cursor.moveToFirst()){
 			msg = new mMessage();
@@ -402,7 +404,7 @@ public class DBHelper extends SQLiteOpenHelper {
         String my_table_name = getTableNameDlgs(ms);
 
         Cursor c;
-        if(dlg.chat_id == 0){
+        if(!dlg.isChat()){
             String selection = DBHelper.colParticipants + " = ?";
             String selection_args[] = {dlg.participants.get(0).address};
             c = db.query(my_table_name, null, selection, selection_args, null, null, null);
@@ -417,21 +419,6 @@ public class DBHelper extends SQLiteOpenHelper {
 
         if(c.moveToFirst()){
             dlg_key = c.getLong( c.getColumnIndex(DBHelper.colId) );
-        } else {
-            ContentValues cv = new ContentValues();
-            if(dlg.isChat()){
-                cv.put(colChatId, dlg.chat_id);
-                cv.put(colParticipants, dlg.getParticipantsAddresses());
-            } else {
-                cv.put(colParticipants, dlg.participants.get(0).address);
-            }
-
-            SQLiteDatabase dbw = getWritableDatabase();
-            dlg_key = dbw.insert(my_table_name, null, cv);
-
-            if(dlg_key == -1){
-                Log.d("DBHelper", "Dlg not created!");
-            }
         }
         c.close();
 
@@ -479,6 +466,8 @@ public class DBHelper extends SQLiteOpenHelper {
             dlg.last_msg = getMsgByMsgId(dlg.last_msg_id, ms);
         }
 
+        if(!cursor.isNull( cursor.getColumnIndex(colIcon50url) )) dlg.icon_50_url = cursor.getString( cursor.getColumnIndex(colIcon50url) );
+
         if(!cursor.isNull( cursor.getColumnIndex(colTitle) )) dlg.title = cursor.getString( cursor.getColumnIndex(colTitle) );
 
         dlg.msg_service_type = ms.getServiceType();
@@ -505,11 +494,40 @@ public class DBHelper extends SQLiteOpenHelper {
         return dlg;
     }
 
+    private long getDlgIdOrCreate(mDialog dlg, MessageService ms) {
+        SQLiteDatabase db = getReadableDatabase();
+
+        String my_table_name = getTableNameDlgs(ms);
+        String selection = dlg.isChat() ? DBHelper.colChatId + "=?" : DBHelper.colParticipants + "=?";
+        String selection_args[] = dlg.isChat() ? new String[]{String.valueOf(dlg.chat_id)} : new String[]{dlg.participants.get(0).address};
+        Cursor c = db.query(my_table_name, null, selection, selection_args, null, null, null);
+
+        int dlg_key = -1;
+
+        if(c.moveToFirst()){
+            dlg_key = c.getInt( c.getColumnIndex(DBHelper.colId) );
+        } else {
+            insertDlg(dlg, ms);
+
+            c.close();
+            c = db.query(my_table_name, null, selection, selection_args, null, null, null);
+
+            if(c.moveToFirst()){
+                dlg_key = c.getInt( c.getColumnIndex(DBHelper.colId) );
+            } else {
+                Log.d("DBHelper", "Dlg not created!");
+            }
+        }
+        c.close();
+
+        return dlg_key;
+    }
+
     public int getDlgIdOrCreate(long chat_id, MessageService ms) {
         SQLiteDatabase db = getReadableDatabase();
 
         String my_table_name = getTableNameDlgs(ms);
-        String selection = DBHelper.colChatId + " = ?";
+        String selection = DBHelper.colChatId + "=?";
         String selection_args[] = {String.valueOf(chat_id)};
         Cursor c = db.query(my_table_name, null, selection, selection_args, null, null, null);
 
@@ -522,6 +540,9 @@ public class DBHelper extends SQLiteOpenHelper {
             cv.put(colChatId, chat_id);
             SQLiteDatabase dbw = getWritableDatabase();
             dbw.insert(my_table_name, null, cv);
+
+            c.close();
+            c = db.query(my_table_name, null, selection, selection_args, null, null, null);
 
             if(c.moveToFirst()){
                 dlg_key = c.getInt( c.getColumnIndex(DBHelper.colId) );
@@ -540,8 +561,9 @@ public class DBHelper extends SQLiteOpenHelper {
         ContentValues cv = new ContentValues();
         cv.put(colParticipants, dlg.getParticipantsAddresses());
         cv.put(colLastmsgid, dlg.last_msg_id);
-        if(dlg.chat_id != 0)cv.put(colChatId, dlg.chat_id);
+        if(dlg.isChat())cv.put(colChatId, dlg.chat_id);
         cv.put(colTitle, dlg.title);
+        cv.put(colIcon50url, dlg.icon_50_url);
 
         SQLiteDatabase db = getWritableDatabase();
         db.insert(table_name, null, cv);
@@ -570,8 +592,9 @@ public class DBHelper extends SQLiteOpenHelper {
         ContentValues cv = new ContentValues();
         cv.put(colParticipants, dlg.getParticipantsAddresses());
         cv.put(colLastmsgid, dlg.last_msg_id);
-        if(dlg.chat_id != 0)cv.put(colChatId, dlg.chat_id);
+        if(dlg.isChat())cv.put(colChatId, dlg.chat_id);
         cv.put(colTitle, dlg.title);
+        cv.put(colIcon50url, dlg.icon_50_url);
 
         getWritableDatabase().update(table_name, cv, "_id=" + id, null);
 
@@ -637,20 +660,7 @@ public class DBHelper extends SQLiteOpenHelper {
 
         if(cursor.moveToFirst()){
             dlg = new mDialog();
-            if(cursor.isNull(cursor.getColumnIndex(colChatId))){
-                dlg.participants.add( ms.getContact( cursor.getString( cursor.getColumnIndex(colParticipants) ) ) );
-            } else {
-                dlg.chat_id = cursor.getLong( cursor.getColumnIndex(colChatId) );
-                String[] ps = cursor.getString( cursor.getColumnIndex(colParticipants) ).split(",");
-                for(String part : ps) dlg.participants.add( ms.getContact( part ) );
-            }
-            if(!cursor.isNull( cursor.getColumnIndex(colLastmsgid) )) {
-                dlg.last_msg_id = cursor.getString(cursor.getColumnIndex(colLastmsgid));
-                dlg.last_msg = getMsgByMsgId(dlg.last_msg_id, ms);
-            }
-            if(!cursor.isNull( cursor.getColumnIndex(colTitle) )) dlg.title = cursor.getString(cursor.getColumnIndex(colTitle));
-
-            dlg.msg_service_type = ms.getServiceType();
+            loadDlgFromCursor(dlg, cursor, ms);
         }
         cursor.close();
 

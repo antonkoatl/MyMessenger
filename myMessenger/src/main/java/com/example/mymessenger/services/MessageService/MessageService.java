@@ -246,6 +246,10 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
     // TODO: Периодически обновлять
     @Override
     public final mContact getContact(String address) {
+        if(address.equals("173156958")){
+            Log.d("test", "test");
+        }
+
         mContact cnt = msContacts.get(address);
 
         if (cnt == null) {

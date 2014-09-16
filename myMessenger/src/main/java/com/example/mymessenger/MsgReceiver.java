@@ -34,7 +34,7 @@ public class MsgReceiver extends BroadcastReceiver {
 			long chat_id = intent.getLongExtra("chat_id", 0);
 
             mDialog dlg = ms.msDBHelper.updateDlgInDB(msg, chat_id, ms);
-            ms.msDBHelper.updateMsgInDB(msg, chat_id, ms);
+            ms.msDBHelper.updateMsgInDB(msg, dlg, ms);
             ms.getMsApp().triggerMsgUpdaters(msg, dlg);
             ms.getMsApp().triggerDlgUpdaters(dlg);
 
