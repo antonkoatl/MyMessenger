@@ -5,6 +5,10 @@ import android.os.Parcelable;
 import android.text.format.Time;
 import android.view.View;
 
+import com.example.mymessenger.attachments.mAttachment;
+
+import java.util.List;
+
 public class mMessage implements Parcelable {
 	public static final int OUT = 1;
 	public static final int READED = 2;
@@ -20,6 +24,8 @@ public class mMessage implements Parcelable {
 	public int msg_service;
 	
 	public int flags;
+
+    public List<mAttachment> attachments;
 	
 	public MsgListItem msg_ui_helper;
 			

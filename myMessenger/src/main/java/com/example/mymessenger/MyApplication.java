@@ -123,7 +123,7 @@ public class MyApplication extends Application {
         sPref = getSharedPreferences(PREF_NAME, MODE_PRIVATE); //загрузка конфигов
 
         msManager = new MessageServiceManager(this);
-        msManager.init();
+        msManager.load();
 
         //Запуск сервиса обновлений        
         Intent intent1 = new Intent(this, UpdateService.class);

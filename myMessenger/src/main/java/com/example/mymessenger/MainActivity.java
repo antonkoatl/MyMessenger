@@ -44,7 +44,10 @@ public class MainActivity extends ActionBarActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        app = (MyApplication) getApplicationContext();
+
         MyApplication.setMainActivity(this);
+
 
 
         Intent intent = getIntent();
@@ -55,9 +58,9 @@ public class MainActivity extends ActionBarActivity {
         setContentView(R.layout.pager);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setHomeButtonEnabled(true);
-        app = (MyApplication) getApplicationContext();
-        app.msManager.onCreate(this, savedInstanceState);
 
+        app.msManager.onCreate(this, savedInstanceState);
+        app.msManager.init();
         
         pagerAdapter = new MyPagerAdapter(getSupportFragmentManager(), this);
         mViewPager = (ViewPagerAdvanced) findViewById(R.id.pager);

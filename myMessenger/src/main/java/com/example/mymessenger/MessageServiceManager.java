@@ -33,16 +33,8 @@ public class MessageServiceManager {
 
     public void init(){
         //загрузка сервисов
-        String using_services[] = msApp.getSharedPreferences(MyApplication.PREF_NAME, Context.MODE_PRIVATE).getString(PREF_USING_SERVICES, "10").split(",");
-        for(String i : using_services){
-            MessageService ms = MessageService.createServiceByType(Integer.valueOf(i), msApp);
-            if(ms != null){
-                addMsgService(ms);
-                ms.init();
-            }
-        }
-
-        active_service = msApp.getSharedPreferences(MyApplication.PREF_NAME, Context.MODE_PRIVATE).getInt(PREF_ACTIVE_SERVICE, 0);
+        for(MessageService ms : myMsgServices)
+            ms.init();
     }
 
     public boolean newService(int service_type) {
@@ -206,5 +198,18 @@ public class MessageServiceManager {
         for(msInterfaceUI ms : myMsgServices){
             ms.onDestroy(activity);
         }
+    }
+
+    public void load() {
+        //загрузка сервисов
+        String using_services[] = msApp.getSharedPreferences(MyApplication.PREF_NAME, Context.MODE_PRIVATE).getString(PREF_USING_SERVICES, "10").split(",");
+        for(String i : using_services){
+            MessageService ms = MessageService.createServiceByType(Integer.valueOf(i), msApp);
+            if(ms != null){
+                addMsgService(ms);
+            }
+        }
+
+        active_service = msApp.getSharedPreferences(MyApplication.PREF_NAME, Context.MODE_PRIVATE).getInt(PREF_ACTIVE_SERVICE, 0);
     }
 }

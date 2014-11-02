@@ -77,7 +77,7 @@ public class mFacebook extends MessageService {
     }
 
     @Override
-    public void requestNewMessagesRunnable(AsyncTaskCompleteListener<RunnableAdvanced<?>> cb) {
+    public void requestNewMessagesRunnableFromNet(AsyncTaskCompleteListener<RunnableAdvanced<?>> cb) {
 
     }
 

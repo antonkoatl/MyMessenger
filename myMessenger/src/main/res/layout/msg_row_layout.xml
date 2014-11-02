@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/msg_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bubble_yellow"
+        android:id="@+id/msg_linearLayout"
+        android:layout_alignParentRight="false"
+        android:layout_alignParentLeft="true">
+
+        <com.example.mymessenger.WrapWidthTextView
+            android:id="@+id/msg_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_margin="5dip"
+            android:paddingLeft="10dp"
+            android:text="Ну очень длинный текст в несколькоооо строк"
+            android:textColor="#000000"
+            android:textSize="16sp" />
+     </LinearLayout>
+
+    <com.example.mymessenger.WrapWidthTextView
+        android:id="@+id/msg_date"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingTop="15dp"
+        android:text="10:47 \n 01.01.2014"
+        android:textSize="10sp"
+        android:layout_alignParentTop="false"
+        android:layout_toRightOf="@+id/msg_linearLayout" />
+
+
+</RelativeLayout>

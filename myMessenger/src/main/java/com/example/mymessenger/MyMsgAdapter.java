@@ -51,7 +51,7 @@ public class MyMsgAdapter extends BaseAdapter {
 
 
         if (view == null) {
-            view = lInflater.inflate(R.layout.list_row_layout, parent, false);
+            view = lInflater.inflate(R.layout.msg_row_layout, parent, false);
         }
 
         mMessage msg = data.get(position);

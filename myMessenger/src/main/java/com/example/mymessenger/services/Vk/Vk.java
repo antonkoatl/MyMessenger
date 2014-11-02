@@ -14,6 +14,8 @@ import com.example.mymessenger.MyApplication;
 import com.example.mymessenger.R;
 import com.example.mymessenger.RunnableAdvanced;
 import com.example.mymessenger.UpdateService;
+import com.example.mymessenger.attachments.PhotoAttachment;
+import com.example.mymessenger.attachments.mAttachment;
 import com.example.mymessenger.download_waiter;
 import com.example.mymessenger.mContact;
 import com.example.mymessenger.mDialog;
@@ -65,7 +67,7 @@ public class Vk extends MessageService {
     // Necessary methods
 
     @Override
-    public void requestNewMessagesRunnable(AsyncTaskCompleteListener<RunnableAdvanced<?>> cb){
+    public void requestNewMessagesRunnableFromNet(AsyncTaskCompleteListener<RunnableAdvanced<?>> cb){
         VKRequest request = new VKRequest("messages.getLongPollServer", VKParameters.from(VKApiConst.COUNT, String.valueOf(1)));
         request.secure = false;
         VKParameters preparedParameters = request.getPreparedParameters();
@@ -459,14 +461,42 @@ public class Vk extends MessageService {
 
     private mMessage getMsgFromJSON(JSONObject item) throws JSONException {
         mMessage msg = new mMessage();
-        msg.setFlag(mMessage.OUT, item.getInt("out") == 1 ?	true : false);
+        msg.setOut(item.getInt("out") == 1 ?	true : false);
 
         msg.respondent = getContact( item.getString( "user_id" ) );
         msg.text = item.getString( "body" );
         msg.sendTime.set(item.getLong( "date" )*1000);
-        msg.setFlag(mMessage.READED, item.getInt( "read_state" ) == 1 ? true : false);
+        msg.setReaded(item.getInt( "read_state" ) == 1 ? true : false);
         msg.id = item.getString("id");
         msg.msg_service = getServiceType();
+
+        if(item.has("attachments")){
+            msg.attachments = new ArrayList<mAttachment>();
+            JSONArray a = item.getJSONArray("attachments");
+            for(int i = 0; i < a.length(); i++){
+                JSONObject attachment = a.getJSONObject(i);
+
+                if(attachment.getString("type").equals("photo")){
+                    JSONObject data = attachment.getJSONObject("photo");
+                    PhotoAttachment at = new PhotoAttachment();
+
+                    int width = data.getInt("width");
+                    if(width <= 75)at.setUrl(data.getString("photo_75"));
+                    else if(width <= 130)at.setUrl(data.getString("photo_130"));
+                    else at.setUrl(data.getString("photo_604"));
+                    //else if(width <= 604)at.setUrl(data.getString("photo_604"));
+                    //else if(width <= 807)at.setUrl(data.getString("photo_807"));
+                    //else if(width <= 1280)at.setUrl(data.getString("photo_1280"));
+                    //else if(width <= 2560)at.setUrl(data.getString("photo_2560"));
+
+                    at.setId(data.getString("id"));
+
+                    msg.attachments.add(at);
+                }
+
+            };
+        }
+
         return msg;
     }
 

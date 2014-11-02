@@ -8,6 +8,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.net.Uri;
 import android.util.Log;
 
+import com.example.mymessenger.attachments.mAttachment;
 import com.example.mymessenger.services.MessageService.MessageService;
 import com.example.mymessenger.services.MessageService.msInterfaceMS;
 
@@ -25,6 +26,7 @@ public class DBHelper extends SQLiteOpenHelper {
 	public static final String colFlags = "flags";
 	public static final String colDlgkey = "dlg_key";
 	public static final String colMsgId = "msg_id";
+    public static final String colAttachments = "attachments";
 	
 	//dialog
 	public static final String colParticipants = "participants";
@@ -72,6 +74,7 @@ public class DBHelper extends SQLiteOpenHelper {
 		          + colBody + " text,"
 		          + colFlags + " integer,"
 		          + colMsgId + " text unique,"
+                  + colAttachments + " text,"
 		          + colDlgkey + " integer" + ");");
 		
 		db.execSQL("create table IF NOT EXISTS " + tn_dlgs + " ("
@@ -123,6 +126,7 @@ public class DBHelper extends SQLiteOpenHelper {
 		cv.put(colDlgkey, dlg_key);
 		cv.put(colMsgId, msg.id);
 		cv.put(colFlags, msg.flags);
+        cv.put(colAttachments, mAttachment.getDataString(msg.attachments));
 		
 		SQLiteDatabase db = getWritableDatabase();
 		db.insert(table, null, cv);		
@@ -172,6 +176,7 @@ public class DBHelper extends SQLiteOpenHelper {
 	        	msg.flags = cursor.getInt(cursor.getColumnIndex(colFlags));
 	        	msg.id = cursor.getString(cursor.getColumnIndex(colMsgId));
 	        	msg.msg_service = ms.getServiceType();
+                msg.attachments = mAttachment.getListFromDataString(cursor.getString(cursor.getColumnIndex(colAttachments)));
 	        	
 	        	result.add(msg);
 	        	cursor_chk = cursor.moveToNext();

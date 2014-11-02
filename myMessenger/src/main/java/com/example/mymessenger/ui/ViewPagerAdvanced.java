@@ -951,7 +951,7 @@ public class ViewPagerAdvanced extends ViewGroup {
     }
 
     void populate(int newCurrentItem) {
-        Log.d("slider", "populate");
+        //Log.d("slider", "populate");
         ItemInfo oldCurInfo = null;
         int focusDirection = View.FOCUS_FORWARD;
         if (mCurItem != newCurrentItem) {

@@ -46,6 +46,7 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
     public static final int CNTS_REQUEST_ACCUM_TIME = 1000;
 
     protected static final String PREFS_ACTIVE_ACCOUNT = "active_account";
+    protected static final String PREFS_SETUP_FINISHED = "setup_finished";
 
     protected final static Handler msHandler; //Для отложенного запроса данных о пользователях
     protected final static HandlerThread msThread = new HandlerThread("MessageServiceThread");
@@ -69,7 +70,7 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
     protected Map<mDialog, IntegerMutable> msgs_thread_count; //Количество потоков, загружающих сообщения для определённого диалога в данных момент
     protected SharedPreferences sPref;
 
-    boolean msIsSetupFinished = true;
+    boolean msIsSetupFinished = false;
     protected int msSetupStage;
     protected AsyncTaskCompleteListener<MessageService> cbms_for_setup = null;
 
@@ -102,7 +103,11 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
 
         sPref = app.getSharedPreferences(String.valueOf(msServiceType), Context.MODE_PRIVATE); //загрузка конфигов
 
-        msSelfContact = new mContact(sPref.getString(PREFS_ACTIVE_ACCOUNT, ""));
+        msIsSetupFinished = sPref.getBoolean(PREFS_SETUP_FINISHED, false);
+
+        if(msIsSetupFinished) {
+            msSelfContact = new mContact(sPref.getString(PREFS_ACTIVE_ACCOUNT, ""));
+        }
 
         setupEmoji();
     }
@@ -113,6 +118,15 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
 
     @Override
     public void init(){
+        if(!msIsSetupFinished){
+            setup(null);
+            return;
+        }
+        if(!msAuthorised){
+            authorize(MyApplication.getMainActivity());
+            return;
+        }
+
         onInitFinish();
     }
 
@@ -238,6 +252,14 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
         }
     }
 
+    public void requestNewMessagesRunnable(AsyncTaskCompleteListener<RunnableAdvanced<?>> cb){
+        if(isOnline()){
+            requestNewMessagesRunnableFromNet(cb);
+        }
+    }
+
+    protected abstract void requestNewMessagesRunnableFromNet(AsyncTaskCompleteListener<RunnableAdvanced<?>> cb);
+
     // TODO: Пересмотреть
     public final void refreshMessagesFromNet(mDialog dlg, AsyncTaskCompleteListener<List<mMessage>> cb, int count) {
         msRefreshMsgsCb.addRefresh(dlg, cb, count);
@@ -288,11 +310,6 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
         return dlg;
     }
 
-
-
-    // TODO: Организовать работу в UpdateService через ThreadPool
-    @Override
-    public abstract void requestNewMessagesRunnable(AsyncTaskCompleteListener<RunnableAdvanced<?>> cb);
 
     @Override
     public final String getServiceName() {
@@ -431,6 +448,7 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
         switch (msSetupStage) {
             case 1:
                 logout();
+                sPref.edit().clear().commit();
                 authorize(MyApplication.getMainActivity());
                 break;
             case 2:
@@ -450,6 +468,8 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
                 break;
             case 4:
                 msIsSetupFinished = true;
+                sPref.edit().putBoolean(PREFS_SETUP_FINISHED, msIsSetupFinished).commit();
+                msIsInitFinished = true;
                 if (cbms_for_setup != null) cbms_for_setup.onTaskComplete(this);
                 init();
                 break;
@@ -860,6 +880,8 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
         if(!msIsSetupFinished){
             msSetupStage++;
             setupStages();
+        } else if (!msIsInitFinished) {
+            onInitFinish();
         }
     }
 
@@ -869,7 +891,7 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
     }
 
     public void setLoading(boolean fl){
-        if(MyApplication.getMainActivity() != null) {
+        if(MyApplication.getMainActivity() != null && ((MainActivity) MyApplication.getMainActivity()).pagerAdapter != null) {
             ServicesMenuFragment fr = (ServicesMenuFragment) ((MainActivity) MyApplication.getMainActivity()).pagerAdapter.getRegisteredFragment(0);
             if(fr != null)
                 fr.setServiceLoading(this, fl);

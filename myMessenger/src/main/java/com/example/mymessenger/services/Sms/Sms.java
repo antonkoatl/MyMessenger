@@ -56,13 +56,13 @@ public class Sms extends MessageService {
 
     @Override
     public void authorize(Context context) {
-
+        onAuthorize();
     }
 
     @Override
     protected void requestAccountInfoFromNet(AsyncTaskCompleteListener<mContact> cb) {
         mContact cnt = new mContact("");
-        cnt.name = "NOWAYTOGETTHIS";
+        cb.onTaskComplete(cnt);
     }
 
 
@@ -203,7 +203,7 @@ public class Sms extends MessageService {
     }
 
     @Override
-    public void requestNewMessagesRunnable(
+    public void requestNewMessagesRunnableFromNet(
             AsyncTaskCompleteListener<RunnableAdvanced<?>> cb) {
         BroadcastReceiver br = new SmsReceiver();
         IntentFilter intFilt = new IntentFilter();
