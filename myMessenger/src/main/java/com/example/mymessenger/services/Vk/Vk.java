@@ -481,6 +481,7 @@ public class Vk extends MessageService {
                     PhotoAttachment at = new PhotoAttachment();
 
                     int width = data.getInt("width");
+                    int height = data.getInt("height");
                     if(width <= 75)at.setUrl(data.getString("photo_75"));
                     else if(width <= 130)at.setUrl(data.getString("photo_130"));
                     else at.setUrl(data.getString("photo_604"));
@@ -490,7 +491,12 @@ public class Vk extends MessageService {
                     //else if(width <= 2560)at.setUrl(data.getString("photo_2560"));
 
                     at.setId(data.getString("id"));
+                    at.setSize(width, height);
 
+                    msg.attachments.add(at);
+                } else {
+                    mAttachment at = new mAttachment();
+                    at.setName("Vk:" + attachment.getString("type"));
                     msg.attachments.add(at);
                 }
 

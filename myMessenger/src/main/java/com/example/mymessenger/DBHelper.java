@@ -462,8 +462,7 @@ public class DBHelper extends SQLiteOpenHelper {
             dlg.participants.add( ms.getContact( cursor.getString( cursor.getColumnIndex(colParticipants) ) ) );
         } else {
             dlg.chat_id = cursor.getLong( cursor.getColumnIndex(colChatId) );
-            String[] ps = cursor.getString( cursor.getColumnIndex(colParticipants) ).split(",");
-            for(String part : ps) dlg.participants.add( ms.getContact( part ) );
+            dlg.parseParticipants(cursor.getString( cursor.getColumnIndex(colParticipants) ), ms);
         }
 
         if(!cursor.isNull( cursor.getColumnIndex(colLastmsgid) )) {
@@ -478,12 +477,33 @@ public class DBHelper extends SQLiteOpenHelper {
         dlg.msg_service_type = ms.getServiceType();
     }
 
-    public mDialog getDlg(String from_id, MessageService ms) {
+    public mDialog getDlg(mContact from, MessageService ms) {
         SQLiteDatabase db = getReadableDatabase();
 
         String my_table_name = getTableNameDlgs(ms);
         String selection = colParticipants + " = ? AND " + colChatId + " IS NULL";
-        String selection_args[] = {from_id};
+        String selection_args[] = {from.address};
+        Cursor c = db.query(my_table_name, null, selection, selection_args, null, null, null);
+
+        mDialog dlg;
+
+        if(c.moveToFirst()){
+            dlg = new mDialog();
+            loadDlgFromCursor(dlg, c, ms);
+        } else {
+            dlg = null;
+        }
+        c.close();
+
+        return dlg;
+    }
+
+    public mDialog getDlg(long chat_id, MessageService ms) {
+        SQLiteDatabase db = getReadableDatabase();
+
+        String my_table_name = getTableNameDlgs(ms);
+        String selection = colChatId + " = ?";
+        String selection_args[] = {String.valueOf(chat_id)};
         Cursor c = db.query(my_table_name, null, selection, selection_args, null, null, null);
 
         mDialog dlg;
@@ -528,42 +548,12 @@ public class DBHelper extends SQLiteOpenHelper {
         return dlg_key;
     }
 
-    public int getDlgIdOrCreate(long chat_id, MessageService ms) {
-        SQLiteDatabase db = getReadableDatabase();
-
-        String my_table_name = getTableNameDlgs(ms);
-        String selection = DBHelper.colChatId + "=?";
-        String selection_args[] = {String.valueOf(chat_id)};
-        Cursor c = db.query(my_table_name, null, selection, selection_args, null, null, null);
-
-        int dlg_key = -1;
-
-        if(c.moveToFirst()){
-            dlg_key = c.getInt( c.getColumnIndex(DBHelper.colId) );
-        } else {
-            ContentValues cv = new ContentValues();
-            cv.put(colChatId, chat_id);
-            SQLiteDatabase dbw = getWritableDatabase();
-            dbw.insert(my_table_name, null, cv);
-
-            c.close();
-            c = db.query(my_table_name, null, selection, selection_args, null, null, null);
-
-            if(c.moveToFirst()){
-                dlg_key = c.getInt( c.getColumnIndex(DBHelper.colId) );
-            } else {
-                Log.d("DBHelper", "Dlg not created!");
-            }
-        }
-        c.close();
-
-        return dlg_key;
-    }
-
     public void insertDlg(mDialog dlg, MessageService ms){
         String table_name = getTableNameDlgs(ms);
 
         ContentValues cv = new ContentValues();
+        if(dlg.getParticipantsAddresses() == null || dlg.getParticipantsAddresses().length() == 0)
+            Log.d("DB", "DLG ERROR");
         cv.put(colParticipants, dlg.getParticipantsAddresses());
         cv.put(colLastmsgid, dlg.last_msg_id);
         if(dlg.isChat())cv.put(colChatId, dlg.chat_id);

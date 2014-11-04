@@ -8,12 +8,12 @@
         android:orientation="vertical"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:background="@drawable/bubble_yellow"
+        android:background="@drawable/bubble_green"
         android:id="@+id/msg_linearLayout"
-        android:layout_alignParentRight="false"
-        android:layout_alignParentLeft="true">
+        android:layout_alignParentRight="true"
+        android:layout_alignParentLeft="false">
 
-        <com.example.mymessenger.WrapWidthTextView
+        <com.example.mymessenger.ui.WrapWidthTextView
             android:id="@+id/msg_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -23,17 +23,19 @@
             android:text="Ну очень длинный текст в несколькоооо строк"
             android:textColor="#000000"
             android:textSize="16sp" />
-     </LinearLayout>
 
-    <com.example.mymessenger.WrapWidthTextView
+    </LinearLayout>
+
+    <TextView
         android:id="@+id/msg_date"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:paddingTop="15dp"
-        android:text="10:47 \n 01.01.2014"
+        android:text="10:47\n01.01.2014"
         android:textSize="10sp"
         android:layout_alignParentTop="false"
-        android:layout_toRightOf="@+id/msg_linearLayout" />
+        android:layout_toLeftOf="@+id/msg_linearLayout"
+        android:gravity="right" />
 
 
 </RelativeLayout>

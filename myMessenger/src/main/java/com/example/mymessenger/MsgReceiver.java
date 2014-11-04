@@ -33,8 +33,20 @@ public class MsgReceiver extends BroadcastReceiver {
             MessageService ms = (MessageService) app.msManager.getService(msg.msg_service);
 			long chat_id = intent.getLongExtra("chat_id", 0);
 
-            mDialog dlg = ms.msDBHelper.updateDlgInDB(msg, chat_id, ms);
+            mDialog dlg = ms.msDBHelper.findDlgInDB(msg, chat_id, ms);
+            if(dlg == null){
+                if(chat_id == 0){
+                    dlg = new mDialog(msg.respondent);
+                } else {
+                    dlg = new mDialog();
+                    dlg.chat_id = chat_id;
+                }
+            }
+
+            dlg.setLastMsg(msg);
+            ms.msDBHelper.updateDlgInDB(msg, chat_id, ms);
             ms.msDBHelper.updateMsgInDB(msg, dlg, ms);
+
             ms.getMsApp().triggerMsgUpdaters(msg, dlg);
             ms.getMsApp().triggerDlgUpdaters(dlg);
 
@@ -107,8 +119,8 @@ public class MsgReceiver extends BroadcastReceiver {
 
     private CharSequence getChatName(mMessage msg, long chat_id) {
         MessageService ms = (MessageService) app.msManager.getService(msg.msg_service);
-        mDialog dlg = ms.msDBHelper.getDlgFromDBOrCreate(msg, chat_id, ms);
-        return dlg.getDialogTitle();
+        mDialog dlg = ms.msDBHelper.findDlgInDB(msg, chat_id, ms);
+        return dlg == null ? "null" : dlg.getDialogTitle();
     }
 
     public void createSimpleNotification(Context context, mMessage msg){

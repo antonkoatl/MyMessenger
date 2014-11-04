@@ -2,14 +2,38 @@ package com.example.mymessenger.attachments;
 
 import android.content.Context;
 import android.view.View;
+import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class mAttachment {
+public class mAttachment {
+    public static final int BASE = 0;
     public static final int PHOTO = 1;
-    public abstract View getView(Context context);
-    public abstract int getType();
+
+    String name;
+
+    public mAttachment(String data) {
+        this.getFromDataString(data);
+    }
+
+    public mAttachment() {
+
+    }
+
+    public View getView(Context context){
+        TextView textView = new TextView(context);
+        textView.setText("<attachment>"+name);
+        return textView;
+    }
+
+    public int getType(){
+        return BASE;
+    }
+
+    public void setName(String name){
+        this.name = name;
+    }
 
     public static String getDataString(List<mAttachment> attachments) {
         if(attachments == null)return "";
@@ -22,7 +46,9 @@ public abstract class mAttachment {
         return data;
     }
 
-    protected abstract String getDataString();
+    protected String getDataString() {
+        return name;
+    };
 
     public static List<mAttachment> getListFromDataString(String data) {
         if(data.length() == 0)return null;
@@ -36,6 +62,7 @@ public abstract class mAttachment {
                     at = new PhotoAttachment(data_at);
                     break;
                 default:
+                    at = new mAttachment(data_at);
                     break;
             }
             attachments.add(at);
@@ -44,6 +71,8 @@ public abstract class mAttachment {
         return attachments;
     }
 
-    protected abstract void getFromDataString(String data);
+    protected void getFromDataString(String data){
+        this.name = data;
+    };
 
 }

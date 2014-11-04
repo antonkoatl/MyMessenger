@@ -24,8 +24,10 @@ public class mGlobal {
 		
 	}
 
+    public static int msg_max_width = 368;
 
-	public static int scale(float dip) {
+
+    public static int scale(float dip) {
         return Math.round(displayDensity * dip);
     }
 	

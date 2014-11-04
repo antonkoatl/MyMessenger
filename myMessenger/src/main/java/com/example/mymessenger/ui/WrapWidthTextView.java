@@ -1,4 +1,4 @@
-package com.example.mymessenger;
+package com.example.mymessenger.ui;
 
 import android.content.Context;
 import android.text.Layout;
@@ -7,7 +7,7 @@ import android.util.FloatMath;
 import android.widget.TextView;
 
 public class WrapWidthTextView extends TextView {
-	private float custom_max = 0;
+	private float custom_max_width = 0;
 
 	public WrapWidthTextView(Context context) {
 		super(context);
@@ -52,13 +52,13 @@ public class WrapWidthTextView extends TextView {
 	    
 	    max_width = max_width + getCompoundPaddingLeft() + getCompoundPaddingRight();
 	    
-	    if(custom_max > 0 && max_width > custom_max){
-	    	max_width = custom_max;
+	    if(custom_max_width > 0 && max_width > custom_max_width){
+	    	max_width = custom_max_width;
 	    }
 	    return max_width;
 	}
 	
-	public void setCustomMax(float dp){
-		custom_max = dp;
+	public void setCustomMaxWidth(float dp){
+		custom_max_width = dp;
 	}
 }

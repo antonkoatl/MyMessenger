@@ -22,7 +22,7 @@ public class DownloadService extends IntentService {
 	protected void onHandleIntent(Intent intent) {
 		String url_path = intent.getStringExtra("url");
         int ser_type = intent.getIntExtra("ser_type", 0);
-		
+
 		String fileName = url_path.substring( url_path.lastIndexOf('/')+1, url_path.length() );
 		
 		

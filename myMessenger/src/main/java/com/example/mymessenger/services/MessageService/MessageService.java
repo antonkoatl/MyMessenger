@@ -239,7 +239,7 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
     public final void requestMessages(mDialog dlg, int count, int offset, AsyncTaskCompleteListener<List<mMessage>> cb) {
         int msgs_in_db = msApp.dbHelper.getMsgsCount(dlg, MessageService.this);
 
-        if (offset + count < msgs_in_db) {
+        if (offset + count <= msgs_in_db) {
             msDBHelper.getMessagesFromDB(dlg, count, offset, cb, this);
             if(isOnline()) refreshMessagesFromNet(dlg, cb, 0);
         } else {
@@ -299,7 +299,7 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
     @Override
     public final mDialog getDialog(mContact cnt) {
         // Есть ли в базе? - Загрузить : Создасть. Обновить
-        mDialog dlg = msApp.dbHelper.getDlg(cnt.address, this);
+        mDialog dlg = msApp.dbHelper.getDlg(cnt, this);
 
         if (dlg == null) {
             dlg = new mDialog(cnt);
@@ -685,28 +685,29 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
                 }
             }
 
-            if (all_new && result.size() > 0) {
-                int msgs_to_update = msApp.dbHelper.getMsgsCount(dlg_key, MessageService.this) - (cp.offset + cp.count);
-                if (cp.max_count > 0 && (cp.offset + msgs_to_update) > cp.max_count) {
-                    msgs_to_update = cp.max_count - cp.offset;
-                }
-
-                cp.offset = cp.offset + cp.count;
-                if (msgs_to_update > 0) {
-                    if (msgs_to_update > MSGS_DOWNLOAD_COUNT) {
-                        cp.count = MSGS_DOWNLOAD_COUNT;
-                    } else {
-                        cp.count = msgs_to_update;
+            if (cp.update_msgs.size() > 0) {
+                if (all_new) {
+                    int msgs_to_update = msApp.dbHelper.getMsgsCount(dlg_key, MessageService.this) - (cp.offset + cp.count);
+                    if (cp.max_count > 0 && (cp.offset + msgs_to_update) > cp.max_count) {
+                        msgs_to_update = cp.max_count - cp.offset;
                     }
 
-                    getMessagesFromNet(new MsgsDownloadsRequest(cp.dlg, cp.count, cp.offset, this));
+                    cp.offset = cp.offset + cp.count;
+                    if (msgs_to_update > 0) {
+                        if (msgs_to_update > MSGS_DOWNLOAD_COUNT) {
+                            cp.count = MSGS_DOWNLOAD_COUNT;
+                        } else {
+                            cp.count = msgs_to_update;
+                        }
+
+                        getMessagesFromNet(new MsgsDownloadsRequest(cp.dlg, cp.count, cp.offset, this));
+                    } else {
+                        run_cbs();
+                    }
                 } else {
                     run_cbs();
                 }
-            } else {
-                run_cbs();
             }
-
         }
 
         private void run_cbs() {

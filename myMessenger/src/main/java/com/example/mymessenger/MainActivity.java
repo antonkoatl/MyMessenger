@@ -175,14 +175,19 @@ public class MainActivity extends ActionBarActivity {
 
             mDialog dlg;
 
-        	dlg = ms.msDBHelper.getDlgFromDBOrCreate(msg, chat_id, ms);
 
-        	/*dlg.participants.add( msg.respondent );
-        	dlg.snippet = msg.text;
-			dlg.snippet_out = msg.getFlag(mMessage.OUT) ? 1 : 0;
-			dlg.last_msg_time.set(msg.sendTime);
-			dlg.msg_service_type = msg.msg_service;*/
-			
+        	dlg = ms.msDBHelper.findDlgInDB(msg, chat_id, ms);
+            if(dlg == null){
+                if(chat_id == 0){
+                    dlg = new mDialog(msg.respondent);
+                } else {
+                    dlg = new mDialog();
+                    dlg.chat_id = chat_id;
+                }
+
+            }
+
+            dlg.setLastMsg(msg);
         	ms.setActiveDialog(dlg);
         	app.triggerDlgUpdaters(dlg);
         	

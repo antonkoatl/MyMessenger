@@ -95,7 +95,7 @@ public class MSDBHelper {
 
         protected void onPostExecute(List<mMessage> result) {
             ms.updateMsgsThreadCount(dlg, -1);
-            if (callback != null) callback.onTaskComplete(result);
+            if (callback != null && result.size() > 0) callback.onTaskComplete(result);
         }
 
         @Override
@@ -137,27 +137,21 @@ public class MSDBHelper {
     }
 
     public mDialog updateDlgInDB(mMessage msg, long chat_id, MessageService ms) {
-        mDialog dlg;
-        if (chat_id != 0) {
-            int dlg_key = ms.msApp.dbHelper.getDlgIdOrCreate(chat_id, ms);
-            dlg = ms.msApp.dbHelper.update_db_dlg(msg, dlg_key, ms);
+        mDialog dlg = findDlgInDB(msg, chat_id, ms);
+        if(dlg == null){
+
         } else {
-            long dlg_key = ms.msApp.dbHelper.getDlgIdOrCreate(msg.respondent.address, ms);
-            dlg = ms.msApp.dbHelper.update_db_dlg(msg, dlg_key, ms);
+            dlg = ms.msApp.dbHelper.update_db_dlg(msg, ms.msApp.dbHelper.getDlgId(dlg, ms), ms);
         }
-
-
         return dlg;
     }
 
-    public mDialog getDlgFromDBOrCreate(mMessage msg, long chat_id, MessageService ms){
-        mDialog dlg;
+    public mDialog findDlgInDB(mMessage msg, long chat_id, MessageService ms){
+        mDialog dlg = null;
         if (chat_id != 0) {
-            int dlg_key = ms.msApp.dbHelper.getDlgIdOrCreate(chat_id, ms);
-            dlg = ms.msApp.dbHelper.getDlgById(dlg_key, ms);
+            dlg = ms.msApp.dbHelper.getDlg(chat_id, ms);
         } else {
-            long dlg_key = ms.msApp.dbHelper.getDlgIdOrCreate(msg.respondent.address, ms);
-            dlg = ms.msApp.dbHelper.getDlgById(dlg_key, ms);
+            dlg = ms.msApp.dbHelper.getDlg(msg.respondent, ms);
         }
 
         return dlg;

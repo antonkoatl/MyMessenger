@@ -4,6 +4,8 @@ import android.graphics.Bitmap;
 import android.text.format.Time;
 import android.view.View;
 
+import com.example.mymessenger.services.MessageService.MessageService;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -176,5 +178,14 @@ public class mDialog {
     public void setLastMsg(mMessage msg) {
         this.last_msg = msg;
         this.last_msg_id = msg.id;
+    }
+
+    public void parseParticipants(String participants_str, MessageService ms) {
+        if(participants_str != null && participants_str.length() > 0){
+            for(String address : participants_str.split(",")){
+                participants.add( ms.getContact(address) );
+            }
+        }
+
     }
 }
