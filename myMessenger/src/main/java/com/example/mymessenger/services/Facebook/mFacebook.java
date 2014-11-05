@@ -307,6 +307,11 @@ public class mFacebook extends MessageService {
     }
 
     @Override
+    protected void getChatFromNet(ChatDownloadsRequest req) {
+
+    }
+
+    @Override
     protected void logout_from_net() {
 
     }
@@ -335,12 +340,12 @@ public class mFacebook extends MessageService {
         public void onLogin() {
             // change the state of the button or do whatever you want
             Log.i(TAG, "Logged in");
-            onAuthorize();
+            onAuthorize(true);
         }
 
         @Override
         public void onNotAcceptingPermissions(Permission.Type type) {
-
+            onAuthorize(false);
         }
 
         @Override
@@ -350,12 +355,12 @@ public class mFacebook extends MessageService {
 
         @Override
         public void onException(Throwable throwable) {
-
+            onAuthorize(false);
         }
 
         @Override
         public void onFail(String reason) {
-
+            onAuthorize(false);
         }
 
     /*

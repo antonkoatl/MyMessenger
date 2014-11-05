@@ -1,6 +1,8 @@
 package com.example.mymessenger;
 
 import android.graphics.Bitmap;
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.text.format.Time;
 import android.view.View;
 
@@ -9,8 +11,7 @@ import com.example.mymessenger.services.MessageService.MessageService;
 import java.util.ArrayList;
 import java.util.List;
 
-public class mDialog {
-	public List<mMessage> messages;
+public class mDialog implements Parcelable {
 	public List<mContact> participants;
 	public int msg_service_type;
 
@@ -25,19 +26,16 @@ public class mDialog {
 	public String title;
 		
 	public mDialog() {
-		messages = new ArrayList<mMessage>();
 		participants = new ArrayList<mContact>();
 	}
 	
 
 	public mDialog(mContact cnt) {
-		messages = new ArrayList<mMessage>();
 		participants = new ArrayList<mContact>();
 		this.participants.add(cnt);
 	}
 
     public mDialog(mDialog dlg) {
-        messages = new ArrayList<mMessage>(dlg.messages);
         participants = new ArrayList<mContact>(dlg.participants);
 
         this.chat_id = dlg.chat_id;
@@ -45,6 +43,15 @@ public class mDialog {
         this.last_msg = dlg.last_msg;
         this.last_msg_id = dlg.last_msg_id;
         this.title = dlg.title;
+    }
+
+    public mDialog(Parcel sour){
+        this.chat_id = sour.readLong();
+        sour.readList(this.participants, mContact.class.getClassLoader());
+        this.title = sour.readString();
+        this.last_msg = sour.readParcelable(mMessage.class.getClassLoader());
+        this.last_msg_id = sour.readString();
+        this.msg_service_type = sour.readInt();
     }
 
 
@@ -127,14 +134,8 @@ public class mDialog {
 		if(getLastMessageTime().before(dlg.getLastMessageTime()) && participants.equals(dlg.participants)){
 			last_msg = dlg.last_msg;
 
-			for(mMessage m : dlg.messages){
-				if(messages.contains(m))break;
-				else {
-					int pos = 0;
-					while(messages.get(pos).sendTime.after(m.sendTime))pos++;
-					messages.add(pos, m);
-				}
-			}
+
+
 			
 			if(dlg_ui_helper != null)dlg_ui_helper.update();
 		}		
@@ -187,5 +188,20 @@ public class mDialog {
             }
         }
 
+    }
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeLong(chat_id);
+        dest.writeList(participants);
+        dest.writeString(title);
+        dest.writeParcelable(last_msg, flags);
+        dest.writeString(last_msg_id);
+        dest.writeInt(msg_service_type);
     }
 }

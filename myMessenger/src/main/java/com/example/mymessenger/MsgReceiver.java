@@ -25,7 +25,7 @@ public class MsgReceiver extends BroadcastReceiver {
 	MyApplication app;
 
 	@Override
-	public void onReceive(Context context, Intent intent) {
+	public void onReceive(final Context context, Intent intent) {
 		app = (MyApplication) context.getApplicationContext();
 		
 		if(intent.getAction().equals(ACTION_RECEIVE)){
@@ -37,25 +37,37 @@ public class MsgReceiver extends BroadcastReceiver {
             if(dlg == null){
                 if(chat_id == 0){
                     dlg = new mDialog(msg.respondent);
+                    dlg.setLastMsg(msg);
+                    process_msg(msg, dlg, ms, context);
                 } else {
                     dlg = new mDialog();
                     dlg.chat_id = chat_id;
+                    dlg.setLastMsg(msg);
+
+                    AsyncTaskCompleteListener<mDialog> cb = new AsyncTaskCompleteListener<mDialog>() {
+                        MessageService ms;
+
+                        @Override
+                        public void onTaskComplete(mDialog result) {
+                            process_msg(result.last_msg, result, ms, context);
+                        }
+
+                        AsyncTaskCompleteListener<mDialog> setMS(MessageService ms){
+                            this.ms = ms;
+                            return this;
+                        }
+                    }.setMS(ms);
+
+                    ms.requestChatData(chat_id, cb);
                 }
+            } else {
+                dlg.setLastMsg(msg);
+                process_msg(msg, dlg, ms, context);
             }
 
-            dlg.setLastMsg(msg);
-            ms.msDBHelper.updateDlgInDB(msg, chat_id, ms);
-            ms.msDBHelper.updateMsgInDB(msg, dlg, ms);
 
-            ms.getMsApp().triggerMsgUpdaters(msg, dlg);
-            ms.getMsApp().triggerDlgUpdaters(dlg);
 
-			if(!msg.getFlag(mMessage.OUT)){
-				if(app.getUA() != app.UA_MSGS_LIST && app.getUA() != app.UA_DLGS_LIST)
-					createInfoNotification(context, msg, chat_id);
-				else
-					createSimpleNotification(context, msg);
-			}
+
 		}
 
 		if(intent.getAction().equals(ACTION_UPDATE)){
@@ -93,22 +105,37 @@ public class MsgReceiver extends BroadcastReceiver {
 		
 	}
 
-    public void createInfoNotification(Context context, mMessage msg, long chat_id){
+    private void process_msg(mMessage msg, mDialog dlg, MessageService ms, Context context){
+        ms.msDBHelper.updateDlgInDB(msg, dlg.chat_id, ms);
+        ms.msDBHelper.updateMsgInDB(msg, dlg, ms);
+
+        ms.getMsApp().triggerMsgUpdaters(msg, dlg);
+        ms.getMsApp().triggerDlgUpdaters(dlg);
+
+        if(!msg.getFlag(mMessage.OUT)){
+            if(app.getUA() != app.UA_MSGS_LIST && app.getUA() != app.UA_DLGS_LIST)
+                createInfoNotification(context, msg, dlg);
+            else
+                createSimpleNotification(context, msg);
+        }
+    }
+
+    public void createInfoNotification(Context context, mMessage msg, mDialog dlg){
         manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
 
         Intent notificationIntent = new Intent(context, MainActivity.class); // по клику на уведомлении откроется MainActivity
         notificationIntent.putExtra("notification_clicked_msg", true);
         notificationIntent.putExtra("msg", msg);
-        notificationIntent.putExtra("chat_id", chat_id);
+        notificationIntent.putExtra("dlg", dlg);
 
         NotificationCompat.Builder nb = new NotificationCompat.Builder(context)
                 .setSmallIcon(R.drawable.ic_launcher) //иконка уведомления
                 .setAutoCancel(true) //уведомление закроется по клику на него
                 .setTicker(msg.text) //текст, который отобразится вверху статус-бара при создании уведомления
-                .setContentText(msg.text) // Основной текст уведомления
+                .setContentText(msg.text.length() < 50 ? msg.text : msg.text.substring(0, 50) + "...") // Основной текст уведомления
                 .setContentIntent(PendingIntent.getActivity(context, 0, notificationIntent, PendingIntent.FLAG_CANCEL_CURRENT))
                 .setWhen(msg.sendTime.toMillis(false)) //отображаемое время уведомления
-                .setContentTitle(app.msManager.getService(msg.msg_service).getServiceName() + " - " + msg.respondent.getName() + (chat_id == 0 ? "" : " (" + getChatName(msg, chat_id) + ")")) //заголовок уведомления
+                .setContentTitle(app.msManager.getService(msg.msg_service).getServiceName() + " - " + msg.respondent.getName() + (dlg.chat_id == 0 ? "" : " (" + getChatName(msg, dlg.chat_id) + ")")) //заголовок уведомления
                 .setDefaults(Notification.DEFAULT_ALL); // звук, вибро и диодный индикатор выставляются по умолчанию
 
         Notification notification = nb.build(); //генерируем уведомление

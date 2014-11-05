@@ -71,6 +71,8 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
     protected SharedPreferences sPref;
 
     boolean msIsSetupFinished = false;
+    boolean msIsInitFinished = false;
+    boolean isLoading = false;
     protected int msSetupStage;
     protected AsyncTaskCompleteListener<MessageService> cbms_for_setup = null;
 
@@ -81,7 +83,7 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
          Авторизация
          Обновление сообщений
      */
-    boolean msIsInitFinished = false;
+
 
 
     static {
@@ -118,16 +120,14 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
 
     @Override
     public void init(){
-        if(!msIsSetupFinished){
-            setup(null);
-            return;
+        if(msIsSetupFinished){
+            if(!msAuthorised){
+                isLoading = true;
+                authorize(MyApplication.getMainActivity());
+            } else onInitFinish();
+        } else {
+            setShownError(true);
         }
-        if(!msAuthorised){
-            authorize(MyApplication.getMainActivity());
-            return;
-        }
-
-        onInitFinish();
     }
 
 
@@ -153,6 +153,7 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
         msIsSetupFinished = false;
         msSetupStage = 1;
         cbms_for_setup = asms;
+        isLoading = true;
         setupStages();
     }
 
@@ -258,7 +259,11 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
         }
     }
 
-    protected abstract void requestNewMessagesRunnableFromNet(AsyncTaskCompleteListener<RunnableAdvanced<?>> cb);
+    protected abstract void requestNewMessagesRunnableFromNet(final AsyncTaskCompleteListener<RunnableAdvanced<?>> cb);
+
+    public final void requestChatData(long chat_id, AsyncTaskCompleteListener<mDialog> cb){
+        if(isOnline()) getChatFromNet(new ChatDownloadsRequest(chat_id, cb));
+    }
 
     // TODO: Пересмотреть
     public final void refreshMessagesFromNet(mDialog dlg, AsyncTaskCompleteListener<List<mMessage>> cb, int count) {
@@ -400,6 +405,10 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
     // Загрузка диалогов из интернета
     protected abstract void getDialogsFromNet(DlgsDownloadsRequest req);
 
+
+    // Загрузка информации чата
+    protected abstract void getChatFromNet(final ChatDownloadsRequest req);
+
     // Обновить информацию о потоках загрузки сообщений
     protected final void updateMsgsThreadCount(mDialog dlg, int count) {
         IntegerMutable lm_count = msgs_thread_count.get(dlg);
@@ -411,7 +420,7 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
 
     @Override
     public boolean isLoading() {
-        return !(msIsSetupFinished && msIsInitFinished);
+        return isLoading;
     }
 
 
@@ -471,6 +480,7 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
                 sPref.edit().putBoolean(PREFS_SETUP_FINISHED, msIsSetupFinished).commit();
                 msIsInitFinished = true;
                 if (cbms_for_setup != null) cbms_for_setup.onTaskComplete(this);
+                isLoading = false;
                 init();
                 break;
         }
@@ -493,7 +503,6 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
     public final void refresh() { //сбросить все индикаторы завершения загрузок
         dl_all_dlgs_downloaded = false;
     }
-
 
     protected class msUpdateDlgsDB_cb implements AsyncTaskCompleteListener<List<mDialog>> {
         AsyncTaskCompleteListener<List<mDialog>> cb;
@@ -813,6 +822,10 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
         return this.msIsInitFinished;
     }
 
+    public final boolean isSetupFinished(){
+        return this.msIsSetupFinished;
+    }
+
 
 
 
@@ -875,23 +888,30 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
 
 
 
-    protected void onAuthorize(){
+    protected void onAuthorize(boolean successful){
         msAuthorisationFinished = true;
-        msAuthorised = true;
-        if(!msIsSetupFinished){
-            msSetupStage++;
-            setupStages();
-        } else if (!msIsInitFinished) {
-            onInitFinish();
+        if(successful) {
+            msAuthorised = true;
+            if (!msIsSetupFinished) {
+                msSetupStage++;
+                setupStages();
+            } else if (!msIsInitFinished) {
+                onInitFinish();
+            }
+        } else {
+            isLoading = false;
+            setShownLoading(false);
+            setShownError(true);
         }
     }
 
     protected void onInitFinish(){
         msIsInitFinished = true;
-        setLoading(isLoading());
+        isLoading = false;
+        updateShownStatus();
     }
 
-    public void setLoading(boolean fl){
+    public void setShownLoading(boolean fl){
         if(MyApplication.getMainActivity() != null && ((MainActivity) MyApplication.getMainActivity()).pagerAdapter != null) {
             ServicesMenuFragment fr = (ServicesMenuFragment) ((MainActivity) MyApplication.getMainActivity()).pagerAdapter.getRegisteredFragment(0);
             if(fr != null)
@@ -899,6 +919,18 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
         }
     }
 
+    public void setShownError(boolean fl){
+        if(MyApplication.getMainActivity() != null && ((MainActivity) MyApplication.getMainActivity()).pagerAdapter != null) {
+            ServicesMenuFragment fr = (ServicesMenuFragment) ((MainActivity) MyApplication.getMainActivity()).pagerAdapter.getRegisteredFragment(0);
+            if(fr != null)
+                fr.setServiceError(this, fl);
+        }
+    }
+
+    public void updateShownStatus(){
+        setShownError(!isSetupFinished() || !isInitFinished());
+        setShownLoading(isLoading());
+    }
 
 
     protected void setNotAuthorised(){
@@ -1078,7 +1110,44 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
         }
     }
 
+    public class ChatDownloadsRequest implements DownloadsRequest<mDialog> {
+        public AsyncTaskCompleteListener<mDialog> cb;
+        public long chat_id;
 
+        ChatDownloadsRequest(long chat_id, AsyncTaskCompleteListener<mDialog> cb) {
+            this.cb = cb;
+            this.chat_id = chat_id;
+        }
+
+        @Override
+        public void onStarted() {
+
+        }
+
+        @Override
+        public void onFinished(mDialog result) {
+            if (cb != null) {
+                ((MainActivity) MyApplication.getMainActivity()).runOnUiThread(new Runnable() {
+                    mDialog dlg;
+
+                    Runnable setDlg(mDialog dlg) {
+                        this.dlg = dlg;
+                        return this;
+                    }
+
+                    @Override
+                    public void run() {
+                        cb.onTaskComplete(dlg);
+                    }
+                }.setDlg(result));
+            }
+        }
+
+        @Override
+        public void onError() {
+
+        }
+    }
 
 
 

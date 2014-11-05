@@ -56,7 +56,7 @@ public class Sms extends MessageService {
 
     @Override
     public void authorize(Context context) {
-        onAuthorize();
+        onAuthorize(true);
     }
 
     @Override
@@ -263,6 +263,11 @@ public class Sms extends MessageService {
     @Override
     protected void getDialogsFromNet(DlgsDownloadsRequest req) {
         req.onFinished(new ArrayList<mDialog>());
+    }
+
+    @Override
+    protected void getChatFromNet(ChatDownloadsRequest req) {
+
     }
 
     @Override

@@ -66,8 +66,7 @@ public class MessageServiceManager {
 
             @Override
             public void onTaskComplete(MessageService ms) {
-                ListViewSimpleFragment fr2 = (ListViewSimpleFragment) ((MainActivity) msApp.getMainActivity()).pagerAdapter.getRegisteredFragment(1);
-                fr2.POSITION = FragmentPagerAdapter.POSITION_NONE;
+                ((MainActivity) msApp.getMainActivity()).pagerAdapter.recreateFragment(1);
 
                 ((MainActivity) msApp.getMainActivity()).runOnUiThread(new Runnable() {
 

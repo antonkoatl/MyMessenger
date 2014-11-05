@@ -18,6 +18,7 @@ import android.view.View.OnClickListener;
 import android.view.View.OnTouchListener;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -67,7 +68,7 @@ public class ServicesMenuFragment extends Fragment implements OnClickListener, O
         
         LinearLayout ll_list = (LinearLayout) rootView.findViewById(R.id.linearlay_mainbuttons);
 
-        for(msInterfaceUI ser : app.msManager.myMsgServices){
+        for(MessageService ser : app.msManager.myMsgServices){
         	View button_view = inflater.inflate(R.layout.main_servicerow, container, false);
         	
         	Button service_button = (Button) button_view.findViewById(R.id.service_button);
@@ -80,8 +81,15 @@ public class ServicesMenuFragment extends Fragment implements OnClickListener, O
         	service_delete.setVisibility(View.INVISIBLE);
 
             ProgressBar prog_bar = (ProgressBar) button_view.findViewById(R.id.service_loading);
+
+            ImageView error_icon = (ImageView) button_view.findViewById(R.id.error_icon);
+
             if(ser.isLoading()) prog_bar.setVisibility(View.VISIBLE);
-            else prog_bar.setVisibility(View.INVISIBLE);
+            else {
+                prog_bar.setVisibility(View.INVISIBLE);
+                if(!ser.isSetupFinished() || !ser.isInitFinished()) error_icon.setVisibility(View.VISIBLE);
+                else error_icon.setVisibility(View.INVISIBLE);
+            }
 
         	ll_list.addView(button_view);
             service_button_views.put(ser.getServiceType(), button_view);
@@ -160,20 +168,15 @@ public class ServicesMenuFragment extends Fragment implements OnClickListener, O
 	public void onClick(View view) {
 		if( isServicesButton(view) ){
 			if(isForDelete){
-                ((MyApplication) getActivity().getApplication()).msManager.deleteService((Integer) view.getTag());
+                ((MyApplication) getActivity().getApplication()).msManager.deleteService((Integer) view.getTag(R.id.SERVICE_BUTTON_SERVICE_KEY));
 				//setForNormal();
-				ServicesMenuFragment fr = (ServicesMenuFragment) ((MainActivity) getActivity()).pagerAdapter.getRegisteredFragment(0);		
-				fr.POSITION = FragmentPagerAdapter.POSITION_NONE;
-				
-				ListViewSimpleFragment fr2 = (ListViewSimpleFragment) ((MainActivity) getActivity()).pagerAdapter.getRegisteredFragment(1);				
-				fr2.POSITION = FragmentPagerAdapter.POSITION_NONE;
-				
-				((MainActivity) getActivity()).pagerAdapter.notifyDataSetChanged();				
+				((MainActivity) getActivity()).pagerAdapter.recreateFragment(0);
+                ((MainActivity) getActivity()).pagerAdapter.recreateFragment(1);
 			} else {
 				MessageService ser = ((MyApplication) getActivity().getApplication()).msManager.getService((Integer) view.getTag(R.id.SERVICE_BUTTON_SERVICE_KEY));
 				((MyApplication) getActivity().getApplication()).msManager.active_service = ser.getServiceType();
-				getActivity().removeDialog(view.getId());
-				getActivity().showDialog(view.getId());
+				getActivity().removeDialog((Integer) view.getTag(R.id.SERVICE_BUTTON_SERVICE_KEY));
+				getActivity().showDialog((Integer) view.getTag(R.id.SERVICE_BUTTON_SERVICE_KEY));
 			}
 		}
 	}
@@ -187,7 +190,6 @@ public class ServicesMenuFragment extends Fragment implements OnClickListener, O
 	}
 
     public void setServiceLoading(MessageService ms, boolean fl) {
-        View view = getView();
         ProgressBar prog_bar = (ProgressBar) service_button_views.get(ms.getServiceType()).findViewById( R.id.service_loading );
         if(fl)
             prog_bar.setVisibility(View.VISIBLE);
@@ -199,5 +201,13 @@ public class ServicesMenuFragment extends Fragment implements OnClickListener, O
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         Log.d("ServicesMenuFragment", "onCreateOptionsMenu");
         super.onCreateOptionsMenu(menu, inflater);
+    }
+
+    public void setServiceError(MessageService ms, boolean fl) {
+        ImageView error_icon = (ImageView) service_button_views.get(ms.getServiceType()).findViewById( R.id.error_icon );
+        if(fl)
+            error_icon.setVisibility(View.VISIBLE);
+        else
+            error_icon.setVisibility(View.INVISIBLE);
     }
 }

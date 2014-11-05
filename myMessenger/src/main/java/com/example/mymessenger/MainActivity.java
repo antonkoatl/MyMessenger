@@ -173,24 +173,10 @@ public class MainActivity extends ActionBarActivity {
 
             long chat_id = intent.getLongExtra("chat_id", 0);
 
-            mDialog dlg;
+            mDialog dlg = intent.getParcelableExtra("dlg");
 
-
-        	dlg = ms.msDBHelper.findDlgInDB(msg, chat_id, ms);
-            if(dlg == null){
-                if(chat_id == 0){
-                    dlg = new mDialog(msg.respondent);
-                } else {
-                    dlg = new mDialog();
-                    dlg.chat_id = chat_id;
-                }
-
-            }
-
-            dlg.setLastMsg(msg);
         	ms.setActiveDialog(dlg);
-        	app.triggerDlgUpdaters(dlg);
-        	
+
         	pagerAdapter.recreateFragment(2);
         	mViewPager.setCurrentItem(2, false);
         }
@@ -414,7 +400,7 @@ public class MainActivity extends ActionBarActivity {
 	protected Dialog onCreateDialog(int id) {
 		AlertDialog.Builder adb = new AlertDialog.Builder(this);
 		
-		msInterfaceUI ser = getServiceFromButtonId(id);
+		msInterfaceUI ser = app.msManager.getService(id);
 		
 		String data[] = ser.getStringsForMainViewMenu();
 
@@ -423,7 +409,7 @@ public class MainActivity extends ActionBarActivity {
 
 		return adb.create();
 	}
-			
+
 
 	android.content.DialogInterface.OnClickListener myClickListener = new android.content.DialogInterface.OnClickListener() {
 		public void onClick(DialogInterface dialog, int which) {

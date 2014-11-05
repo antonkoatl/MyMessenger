@@ -91,8 +91,9 @@ public class mTwitter extends MessageService {
                 Log.d("msTwitter", at.getTokenSecret());
                 sPref.edit().putString(ACCESS_TOKEN, at.getToken()).commit();
                 sPref.edit().putString(SECRET_TOKEN, at.getTokenSecret()).commit();
-                onAuthorize();
+                onAuthorize(true);
             } catch (TwitterException e) {
+                onAuthorize(false);
                 e.printStackTrace();
             }
         }
@@ -150,8 +151,8 @@ public class mTwitter extends MessageService {
     double_auth da;
 
     @Override
-    protected void onAuthorize(){
-        super.onAuthorize();
+    protected void onAuthorize(boolean successful){
+        super.onAuthorize(successful);
         if(!isInitFinished()) onInitFinish();
         da = null;
     }
@@ -413,6 +414,11 @@ public class mTwitter extends MessageService {
 
         //MyApplication.handler1.post(r);
         handler1.post(r);
+    }
+
+    @Override
+    protected void getChatFromNet(ChatDownloadsRequest req) {
+
     }
 
     private void handleTwitterException(TwitterException e, Runnable runnable, DownloadsRequest req) {

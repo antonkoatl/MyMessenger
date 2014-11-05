@@ -314,7 +314,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
     }
 
 
-    AsyncTaskCompleteListener<List<mDialog>> dlg_receiver = new AsyncTaskCompleteListener<List<mDialog>>(){
+    public AsyncTaskCompleteListener<List<mDialog>> dlg_receiver = new AsyncTaskCompleteListener<List<mDialog>>(){
 
         @Override
         public void onTaskComplete(List<mDialog> result) {

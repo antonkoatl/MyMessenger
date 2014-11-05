@@ -67,11 +67,11 @@ public class Vk extends MessageService {
     // Necessary methods
 
     @Override
-    public void requestNewMessagesRunnableFromNet(AsyncTaskCompleteListener<RunnableAdvanced<?>> cb){
+    public void requestNewMessagesRunnableFromNet(final AsyncTaskCompleteListener<RunnableAdvanced<?>> cb){
         VKRequest request = new VKRequest("messages.getLongPollServer", VKParameters.from(VKApiConst.COUNT, String.valueOf(1)));
         request.secure = false;
         VKParameters preparedParameters = request.getPreparedParameters();
-        VKRequestListener rl = 	new VKRequestListenerWithCallback<RunnableAdvanced<?>>(cb, Vk.this) {
+        VKRequestListener rl = 	new VKRequestListenerWithCallback<RunnableAdvanced<?>>(Vk.this) {
 
             @Override
             public void onComplete(VKResponse response) {
@@ -85,7 +85,7 @@ public class Vk extends MessageService {
                     Integer ts = response_json.getInt( "ts" );
 
                     RunnableAdvanced<?> r = new LongPollRunnable(server, key, ts);
-                    callback.onTaskComplete(r);
+                    cb.onTaskComplete(r);
 
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -100,7 +100,7 @@ public class Vk extends MessageService {
 
     @Override
     public void authorize(Context acontext){
-        if(msAuthorisationFinished){
+        if(msAuthorisationFinished && acontext != null){
             VKUIHelper.onResume((Activity) acontext);
             VKSdk.authorize(sMyScope, false, true);
             //VKUIHelper.onDestroy((Activity) acontext);
@@ -114,7 +114,7 @@ public class Vk extends MessageService {
         request.secure = false;
         VKParameters preparedParameters = request.getPreparedParameters();
 
-        VKRequestListener rl = new VKRequestListenerWithCallback<Void>(null, Vk.this) {
+        VKRequestListener rl = new VKRequestListenerWithCallback<Void>(Vk.this) {
             @Override
             public void onComplete(VKResponse response) {
                 super.onComplete(response);
@@ -160,7 +160,7 @@ public class Vk extends MessageService {
 
 
 
-        VKRequestListener rl = new VKRequestListenerWithCallback<Void>(null, Vk.this) {
+        VKRequestListener rl = new VKRequestListenerWithCallback<Void>(Vk.this) {
             @Override
             public void onComplete(VKResponse response) {
                 Log.d("VKRequestListener", response.request.methodName +  " :: onComplete");
@@ -251,6 +251,9 @@ public class Vk extends MessageService {
             data[0] = getActiveDialog().getParticipantsNames();
         }
 
+        if(!isInitFinished() || !isSetupFinished()){
+            data[0] = "Error";
+        }
 
         return data;
     }
@@ -259,7 +262,11 @@ public class Vk extends MessageService {
     public void MainViewMenu_click(int which, Context con) {
         switch(which) {
             case 0:
-                openActiveDlg();
+                if(!isInitFinished() || !isSetupFinished()){
+                    if(!isSetupFinished())
+                        setup(null);
+                    else init();
+                } else openActiveDlg();
                 break;
             case 1:
                 openContacts(con);
@@ -280,7 +287,7 @@ public class Vk extends MessageService {
         request.secure = false;
         VKParameters preparedParameters = request.getPreparedParameters();
 
-        VKRequestListener rl = new VKRequestListenerWithCallback<List<mContact>>(null, Vk.this) {
+        VKRequestListener rl = new VKRequestListenerWithCallback<List<mContact>>(Vk.this) {
             @Override
             public void onComplete(VKResponse response) {
                 Log.d("requestContacts", "onComplete" );
@@ -366,7 +373,7 @@ public class Vk extends MessageService {
 
         final mMessage tmsg = msg;
 
-        VKRequestListener rl = new VKRequestListenerWithCallback<Void>(null, Vk.this) {
+        VKRequestListener rl = new VKRequestListenerWithCallback<Void>( Vk.this) {
             @Override
             public void onComplete(VKResponse response) {
                 Log.d("requestMarkAsReaded", "onComplete" );
@@ -397,7 +404,7 @@ public class Vk extends MessageService {
         request.secure = false;
         VKParameters preparedParameters = request.getPreparedParameters();
 
-        VKRequestListener rl = new VKRequestListenerWithCallback<List<mDialog>>(req.cb, Vk.this) {
+        VKRequestListener rl = new VKRequestListenerWithCallback<List<mDialog>>(Vk.this) {
 
             @Override
             public void onComplete(VKResponse response) {
@@ -523,17 +530,17 @@ public class Vk extends MessageService {
         request.secure = false;
         VKParameters preparedParameters = request.getPreparedParameters();
 
-        VKRequestListener rl = new VKRequestListenerWithCallback<List<mMessage>>(req.cb, Vk.this) {
+        VKRequestListener rl = new VKRequestListenerWithCallback<List<mMessage>>(Vk.this) {
             @Override
             public void onComplete(VKResponse response) {
-                Log.d("VKRequestListener", response.request.methodName +  " :: onComplete");
+                super.onComplete(response);
                 List<mMessage> msgs = new ArrayList<mMessage>();
                 boolean all_new = true;
                 try {
                     JSONObject response_json = response.json.getJSONObject("response");
                     JSONArray items = response_json.getJSONArray("items");
 
-                    mDialog dlg = (mDialog) params.get(0);
+                    mDialog dlg = req.dlg;
 
                     for (int i = 0; i < items.length(); i++) {
                         JSONObject item = items.getJSONObject(i);
@@ -557,11 +564,48 @@ public class Vk extends MessageService {
 
         };
 
-        ((VKRequestListenerWithCallback<List<mMessage>>) rl).setParams(req.dlg);
+
         request.executeWithListener(rl);
 
     }
 
+    @Override
+    protected void getChatFromNet(final ChatDownloadsRequest req){
+        req.onStarted();
+        VKRequest request = new VKRequest("messages.getChat", VKParameters.from("chat_id", String.valueOf(req.chat_id)));
+
+        VKRequestListener rl = new VKRequestListenerWithCallback<List<mMessage>>(Vk.this) {
+            @Override
+            public void onComplete(VKResponse response) {
+                super.onComplete(response);
+
+                mDialog dlg = new mDialog();
+
+
+                try {
+                    JSONObject response_json = response.json.getJSONObject("response");
+                    dlg.chat_id = req.chat_id;
+                    dlg.title = response_json.getString("title");
+                    dlg.icon_50_url = response_json.getString("photo_50");
+
+                    JSONArray users = response_json.getJSONArray("users");
+                    for(int i = 0; i < users.length(); i++){
+                        dlg.participants.add(getContact(users.getString(0)));
+                    }
+
+
+                    Log.d("getChat", "onTaskComplete - net :: " + String.valueOf(req.chat_id));
+                    req.onFinished(dlg);
+
+
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+
+        };
+
+    }
 
     @Override
     public String getEmojiUrl(long code){
@@ -606,6 +650,7 @@ public class Vk extends MessageService {
         public void onAccessDenied(VKError authorizationError) {
             msAuthorisationFinished = true;
             Log.d("VKSdkListener", "onAccessDenied" );
+            onAuthorize(false);
             /*new AlertDialog.Builder(msApp.getApplicationContext())
                     .setMessage(authorizationError.errorMessage)
                     .show();*/
@@ -615,22 +660,21 @@ public class Vk extends MessageService {
         public void onReceiveNewToken(VKAccessToken newToken) {
             Log.d("VKSdkListener", "onReceiveNewToken " + newToken.accessToken + " :: " + sTokenKey + " :: " + VKSdk.getAccessToken().accessToken);
             newToken.saveTokenToSharedPreferences(msApp.getApplicationContext(), sTokenKey);
-            onAuthorize();
+            onAuthorize(true);
         }
 
         @Override
         public void onAcceptUserToken(VKAccessToken token) {
             Log.d("VKSdkListener", "onAcceptUserToken" );
-            onAuthorize();
+            onAuthorize(true);
         }
     };
 
     @Override
-    protected void onAuthorize(){
-        super.onAuthorize();
-
-        if(!isInitFinished()) onInitFinish();
-        execRequestsWaitingForAuth();
+    protected void onAuthorize(boolean successful){
+        super.onAuthorize(successful);
+        if(successful)
+            execRequestsWaitingForAuth();
     }
 
     public void HandleApiError(VKError error){ // http://vk.com/dev/errors
