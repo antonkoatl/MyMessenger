@@ -9,7 +9,7 @@ public class mGlobal {
 	public static Resources res;
 	public static boolean inited;
 	public static boolean isTablet = false;
-
+    public static int msg_max_width;
 
 	static {
 		try {
@@ -18,13 +18,15 @@ public class mGlobal {
             SharedPreferences prefs = MyApplication.context.getApplicationContext().getSharedPreferences(null, 0);
            
             inited = true;
+            msg_max_width = MyApplication.context.getResources().getDisplayMetrics().widthPixels - 2*scale(50) - 10;
+
         } catch (Exception e) {
         }
 
 		
 	}
 
-    public static int msg_max_width = 368;
+
 
 
     public static int scale(float dip) {

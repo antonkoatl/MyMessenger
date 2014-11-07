@@ -1,8 +1,15 @@
 package com.example.mymessenger;
 
+import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.util.DisplayMetrics;
+import android.widget.ImageView;
 
 public class mContact implements Parcelable, Comparable<mContact> {
 	public String address;
@@ -10,6 +17,7 @@ public class mContact implements Parcelable, Comparable<mContact> {
 	public boolean online;
 	public Bitmap icon_50;
 	public String icon_50_url;
+    Drawable icon_50_drawable;
 	
 	public mContact(String address) {
 		this.address = address;
@@ -77,5 +85,16 @@ public class mContact implements Parcelable, Comparable<mContact> {
 
     public void clearCached(){
         icon_50 = null;
+    }
+
+    public Drawable getIconDrawable(Context context) {
+        if (icon_50_drawable == null) {
+            if(icon_50_url == null){
+                icon_50_drawable = context.getResources().getDrawable( R.drawable.sample_image );
+            } else {
+                icon_50_drawable = new DrawableDL(icon_50_url, mGlobal.scale(50), mGlobal.scale(50), context);
+            }
+        }
+        return icon_50_drawable;
     }
 }

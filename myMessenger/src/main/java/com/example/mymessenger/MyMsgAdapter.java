@@ -14,6 +14,7 @@ import java.util.List;
 public class MyMsgAdapter extends BaseAdapter {
     LayoutInflater lInflater;
     List<mMessage> data;
+    mDialog dlg;
     Context context;
 
 
@@ -55,7 +56,7 @@ public class MyMsgAdapter extends BaseAdapter {
         }
 
         mMessage msg = data.get(position);
-        msg.setupUIView(view);
+        msg.setupUIView(view, dlg);
 
         return view;
     }
@@ -92,6 +93,10 @@ public class MyMsgAdapter extends BaseAdapter {
         mMessage t = data.remove(tind);
         notifyDataSetChanged();
         return t;
+    }
+
+    public void setDlg(mDialog dlg){
+        this.dlg = dlg;
     }
 
 }

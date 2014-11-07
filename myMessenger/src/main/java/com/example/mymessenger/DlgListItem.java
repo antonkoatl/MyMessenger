@@ -6,6 +6,7 @@ import android.text.Spannable;
 import android.util.DisplayMetrics;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.example.mymessenger.services.MessageService.MessageService;
@@ -43,53 +44,18 @@ public class DlgListItem {
         }
 
         ImageView iv = (ImageView) view.findViewById(R.id.dlgview_iconmain);
-        if (dlg.isChat()){
-            if(dlg.icon_50 != null)
-                iv.setImageBitmap(dlg.icon_50);
-            else {
-                if(dlg.icon_50_url == null)
-                    dlg.icon_50_url = dlg.participants.get(0).icon_50_url;
 
-                download_waiter tw = new download_waiter(dlg.icon_50_url) {
-                    ImageView iv;
-                    mDialog dlg;
-
-                    @Override
-                    public void onDownloadComplete() {
-                        BitmapFactory.Options options = new BitmapFactory.Options();
-                        options.inDensity = DisplayMetrics.DENSITY_LOW;
-                        options.inScaled = true;
-                        options.inTargetDensity = MyApplication.context.getResources().getDisplayMetrics().densityDpi;
-                        dlg.icon_50 = BitmapFactory.decodeFile(filepath, options);
-                        iv.setImageBitmap(dlg.icon_50);
-                    }
-
-                    public download_waiter setParams(ImageView iv, mDialog dlg) {
-                        this.iv = iv;
-                        this.dlg = dlg;
-                        return this;
-                    }
-
-
-                }.setParams(iv, dlg);
-
-                app.dl_waiters.add(tw);
-
-                Intent intent = new Intent(iv.getContext(), DownloadService.class);
-                intent.putExtra("url", dlg.icon_50_url);
-                iv.getContext().getApplicationContext().startService(intent);
-            }
-        } else {
-            showContactImage(dlg.participants.get(0), iv);
-        }
+        iv.setImageDrawable(dlg.getIconDrawable(view.getContext()));
 
         iv = (ImageView) view.findViewById(R.id.dlgview_dlgtexticon);
         if (dlg.last_msg.isOut()) {
             mContact my_contact = app.msManager.getService(dlg.msg_service_type).getMyContact();
-            showContactImageSmall(my_contact, iv);
+            iv.setImageDrawable(my_contact.getIconDrawable(view.getContext()));
+            //showContactImageSmall(my_contact, iv);
         } else if(dlg.isChat()){
             mContact contact = dlg.last_msg.respondent;
-            showContactImageSmall(contact, iv);
+            iv.setImageDrawable(contact.getIconDrawable(view.getContext()));
+            //showContactImageSmall(contact, iv);
 
         } else {
      		iv.setVisibility(View.INVISIBLE);

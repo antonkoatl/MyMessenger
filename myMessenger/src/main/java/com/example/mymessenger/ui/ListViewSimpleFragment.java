@@ -674,6 +674,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 
     public void setDialog(mDialog dlg){
         if(mode == MESSAGES){
+            msg_adapter.setDlg(dlg);
             Button send_button = ((Button) rootView.findViewById(R.id.msg_sendbutton));
             View myLayout = rootView.findViewById( R.id.msg_footer );
             ImageView b = (ImageView) myLayout.findViewById(R.id.msg_keyboard);

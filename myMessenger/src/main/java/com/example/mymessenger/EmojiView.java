@@ -70,8 +70,6 @@ public class EmojiView extends LinearLayout {
     }
 
     public class EmojiDrawable extends Drawable {
-
-
         Bitmap bmp;
         long eid;
 

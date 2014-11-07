@@ -92,8 +92,8 @@ public class mMessage implements Parcelable {
 		this.flags = msg.flags;
 	}
 
-	public void setupUIView(View view) {
-		if(msg_ui_helper == null)msg_ui_helper = new MsgListItem(this, (MyApplication) view.getContext().getApplicationContext() );
+	public void setupUIView(View view, mDialog dlg) {
+		if(msg_ui_helper == null)msg_ui_helper = new MsgListItem(this, dlg, (MyApplication) view.getContext().getApplicationContext() );
 		
 		msg_ui_helper.setupView(view);
 	}

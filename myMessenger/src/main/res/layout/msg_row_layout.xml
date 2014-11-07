@@ -11,7 +11,12 @@
         android:background="@drawable/bubble_green"
         android:id="@+id/msg_linearLayout"
         android:layout_alignParentRight="true"
-        android:layout_alignParentLeft="false">
+        android:layout_alignParentLeft="false"
+        android:layout_marginRight="50dp"
+        android:measureWithLargestChild="false"
+        android:paddingLeft="-20dp"
+        android:paddingRight="-50dp"
+        android:layout_marginLeft="50dp">
 
         <com.example.mymessenger.ui.WrapWidthTextView
             android:id="@+id/msg_text"
@@ -35,7 +40,16 @@
         android:textSize="10sp"
         android:layout_alignParentTop="false"
         android:layout_toLeftOf="@+id/msg_linearLayout"
-        android:gravity="right" />
+        android:gravity="right"
+        android:layout_marginRight="-50dp" />
+
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/msg_user_icon"
+        android:src="@drawable/sample_image"
+        android:layout_toRightOf="@+id/msg_linearLayout"
+        android:layout_marginLeft="-50dp" />
 
 
 </RelativeLayout>

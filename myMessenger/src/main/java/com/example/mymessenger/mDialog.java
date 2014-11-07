@@ -1,6 +1,8 @@
 package com.example.mymessenger;
 
+import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.drawable.Drawable;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.text.format.Time;
@@ -18,6 +20,7 @@ public class mDialog implements Parcelable {
     public long chat_id;
     public Bitmap icon_50;
     public String icon_50_url;
+    Drawable icon_50_drawable;
 	
     public mMessage last_msg;
     public String last_msg_id;
@@ -203,5 +206,20 @@ public class mDialog implements Parcelable {
         dest.writeParcelable(last_msg, flags);
         dest.writeString(last_msg_id);
         dest.writeInt(msg_service_type);
+    }
+
+    public Drawable getIconDrawable(Context context) {
+        if (icon_50_drawable == null) {
+            if(isChat()) {
+                if (icon_50_url == null) {
+                    icon_50_drawable = participants.get(0).getIconDrawable(context);
+                } else {
+                    icon_50_drawable = new DrawableDL(icon_50_url, mGlobal.scale(50), mGlobal.scale(50), context);
+                }
+            } else {
+                icon_50_drawable = participants.get(0).getIconDrawable(context);
+            }
+        }
+        return icon_50_drawable;
     }
 }
