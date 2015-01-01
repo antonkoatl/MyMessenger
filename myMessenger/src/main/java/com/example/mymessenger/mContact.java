@@ -85,6 +85,7 @@ public class mContact implements Parcelable, Comparable<mContact> {
 
     public void clearCached(){
         icon_50 = null;
+        icon_50_drawable = null;
     }
 
     public Drawable getIconDrawable(Context context) {

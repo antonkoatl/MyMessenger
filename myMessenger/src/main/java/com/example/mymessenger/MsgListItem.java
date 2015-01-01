@@ -1,6 +1,8 @@
 package com.example.mymessenger;
 
 import android.text.Spannable;
+import android.text.format.DateUtils;
+import android.text.format.Time;
 import android.util.DisplayMetrics;
 import android.view.Gravity;
 import android.view.View;
@@ -46,7 +48,7 @@ public class MsgListItem {
 	    if(!msg.getFlag(mMessage.READED))relativeLayout.setBackgroundColor(app.getResources().getColor(R.color.msg_notreaded));
 
         // Msg data layout
-        linearLayout.setBackgroundResource(right ? R.drawable.bubble_green : R.drawable.bubble_yellow);
+        linearLayout.setBackgroundResource(right ? R.drawable.bg_msg_out_full : R.drawable.bg_msg_in_full);
         RelativeLayout.LayoutParams lp_lay = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
         lp_lay.addRule(right ? RelativeLayout.ALIGN_PARENT_RIGHT : RelativeLayout.ALIGN_PARENT_LEFT);
         lp_lay.setMargins(right ? mGlobal.scale(50) : chat ? mGlobal.scale(50) : 0, 0, right ? chat ? mGlobal.scale(50) : 0 : mGlobal.scale(50), 0);
@@ -65,7 +67,13 @@ public class MsgListItem {
         //textLabel_text.setGravity(right ? Gravity.RIGHT : Gravity.LEFT);
 
         // Msg time
-        textLabel_date.setText( msg.sendTime.format("%H:%M\n%d.%m.%Y") );
+        String time = msg.sendTime.format("%H:%M\n");
+        if( DateUtils.isToday(msg.sendTime.toMillis(false)) ){
+            time += "today";
+        } else {
+            time += msg.sendTime.format("%d.%m.%Y");
+        }
+        textLabel_date.setText( time );
         textLabel_date.setGravity(right ? Gravity.RIGHT : Gravity.LEFT);
         RelativeLayout.LayoutParams lp_date = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
         lp_date.addRule(right ? RelativeLayout.LEFT_OF : RelativeLayout.RIGHT_OF, linearLayout.getId());

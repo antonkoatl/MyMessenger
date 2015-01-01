@@ -49,8 +49,9 @@ public class DBHelper extends SQLiteOpenHelper {
 
 	@Override
 	public void onCreate(SQLiteDatabase db) {
-		for(msInterfaceMS ms : app.msManager.myMsgServices){
-			createTablesDb(ms, db);
+		for(MessageService ms : app.msManager.myMsgServices){
+            if(ms.isSetupFinished())
+			    createTablesDb(ms, db);
 		}
 	}
 
@@ -552,7 +553,7 @@ public class DBHelper extends SQLiteOpenHelper {
         String table_name = getTableNameDlgs(ms);
 
         ContentValues cv = new ContentValues();
-        if(dlg.getParticipantsAddresses() == null || dlg.getParticipantsAddresses().length() == 0)
+        if(!dlg.isChat() && (dlg.getParticipantsAddresses() == null || dlg.getParticipantsAddresses().length() == 0))
             Log.d("DB", "DLG ERROR");
         cv.put(colParticipants, dlg.getParticipantsAddresses());
         cv.put(colLastmsgid, dlg.last_msg_id);

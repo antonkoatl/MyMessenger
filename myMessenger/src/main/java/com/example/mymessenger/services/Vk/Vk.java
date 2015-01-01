@@ -424,6 +424,7 @@ public class Vk extends MessageService {
 
                         if(item.has("chat_id")){
                             mdl.chat_id = item.getLong("chat_id");
+                            // TODO: chat_active - идентификаторы авторов последних сообщений беседы - не все?
                             JSONArray ids = item.getJSONArray("chat_active");
                             for(int i1 = 0; i1 < ids.length(); i1++){
                                 mdl.participants.add( getContact( ids.getString(i1) ) );

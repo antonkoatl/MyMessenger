@@ -208,7 +208,7 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
         setFillViewport(true);
         setWillNotDraw(false);
         this.tabsContainer = new LinearLayout(context);
-        this.tabsContainer.setOrientation(0);
+        this.tabsContainer.setOrientation(LinearLayout.HORIZONTAL);
         this.tabsContainer.setLayoutParams(new FrameLayout.LayoutParams(-1, -1));
         addView(this.tabsContainer);
         DisplayMetrics dm = getResources().getDisplayMetrics();
@@ -234,8 +234,8 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
         this.tabBackgroundResId = a.getResourceId(UserListView.TYPE_BLACKLIST, this.tabBackgroundResId);
         this.shouldExpand = a.getBoolean(NewPostActivity.POLL_EDIT_RESULT, this.shouldExpand);
         this.scrollOffset = a.getDimensionPixelSize(UserListView.TYPE_FAVE_LINKS, this.scrollOffset);
-        this.textAllCaps = a.getBoolean(UserListView.TYPE_USER_SUBSCRIPTIONS, this.textAllCaps);*/
-        a.recycle();
+        this.textAllCaps = a.getBoolean(UserListView.TYPE_USER_SUBSCRIPTIONS, this.textAllCaps);
+        a.recycle();*/
         this.rectPaint = new Paint();
         this.rectPaint.setAntiAlias(true);
         this.rectPaint.setStyle(Style.FILL);
@@ -253,7 +253,7 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
         if (badge == null) {
             addTextTab(position, title);
         } else {
-        	TextView tab = new TextView(getContext());
+            TextView tab = new TextView(getContext());
             tab.setText(title);
             tab.setFocusable(true);
             tab.setGravity(Gravity.CENTER);
@@ -266,7 +266,7 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
             bv.setTypeface(Typeface.DEFAULT_BOLD);
             bv.setBackgroundResource(R.drawable.badge_tab);
             LinearLayout ll = new LinearLayout(getContext());
-            ll.setOrientation(0);
+            ll.setOrientation(LinearLayout.HORIZONTAL);
             ll.setGravity(Gravity.CENTER);
             ll.addView(tab);
             ll.addView(bv);
@@ -276,7 +276,7 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
     }
 
     private void addIconTab(int position, int resId) {
-    	ImageButton tab = new ImageButton(getContext());
+        ImageButton tab = new ImageButton(getContext());
         tab.setFocusable(true);
         tab.setImageResource(resId);
         tab.setOnClickListener(new AnonymousClass_4(position));
@@ -284,7 +284,7 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
     }
 
     private void addTextTab(int position, CharSequence title) {
-    	TextView tab = new TextView(getContext());
+        TextView tab = new TextView(getContext());
         tab.setText(title);
         tab.setFocusable(true);
         tab.setGravity(Gravity.CENTER);
