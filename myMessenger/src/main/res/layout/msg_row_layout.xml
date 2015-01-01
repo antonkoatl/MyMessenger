@@ -2,7 +2,8 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/msg_container"
     android:layout_width="match_parent"
-    android:layout_height="match_parent" >
+    android:layout_height="match_parent"
+    android:padding="3dp">
 
     <LinearLayout
         android:orientation="vertical"
@@ -16,7 +17,7 @@
         android:measureWithLargestChild="false"
         android:paddingLeft="-20dp"
         android:paddingRight="-50dp"
-        android:layout_marginLeft="50dp">
+        android:layout_marginLeft="55dp">
 
         <com.example.mymessenger.ui.WrapWidthTextView
             android:id="@+id/msg_text"

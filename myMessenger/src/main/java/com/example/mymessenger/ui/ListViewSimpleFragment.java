@@ -105,6 +105,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
             rootView = inflater.inflate(R.layout.msg_list, container, false);
 
             listview = (PullToRefreshListView) rootView.findViewById(R.id.listview_object);
+            listview.setDivider(null);
             Button send_button = ((Button) rootView.findViewById(R.id.msg_sendbutton));
             send_button.setOnClickListener(this);
 

@@ -2,6 +2,7 @@ package com.example.mymessenger.attachments;
 
 import android.content.Context;
 import android.view.View;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import java.util.ArrayList;
@@ -24,6 +25,8 @@ public class mAttachment {
     public View getView(Context context){
         TextView textView = new TextView(context);
         textView.setText("<attachment>"+name);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        textView.setLayoutParams(lp);
         return textView;
     }
 
