@@ -1,11 +1,19 @@
 package com.example.mymessenger;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Rect;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.text.format.Time;
+import android.util.DisplayMetrics;
 import android.view.View;
 
 import com.example.mymessenger.services.MessageService.MessageService;
@@ -212,7 +220,102 @@ public class mDialog implements Parcelable {
         if (icon_50_drawable == null) {
             if(isChat()) {
                 if (icon_50_url == null) {
-                    icon_50_drawable = participants.get(0).getIconDrawable(context);
+                    if(participants.size() < 2){
+                        icon_50_drawable = context.getResources().getDrawable( R.drawable.ic_place_users_big );
+                        return icon_50_drawable;
+                    }
+
+                    icon_50_drawable = new DrawableDL(null, mGlobal.scale(50), mGlobal.scale(50), context);
+
+                    MyApplication app = (MyApplication) context.getApplicationContext();
+
+                    download_waiter tw = new download_waiter(participants.get(0).icon_50_url) {
+                        mDialog dlg;
+                        MyApplication app;
+                        String[] filepaths = new String[4];
+                        int n = 0;
+                        int i = 0;
+
+                        @Override
+                        public void onDownloadComplete() {
+                            filepaths[i] = filepath;
+                            i++;
+                            while(i < n){
+                                url = dlg.participants.get(i).icon_50_url;
+                                app.dl_waiters.add(this);
+
+                                Intent intent = new Intent(app.getApplicationContext(), DownloadService.class);
+                                intent.putExtra("url", url);
+                                app.startService(intent);
+                                return;
+                            }
+
+                            Bitmap result = Bitmap.createBitmap( mGlobal.scale(50), mGlobal.scale(50), Bitmap.Config.ARGB_8888);
+                            Canvas cv = new Canvas(result);
+                            Paint paint = new Paint();
+
+                            BitmapFactory.Options options = new BitmapFactory.Options();
+                            options.inDensity = DisplayMetrics.DENSITY_LOW;
+                            options.inScaled = true;
+                            options.inTargetDensity = MyApplication.context.getResources().getDisplayMetrics().densityDpi;
+
+                            Bitmap bitmap;
+                            Rect r;
+
+                            if(n == 4) {
+                                bitmap = BitmapFactory.decodeFile(filepaths[0], options);
+                                r = new Rect(0, 0, mGlobal.scale(50) / 2, mGlobal.scale(50) / 2);
+                                cv.drawBitmap(bitmap, null, r, paint);
+
+                                bitmap = BitmapFactory.decodeFile(filepaths[1], options);
+                                r.set(mGlobal.scale(50) / 2, 0, mGlobal.scale(50), mGlobal.scale(50) / 2);
+                                cv.drawBitmap(bitmap, null, r, paint);
+
+                                bitmap = BitmapFactory.decodeFile(filepaths[2], options);
+                                r.set(0, mGlobal.scale(50) / 2, mGlobal.scale(50) / 2, mGlobal.scale(50));
+                                cv.drawBitmap(bitmap, null, r, paint);
+
+                                bitmap = BitmapFactory.decodeFile(filepaths[3], options);
+                                r.set(mGlobal.scale(50) / 2, mGlobal.scale(50) / 2, mGlobal.scale(50), mGlobal.scale(50));
+                                cv.drawBitmap(bitmap, null, r, paint);
+                            }
+
+                            if(n == 2){
+                                bitmap = BitmapFactory.decodeFile(filepaths[0], options);
+                                Rect r2 = new Rect((int) (bitmap.getWidth() * 0.25), 0, (int) (bitmap.getWidth() * 0.75), bitmap.getHeight());
+                                r = new Rect(0, 0, mGlobal.scale(50) / 2, mGlobal.scale(50));
+                                cv.drawBitmap(bitmap, r2, r, paint);
+
+                                bitmap = BitmapFactory.decodeFile(filepaths[1], options);
+                                r.set(mGlobal.scale(50) / 2, 0, mGlobal.scale(50), mGlobal.scale(50));
+                                cv.drawBitmap(bitmap, r2, r, paint);
+                            }
+
+                            ((DrawableDL) icon_50_drawable).setBitmap(result);
+                            //DrawableDL.this.invalidateSelf();
+                        }
+
+                        public download_waiter setParams(mDialog dlg, MyApplication app) {
+                            this.dlg = dlg;
+                            this.app = app;
+                            if(dlg.participants.size() > 3){
+                                n = 4;
+                            } else if (dlg.participants.size() > 1){
+                                n = 2;
+                            }
+                            return this;
+                        }
+
+
+                    }.setParams(this, app);
+
+
+
+                    app.dl_waiters.add(tw);
+
+                    Intent intent = new Intent(context, DownloadService.class);
+                    intent.putExtra("url", participants.get(0).icon_50_url);
+                    app.startService(intent);
                 } else {
                     icon_50_drawable = new DrawableDL(icon_50_url, mGlobal.scale(50), mGlobal.scale(50), context);
                 }

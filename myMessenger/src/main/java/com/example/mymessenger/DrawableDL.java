@@ -131,7 +131,7 @@ public class DrawableDL extends Drawable {
         mBitmapHeight = mBitmap.getScaledHeight(mTargetDensity);
     }
 
-    private void setBitmap(Bitmap bitmap) {
+    public void setBitmap(Bitmap bitmap) {
         if (bitmap != mBitmap) {
             mBitmap = bitmap;
             if (bitmap != null) {
