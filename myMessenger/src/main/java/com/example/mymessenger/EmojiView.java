@@ -14,6 +14,7 @@ import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v4.view.ViewPager.OnPageChangeListener;
 import android.text.TextUtils;
+import android.util.DisplayMetrics;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -67,6 +68,8 @@ public class EmojiView extends LinearLayout {
         placeholderPaint.setColor(1426063360);
         emojidrawablePaint = new Paint();
         emojidrawablePaint.setFilterBitmap(true);
+        emojidrawablePaint.setAntiAlias(true);
+        emojidrawablePaint.setDither(true);
     }
 
     public class EmojiDrawable extends Drawable {
@@ -94,21 +97,19 @@ public class EmojiView extends LinearLayout {
                     bmp = bmps.get(eid);
                 }
                 Rect b = copyBounds();
-                /*
+
                 int cX = b.centerX();
                 int cY = b.centerY();
 
-                if (this.customSize > 0) {
-                    b.left = cX - Math.min(this.fullSize ? bigImgSize : drawImgSize, this.customSize) / 2;
-                    b.right = Math.min(this.fullSize ? bigImgSize : drawImgSize, this.customSize) / 2 + cX;
-                    b.top = cY - Math.min(this.fullSize ? bigImgSize : drawImgSize, this.customSize) / 2;
-                    b.bottom = Math.min(this.fullSize ? bigImgSize : drawImgSize, this.customSize) / 2 + cY;
-                } else {
-                    b.left = cX - (this.fullSize ? bigImgSize : drawImgSize) / 2;
-                    b.right = (this.fullSize ? bigImgSize : drawImgSize) / 2 + cX;
-                    b.top = cY - (this.fullSize ? bigImgSize : drawImgSize) / 2;
-                    b.bottom = (this.fullSize ? bigImgSize : drawImgSize) / 2 + cY;
-                }*/
+                int mX = mGlobal.scale(30) / 2;
+                int mY = mGlobal.scale(30) / 2;
+
+                b.left = Math.max( cX - Math.max(bmp.getWidth() / 2, mX), b.left);
+                b.right = Math.min( Math.max(bmp.getWidth() / 2, mX) + cX, b.right);
+                b.top = Math.max(cY - Math.max(bmp.getHeight() / 2, mY), b.top);
+                b.bottom = Math.min( Math.max(bmp.getHeight() / 2, mY) + cY, b.bottom);
+
+                //canvas.setDensity(bmp.getDensity());
                 canvas.drawBitmap(this.bmp, null, b, emojidrawablePaint);
             }
         }
@@ -159,7 +160,7 @@ public class EmojiView extends LinearLayout {
 
             };
 
-            ChatMessageFormatter.getDownloadB(ms.getEmojiUrl(data), cbcf, mGlobal.scale(30), ms);
+            ChatMessageFormatter.getDownloadB(ms.getEmojiUrl(data), cbcf, 0, ms);
         }
 
     };

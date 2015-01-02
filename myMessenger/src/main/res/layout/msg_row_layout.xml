@@ -24,9 +24,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentTop="true"
-            android:layout_margin="0dp"
-            android:paddingLeft="10dp"
-            android:text="Ну очень длинный текст в несколькоооо строк"
+            android:text="Ну ооооооооочень длинный текст в несколько строк"
             android:textColor="#000000"
             android:textSize="16sp" />
 
@@ -36,13 +34,14 @@
         android:id="@+id/msg_date"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:paddingTop="15dp"
         android:text="10:47\n01.01.2014"
         android:textSize="10sp"
         android:layout_alignParentTop="false"
         android:layout_toLeftOf="@+id/msg_linearLayout"
         android:gravity="right"
-        android:layout_marginRight="-50dp" />
+        android:layout_marginRight="-50dp"
+        android:layout_marginTop="5dp"
+        android:textStyle="italic" />
 
     <ImageView
         android:layout_width="wrap_content"
