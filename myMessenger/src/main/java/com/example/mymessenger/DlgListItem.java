@@ -33,14 +33,14 @@ public class DlgListItem {
         textLabel.setText(dlg.getLastMessageTime().format("%H:%M %d.%m.%Y"));
 
 
-        textLabel = (TextView) view.findViewById(R.id.dlgview_dlgtext);
+        TextView textLabel_dlgtext = (TextView) view.findViewById(R.id.dlgview_dlgtext);
 
         if (snippet_spannable_cache == null) {
             RunnableUpdateDlgItem r = new RunnableUpdateDlgItem(view);
             MyApplication.handler1.post(r);
-            textLabel.setText(dlg.last_msg.text);
+            textLabel_dlgtext.setText(dlg.last_msg.text);
         } else {
-            textLabel.setText(snippet_spannable_cache);
+            textLabel_dlgtext.setText(snippet_spannable_cache);
         }
 
         ImageView iv = (ImageView) view.findViewById(R.id.dlgview_iconmain);
@@ -52,15 +52,27 @@ public class DlgListItem {
             mContact my_contact = app.msManager.getService(dlg.msg_service_type).getMyContact();
             iv.setImageDrawable(my_contact.getIconDrawable(view.getContext()));
             //showContactImageSmall(my_contact, iv);
-        } else if(dlg.isChat()){
-            mContact contact = dlg.last_msg.respondent;
-            iv.setImageDrawable(contact.getIconDrawable(view.getContext()));
-            //showContactImageSmall(contact, iv);
 
+            if(!dlg.last_msg.isReaded()){
+                textLabel_dlgtext.setBackgroundColor(app.getResources().getColor(R.color.msg_notreaded));
+            }
         } else {
-     		iv.setVisibility(View.INVISIBLE);
-     		iv.getLayoutParams().width = 0;
-     		iv.requestLayout();
+            if(dlg.isChat()){
+                mContact contact = dlg.last_msg.respondent;
+                iv.setImageDrawable(contact.getIconDrawable(view.getContext()));
+                //showContactImageSmall(contact, iv);
+
+            } else {
+                iv.setVisibility(View.INVISIBLE);
+                iv.getLayoutParams().width = 0;
+                iv.requestLayout();
+            }
+
+            if(dlg.last_msg.isReaded()){
+                view.setBackgroundColor(app.getResources().getColor(R.color.msg_readed));
+            } else {
+                view.setBackgroundColor(app.getResources().getColor(R.color.msg_notreaded));
+            }
         }
 
     	//Log.d("MyDialogsAdapter", data.size() + " : " + position + " : " + dlg.getParticipantsNames());

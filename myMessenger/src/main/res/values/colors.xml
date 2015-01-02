@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="msg_notreaded">#a0b0bda5</color>
+    <color name="msg_readed">#ffffffff</color>
     <color name="background_tab_pressed">#6633b5e5</color>
+
 </resources>

@@ -18,6 +18,7 @@ import android.view.View;
 
 import com.example.mymessenger.services.MessageService.MessageService;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,7 +30,7 @@ public class mDialog implements Parcelable {
     public Bitmap icon_50;
     public String icon_50_url;
     Drawable icon_50_drawable;
-	
+
     public mMessage last_msg;
     public String last_msg_id;
 	
@@ -320,7 +321,7 @@ public class mDialog implements Parcelable {
                     icon_50_drawable = new DrawableDL(icon_50_url, mGlobal.scale(50), mGlobal.scale(50), context);
                 }
             } else {
-                icon_50_drawable = participants.get(0).getIconDrawable(context);
+                return participants.get(0).getIconDrawable(context);
             }
         }
         return icon_50_drawable;

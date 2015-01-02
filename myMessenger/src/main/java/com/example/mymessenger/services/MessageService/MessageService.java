@@ -109,6 +109,7 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
 
         if(msIsSetupFinished) {
             msSelfContact = new mContact(sPref.getString(PREFS_ACTIVE_ACCOUNT, ""));
+            msContacts.put(msSelfContact.address, msSelfContact);
         }
 
         setupEmoji();
@@ -273,10 +274,6 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
     // TODO: Периодически обновлять
     @Override
     public final mContact getContact(String address) {
-        if(address.equals("173156958")){
-            Log.d("test", "test");
-        }
-
         mContact cnt = msContacts.get(address);
 
         if (cnt == null) {
@@ -771,8 +768,10 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
 
         @Override
         public void onTaskComplete(mContact result) {
-            if (msSelfContact == null) msSelfContact = result;
-            else msSelfContact.update(result);
+            if (msSelfContact == null) {
+                msSelfContact = result;
+                msContacts.put(result.address, result);
+            } else msSelfContact.update(result);
 
             SharedPreferences.Editor ed = sPref.edit();
             ed.putString(PREFS_ACTIVE_ACCOUNT, msSelfContact.address);
@@ -908,6 +907,7 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
     protected void onInitFinish(){
         msIsInitFinished = true;
         isLoading = false;
+        requestAccountInfo();
         updateShownStatus();
     }
 

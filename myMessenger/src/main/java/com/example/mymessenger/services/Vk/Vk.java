@@ -172,17 +172,27 @@ public class Vk extends MessageService {
                     for(int i = 0; i < response_json.length(); i++){
                         JSONObject item = response_json.getJSONObject(i);
 
-                        mContact cnt = req.cnts.get(i);
+                        mContact tcnt = req.cnts.get(i);
 
                         String name = item.getString("first_name");
                         name += " " + item.getString("last_name");
 
                         String photo_50_url = item.getString("photo_50");
 
-                        cnt.icon_50_url = photo_50_url;
-                        cnt.name = name;
+                        tcnt.icon_50_url = photo_50_url;
+                        tcnt.name = name;
 
-                        cnts.add(cnt);
+                        int cind = req.cnts.indexOf(tcnt);
+
+                        if( cind >= 0 ){
+                            mContact cnt = req.cnts.get(cind);
+                            cnt.update(tcnt);
+                            cnts.add(cnt);
+                        } else {
+                            Log.d("Vk:getContactsDataFromNet", "Wrong cnt!!");
+                        }
+
+
                     }
 
                     req.onFinished(cnts);

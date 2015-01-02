@@ -45,7 +45,11 @@ public class MsgListItem {
         DisplayMetrics metrics = app.getResources().getDisplayMetrics();
 
         // Color for new messages
-	    if(!msg.getFlag(mMessage.READED))relativeLayout.setBackgroundColor(app.getResources().getColor(R.color.msg_notreaded));
+	    if(msg.getFlag(mMessage.READED)) {
+            relativeLayout.setBackgroundColor(app.getResources().getColor(R.color.msg_readed));
+        } else {
+            relativeLayout.setBackgroundColor(app.getResources().getColor(R.color.msg_notreaded));
+        }
 
         // Msg data layout
         linearLayout.setBackgroundResource(right ? R.drawable.bg_msg_out_full : R.drawable.bg_msg_in_full);
