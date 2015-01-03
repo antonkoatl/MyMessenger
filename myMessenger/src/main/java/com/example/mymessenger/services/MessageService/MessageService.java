@@ -70,7 +70,7 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
     protected Map<mDialog, IntegerMutable> msgs_thread_count; //Количество потоков, загружающих сообщения для определённого диалога в данных момент
     protected SharedPreferences sPref;
 
-    boolean msIsSetupFinished = false;
+    protected boolean msIsSetupFinished = false;
     boolean msIsInitFinished = false;
     boolean isLoading = false;
     protected int msSetupStage;
@@ -94,7 +94,7 @@ public abstract class MessageService implements msInterfaceMS, msInterfaceDB, ms
     protected MessageService(MyApplication app, int ser_type, int ser_name_id) {
         this.msApp = app;
         setupDBHelper();
-/**/        msContacts = new HashMap<String, mContact>();
+        msContacts = new HashMap<String, mContact>();
         msgs_thread_count = new HashMap<mDialog, IntegerMutable>(); //индикаторы загрузки сообщений для диалогов
 
         msAccumCnts = new ArrayList<mContact>();

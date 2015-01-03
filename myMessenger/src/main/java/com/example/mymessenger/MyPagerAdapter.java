@@ -75,7 +75,7 @@ public class MyPagerAdapter extends FragmentPagerAdapter {
     @Override
     public int getItemPosition(Object object)
     {
-    	Log.d("MyPagerAdapter","getItemPosition");
+    	//Log.d("MyPagerAdapter","getItemPosition");
     	if(object == null)
     		return POSITION_NONE;
     	if (object instanceof ServicesMenuFragment)

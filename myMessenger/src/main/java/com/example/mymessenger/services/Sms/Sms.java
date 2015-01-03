@@ -39,9 +39,7 @@ public class Sms extends MessageService {
         mDeliveredIntent = PendingIntent.getBroadcast(app.getApplicationContext(), 0, new Intent("CTS_SMS_DELIVERY_ACTION"),
                 PendingIntent.FLAG_ONE_SHOT);
 
-        /*Cursor cursor = app.getApplicationContext().getContentResolver().query(Uri.parse("content://mms-sms/conversations?simple=true"), null, null, null, null);
-        dlgs_count = cursor.getCount();
-        cursor.close();*/
+        msIsSetupFinished = true; // nothing to do, always true
     }
 
     @Override
