@@ -260,7 +260,7 @@ public class MainActivity extends ActionBarActivity {
 	@Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // TODO: Создаётся два раза подряд при перелистывании фрагметов (?)
-        Log.d("MainActiviy", "onCreateOptionsMenu");
+        //Log.d("MainActiviy", "onCreateOptionsMenu");
 
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.main, menu);

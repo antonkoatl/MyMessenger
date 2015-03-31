@@ -89,15 +89,16 @@ public class PhotoAttachment extends mAttachment {
 
     @Override
     protected String getDataString() {
-        return url + ";" + id + ";" + String.valueOf(width) + ";" + String.valueOf(height);
+        return super.getDataString() + ";" + url + ";" + id + ";" + String.valueOf(width) + ";" + String.valueOf(height);
     }
 
     @Override
     protected void getFromDataString(String data) {
-        this.url = data.split(";")[0];
-        this.id = data.split(";")[1];
-        this.width = Integer.valueOf(data.split(";")[2]);
-        this.height = Integer.valueOf(data.split(";")[3]);
+        super.getFromDataString(data);
+        this.url = data.split(";")[1];
+        this.id = data.split(";")[2];
+        this.width = Integer.valueOf(data.split(";")[3]);
+        this.height = Integer.valueOf(data.split(";")[4]);
     }
 
     public void setUrl(String url) {

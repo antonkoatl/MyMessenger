@@ -7,6 +7,7 @@ import android.view.View;
 
 import com.example.mymessenger.attachments.mAttachment;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class mMessage implements Parcelable {
@@ -27,7 +28,7 @@ public class mMessage implements Parcelable {
 
     public List<mAttachment> attachments;
 	
-	public MsgListItem msg_ui_helper;
+	public transient MsgListItem msg_ui_helper;
 			
 	public mMessage() {
 		sendTime = new Time();
@@ -114,4 +115,8 @@ public class mMessage implements Parcelable {
         return getFlag(READED);
     }
 
+    public void addAttachment(mAttachment at) {
+        if(attachments == null) attachments = new ArrayList<mAttachment>();
+        attachments.add(at);
+    }
 }

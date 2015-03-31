@@ -668,7 +668,7 @@ public class ListViewSimpleFragment extends Fragment implements OnClickListener,
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        Log.d("ListViewSimpleFragment", "onCreateOptionsMenu");
+        //Log.d("ListViewSimpleFragment", "onCreateOptionsMenu");
         super.onCreateOptionsMenu(menu, inflater);
     }
 

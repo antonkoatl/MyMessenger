@@ -34,7 +34,7 @@ public class WrapWidthTextView extends TextView {
 	        //widthMeasureSpec = MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY);
 	        //super.onMeasure(widthMeasureSpec, heightMeasureSpec);
 	        //width = getMeasuredWidth();
-	        int height = getMeasuredHeight();
+	        int height = getText().length() > 0 ? getMeasuredHeight() : 0;
 	        setMeasuredDimension(width, height);
 	        
 	        

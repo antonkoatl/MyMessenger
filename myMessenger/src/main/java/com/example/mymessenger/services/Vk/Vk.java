@@ -14,6 +14,8 @@ import com.example.mymessenger.MyApplication;
 import com.example.mymessenger.R;
 import com.example.mymessenger.RunnableAdvanced;
 import com.example.mymessenger.UpdateService;
+import com.example.mymessenger.attachments.BaseAttachment;
+import com.example.mymessenger.attachments.FwdAttachment;
 import com.example.mymessenger.attachments.PhotoAttachment;
 import com.example.mymessenger.attachments.mAttachment;
 import com.example.mymessenger.download_waiter;
@@ -353,6 +355,7 @@ public class Vk extends MessageService {
 
                 } catch (JSONException e) {
                     e.printStackTrace();
+                    Log.d("getDialogsFromNet", response.json.toString());
                 }
             }
 
@@ -460,6 +463,7 @@ public class Vk extends MessageService {
 
                 } catch (JSONException e) {
                     e.printStackTrace();
+                    Log.d("getDialogsFromNet", response.json.toString());
                 }
             }
 
@@ -478,18 +482,32 @@ public class Vk extends MessageService {
     }
 
     private mMessage getMsgFromJSON(JSONObject item) throws JSONException {
+        return getMsgFromJSON(item, false);
+    }
+
+    private mMessage getMsgFromJSON(JSONObject item, boolean fwd) throws JSONException {
         mMessage msg = new mMessage();
-        msg.setOut(item.getInt("out") == 1 ?	true : false);
+        if(!fwd) msg.setOut(item.getInt("out") == 1 ?	true : false);
 
         msg.respondent = getContact( item.getString( "user_id" ) );
         msg.text = item.getString( "body" );
         msg.sendTime.set(item.getLong( "date" )*1000);
-        msg.setReaded(item.getInt( "read_state" ) == 1 ? true : false);
-        msg.id = item.getString("id");
+        if(!fwd) msg.setReaded(item.getInt( "read_state" ) == 1 ? true : false);
+        if(!fwd) msg.id = item.getString("id");
         msg.msg_service = getServiceType();
 
+        if(item.has("fwd_messages")){
+            JSONArray a = item.getJSONArray("fwd_messages");
+            for(int i = 0; i < a.length(); i++){
+                JSONObject attachment = a.getJSONObject(i);
+
+                mAttachment at = new FwdAttachment(getMsgFromJSON(attachment, true));
+                msg.addAttachment(at);
+            }
+
+        }
+
         if(item.has("attachments")){
-            msg.attachments = new ArrayList<mAttachment>();
             JSONArray a = item.getJSONArray("attachments");
             for(int i = 0; i < a.length(); i++){
                 JSONObject attachment = a.getJSONObject(i);
@@ -497,9 +515,19 @@ public class Vk extends MessageService {
                 if(attachment.getString("type").equals("photo")){
                     JSONObject data = attachment.getJSONObject("photo");
                     PhotoAttachment at = new PhotoAttachment();
+                    at.setId(data.getString("id"));
 
-                    int width = data.getInt("width");
-                    int height = data.getInt("height");
+                    int width = 0;
+                    int height = 0;
+
+                    if(data.getInt("id") == 0){
+                        width = 604;
+                    } else {
+                        width = data.getInt("width");
+                        height = data.getInt("height");
+                    }
+
+
                     if(width <= 75)at.setUrl(data.getString("photo_75"));
                     else if(width <= 130)at.setUrl(data.getString("photo_130"));
                     else at.setUrl(data.getString("photo_604"));
@@ -508,14 +536,14 @@ public class Vk extends MessageService {
                     //else if(width <= 1280)at.setUrl(data.getString("photo_1280"));
                     //else if(width <= 2560)at.setUrl(data.getString("photo_2560"));
 
-                    at.setId(data.getString("id"));
+
                     at.setSize(width, height);
 
-                    msg.attachments.add(at);
+                    msg.addAttachment(at);
                 } else {
-                    mAttachment at = new mAttachment();
+                    mAttachment at = new BaseAttachment();
                     at.setName("Vk:" + attachment.getString("type"));
-                    msg.attachments.add(at);
+                    msg.addAttachment(at);
                 }
 
             };
@@ -570,6 +598,7 @@ public class Vk extends MessageService {
 
                 } catch (JSONException e) {
                     e.printStackTrace();
+                    Log.d("getDialogsFromNet", response.json.toString());
                 }
             }
 
@@ -611,6 +640,7 @@ public class Vk extends MessageService {
 
                 } catch (JSONException e) {
                     e.printStackTrace();
+                    Log.d("getDialogsFromNet", response.json.toString());
                 }
             }
 
@@ -842,6 +872,8 @@ public class Vk extends MessageService {
                         String subject = item.getString(5);
                         String text = item.getString(6);
                         JSONObject attachments = item.getJSONObject(7);
+
+                        //TODO: https://vk.com/dev/using_longpoll
 
                         if(attachments.has("from")){ //chat
                             long chat_id = Long.valueOf(from_id) - 2000000000; //hint

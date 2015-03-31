@@ -105,8 +105,10 @@ public class MsgListItem {
 
         // Attachments
         if(msg.attachments != null) {
+            LinearLayout ll = (LinearLayout) relativeLayout.findViewById(R.id.msg_attachments);
+            ll.removeAllViews();
+
             for (mAttachment attachment : msg.attachments) {
-                LinearLayout ll = (LinearLayout) relativeLayout.findViewById(R.id.msg_linearLayout);
                 View view_at = attachment.getView(view.getContext());
                 ViewParent parent = view_at.getParent();
                 if (parent != null && parent instanceof View) {
@@ -114,7 +116,6 @@ public class MsgListItem {
                 }
 
                 ll.addView(view_at);
-
             }
         }
     	

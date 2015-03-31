@@ -8,9 +8,10 @@ import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.List;
 
-public class mAttachment {
+public abstract class mAttachment {
     public static final int BASE = 0;
     public static final int PHOTO = 1;
+    public static final int FWD = 2;
 
     String name;
 
@@ -22,17 +23,9 @@ public class mAttachment {
 
     }
 
-    public View getView(Context context){
-        TextView textView = new TextView(context);
-        textView.setText("<attachment>"+name);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        textView.setLayoutParams(lp);
-        return textView;
-    }
+    public abstract View getView(Context context);
 
-    public int getType(){
-        return BASE;
-    }
+    public abstract int getType();
 
     public void setName(String name){
         this.name = name;
@@ -42,8 +35,8 @@ public class mAttachment {
         if(attachments == null)return "";
         String data = "";
         for(mAttachment attachment : attachments) {
-            if (data.length() > 0) data += ",";
-            data += String.valueOf(attachment.getType()) + ">" + attachment.getDataString();
+            if (data.length() > 0) data += "<,>";
+            data += String.valueOf(attachment.getType()) + "<:>" + attachment.getDataString();
         }
 
         return data;
@@ -56,16 +49,19 @@ public class mAttachment {
     public static List<mAttachment> getListFromDataString(String data) {
         if(data.length() == 0)return null;
         List<mAttachment> attachments = new ArrayList<mAttachment>();
-        for(String data_ : data.split(",")) {
-            int type = Integer.valueOf(data_.split(">")[0]);
-            String data_at = data_.split(">")[1];
+        for(String data_ : data.split("<,>")) {
+            int type = Integer.valueOf(data_.split("<:>")[0]);
+            String data_at = data_.split("<:>")[1];
             mAttachment at = null;
             switch(type){
                 case PHOTO:
                     at = new PhotoAttachment(data_at);
                     break;
+                case FWD:
+                    at = new FwdAttachment(data_at);
+                    break;
                 default:
-                    at = new mAttachment(data_at);
+                    at = new BaseAttachment(data_at);
                     break;
             }
             attachments.add(at);

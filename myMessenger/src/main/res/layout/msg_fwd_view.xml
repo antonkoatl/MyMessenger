@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="fill_parent"
+        android:id="@+id/fwd_lvl"
+        android:background="@drawable/msg_fwd"
+        android:layout_marginLeft="5dp"
+        android:layout_marginRight="5dp" />
+
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/msg_fwd_user_icon"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentLeft="false"
+        android:src="@drawable/sample_image"
+        android:layout_toRightOf="@+id/fwd_lvl" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="New Text"
+        android:id="@+id/msg_fwd_user_name"
+        android:layout_alignParentTop="true"
+        android:layout_toRightOf="@+id/msg_fwd_user_icon" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="New Text"
+        android:id="@+id/msg_fwd_send_time"
+        android:layout_below="@+id/msg_fwd_user_name"
+        android:layout_toRightOf="@+id/msg_fwd_user_icon" />
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="false"
+        android:layout_toRightOf="@+id/fwd_lvl"
+        android:layout_below="@+id/msg_fwd_user_icon">
+
+        <com.example.mymessenger.ui.WrapWidthTextView
+            android:id="@+id/msg_fwd_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#000000"
+            android:textSize="16sp"
+            android:text="Ну ооооооооочень длинный текст в несколько строк"
+            android:layout_below="@+id/msg_fwd_user_icon"
+            android:layout_alignParentLeft="true" />
+
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:id="@+id/msg_fwd_attachments"></LinearLayout>
+    </LinearLayout>
+
+</RelativeLayout>

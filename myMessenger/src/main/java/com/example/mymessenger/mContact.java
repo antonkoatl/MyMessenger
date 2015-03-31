@@ -17,7 +17,8 @@ public class mContact implements Parcelable, Comparable<mContact> {
 	public boolean online;
 	public Bitmap icon_50;
 	public String icon_50_url;
-    Drawable icon_50_drawable;
+
+    transient Drawable icon_50_drawable;
 	
 	public mContact(String address) {
 		this.address = address;

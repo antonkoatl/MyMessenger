@@ -29,4 +29,6 @@ dependencies {
     compile 'org.twitter4j:twitter4j-core:+'
     compile 'org.twitter4j:twitter4j-stream:+'
     compile 'org.twitter4j:twitter4j-async:+'
+    compile 'com.google.code.gson:gson:1.7.2+'
+
 }
